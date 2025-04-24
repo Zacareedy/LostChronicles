@@ -52,29 +52,74 @@ export const STATIONS = {
   }
 };
 
+// Incident report structure
+interface IncidentReport {
+  title: string;
+  fileNumber: string;
+  classification: string;
+  content: string;
+}
+
 // Incident report content
-export const INCIDENT_REPORTS = [
+export const INCIDENT_REPORTS: IncidentReport[] = [
   {
     title: 'THE INCIDENT',
-    content: `Date: [REDACTED]
+    fileNumber: 'AH/MDG-7715',
+    classification: 'LEVEL 5 - TOP SECRET',
+    content: `Date: 1977.09.22
 
 Following the energy release at the Swan construction site, all non-essential personnel have been evacuated from the island. Dr. Chang has implemented new containment protocols requiring the button to be pushed every 108 minutes.
 
-CONTAINMENT FAILURE MAY RESULT IN ANOTHER INCIDENT`
+The drilling operation penetrated an electromagnetic anomaly of unprecedented magnitude. Several Dharma personnel were killed or severely injured when metal objects were violently drawn to the breached pocket.
+
+Dr. DeGroot has mandated construction of a specialized computer system to discharge the energy buildup. Radzinsky's containment solution will be implemented immediately.
+
+CONTAINMENT FAILURE MAY RESULT IN ANOTHER INCIDENT
+
+Personnel are instructed not to discuss these events with anyone without Level 5 clearance.`
   },
   {
     title: 'ELECTROMAGNETIC ANOMALY',
-    content: `Readings indicate the pocket beneath the Swan station continues to build energy at an exponential rate. The button protocol must be maintained to discharge this energy and prevent catastrophic failure.
+    fileNumber: 'RS/SD-4216',
+    classification: 'LEVEL 4 - CLASSIFIED',
+    content: `Date: 1977.10.04
 
-Reference values: 4.815, 16.23, 42.108`
+Readings indicate the pocket beneath the Swan station continues to build energy at an exponential rate. The button protocol must be maintained to discharge this energy and prevent catastrophic failure.
+
+Analysis of the anomaly suggests a connection to the unique properties of the island. The pocket appears to contain exotic matter with negative mass and unusual temporal properties.
+
+Preliminary experiments indicate the energy has unusual effects on electronic equipment and possibly human memory. Several test subjects have reported disorientation and "flashes" of events they claim have not yet occurred.
+
+Reference values: 4.815, 16.23, 42.108
+
+Further research suspended due to safety concerns. Swan station will operate on containment protocol only until further notice.`
   },
   {
     title: 'SYSTEM FAILURE LOG',
-    content: `Last system failure: 1977.09.22
+    fileNumber: 'DC/SW-0108',
+    classification: 'LEVEL 5 - TOP SECRET',
+    content: `SYSTEM FAILURE RECORD: 1984.11.27
 
-Notes: Magnetic attraction increased by 400%. Multiple casualties reported. Station structural integrity compromised.
+FAILURE DURATION: 3 hours, 54 minutes
+ENERGY DISCHARGE: None
+EFFECTS: 
+- Magnetic attraction increased by 400%
+- Multiple system failures across all stations
+- Temporal anomalies reported by Pearl observers
+- Station structural integrity compromised
+- Medical emergencies: 2 fatalities, 5 injuries
 
-The system failure protocol has been updated. See document AH/MDG-422.`
+CAUSE OF FAILURE: 
+Operator failed to input code sequence within designated timeframe. Subject reported "hearing voices" and deliberately abandoned protocol.
+
+POST-FAILURE PROTOCOL:
+- Subject terminated from Dharma Initiative
+- Pearl observation duties expanded
+- Fail-safe mechanism installed (AUTHORIZED BY: ALVAR HANSO)
+- Orientation film revised to emphasize compliance
+- System failure protocol updated (see document AH/MDG-932815)
+
+NOTE: The psychological impact of extended duty at the Swan requires further study. Recommend rotation of personnel every 540 days maximum.`
   }
 ];
 
