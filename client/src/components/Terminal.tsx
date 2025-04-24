@@ -13,9 +13,10 @@ interface TerminalProps {
   onRevealPuzzle: () => void;
   onRevealStation: (stationName: string) => void;
   onCorrectSequence: () => void;
+  onCommand?: (command: string) => void; // Optional handler for terminal commands
 }
 
-const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, onCorrectSequence }) => {
+const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, onCorrectSequence, onCommand }) => {
   const [terminalOutput, setTerminalOutput] = useState<TerminalOutput[]>([
     { text: '> DHARMA INITIATIVE - SWAN STATION TERMINAL', type: 'output' },
     { text: '> AWAITING INPUT...', type: 'output' },
@@ -124,6 +125,11 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           { text: line, type: 'output' }
         ]);
       });
+    }
+    
+    // Pass command to parent component if handler provided
+    if (onCommand) {
+      onCommand(userInput);
     }
     
     // Add cursor back

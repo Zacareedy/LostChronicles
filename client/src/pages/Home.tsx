@@ -173,10 +173,31 @@ const Home: React.FC = () => {
   };
 
   const handlePuzzleComplete = () => {
-    // Reveal all stations and reports when puzzle is completed
-    setDiscoveredStations(Object.keys(STATIONS));
-    setUnlockedReports([0, 1, 2]);
-    setUnlockedLogs(['orientationVideo', 'distressSignal', 'radioTransmission', 'unknownSource']);
+    // When puzzle is completed, unlock Pearl Station logs
+    playSound('success');
+    if (!unlockedLogs.includes('pearlTransmission')) {
+      setUnlockedLogs(prev => [...prev, 'pearlTransmission']);
+      setSystemStatus('PEARL STATION SURVEILLANCE LOGS UNLOCKED');
+      setTimeout(() => {
+        setSystemStatus('SYSTEM OPERATIONAL');
+      }, 5000);
+      
+      // Save pearl access to localStorage
+      try {
+        localStorage.setItem('dharma_pearl_access', 'true');
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+    }
+    
+    // Unlock various reports when puzzle is completed
+    setUnlockedReports(prev => {
+      const newReports = [...prev];
+      if (!newReports.includes(0)) newReports.push(0);
+      if (!newReports.includes(2)) newReports.push(2);
+      return newReports;
+    });
+    
     setIsPuzzleVisible(false);
   };
 
@@ -212,6 +233,7 @@ const Home: React.FC = () => {
           onRevealPuzzle={handleRevealPuzzle} 
           onRevealStation={handleRevealStation}
           onCorrectSequence={handleCorrectSequence}
+          onCommand={handleTerminalCommand}
         />
         
         <IslandMap 
@@ -233,7 +255,7 @@ const Home: React.FC = () => {
       
       {/* Footer with Station Info */}
       <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-[hsl(var(--dharma-gray))] text-xs">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center relative">
           <div>DHARMA INITIATIVE · STATION 3: THE SWAN · ESTABLISHED 1977</div>
           <div 
             className={`font-terminal ${systemStatus === 'PROTOCOL EXECUTION REQUIRED' ? 'text-[hsl(var(--dharma-red))] animate-terminal-blink' : 'text-[hsl(var(--dharma-amber))]'}`}
@@ -241,6 +263,20 @@ const Home: React.FC = () => {
             {systemStatus}
           </div>
           <div>SECURITY CLEARANCE LEVEL 4 · USER ID: [REDACTED]</div>
+          
+          {/* Hidden Dharma Symbol for secret interaction */}
+          <FooterEasterEgg onUnlockLog={
+            () => {
+              if (!unlockedLogs.includes('unknownSource')) {
+                playSound('success');
+                setUnlockedLogs(prev => [...prev, 'unknownSource']);
+                setSystemStatus('UNKNOWN TRANSMISSION DETECTED');
+                setTimeout(() => {
+                  setSystemStatus('SYSTEM OPERATIONAL');
+                }, 3000);
+              }
+            }
+          } />
         </div>
       </footer>
       
@@ -250,6 +286,50 @@ const Home: React.FC = () => {
         onClose={() => setIsPuzzleVisible(false)} 
         onComplete={handlePuzzleComplete}
       />
+    </div>
+  );
+};
+
+// Hidden easter egg component for footer
+interface FooterEasterEggProps {
+  onUnlockLog: () => void;
+}
+
+const FooterEasterEgg: React.FC<FooterEasterEggProps> = ({ onUnlockLog }) => {
+  const [clicks, setClicks] = useState(0);
+  
+  // Reset clicks after a period of inactivity
+  useEffect(() => {
+    if (clicks > 0) {
+      const timeout = setTimeout(() => {
+        setClicks(0);
+      }, 3000);
+      
+      return () => clearTimeout(timeout);
+    }
+  }, [clicks]);
+  
+  // Check for the correct sequence: 4-8-15-16-23-42 of clicks
+  useEffect(() => {
+    // Specifically looking for the 6th click (index 5)
+    if (clicks === 6) {
+      onUnlockLog();
+    }
+  }, [clicks, onUnlockLog]);
+  
+  const handleClick = () => {
+    playSound('beep', 'short');
+    setClicks(prev => Math.min(prev + 1, 6));
+  };
+  
+  return (
+    <div 
+      className="absolute bottom-0 right-0 opacity-10 hover:opacity-30 cursor-pointer transition-opacity" 
+      onClick={handleClick}
+    >
+      <div className="w-10 h-10 flex items-center justify-center text-[hsl(var(--dharma-amber))]">
+        ⓘ
+      </div>
     </div>
   );
 };
