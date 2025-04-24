@@ -69,74 +69,84 @@ const AudioLogs: React.FC<AudioLogsProps> = ({ unlockedLogs, onLogPlay }) => {
       
       <div className="p-4">
         <div className="space-y-4">
-          {Object.entries(audioLogs).map(([id, log]) => {
-            const isUnlocked = unlockedLogs.includes(id);
-            
-            return (
+          {/* Only show unlocked logs - hide locked ones entirely */}
+          {Object.entries(audioLogs)
+            .filter(([id]) => unlockedLogs.includes(id))
+            .map(([id, log]) => (
               <div 
                 key={id}
-                className={`border border-[hsla(var(--dharma-gray),0.3)] rounded p-3 ${isUnlocked ? 'reveal-trigger hover:bg-[hsla(var(--dharma-gray),0.1)]' : 'opacity-70'} transition-colors`}
+                className="border border-[hsla(var(--dharma-gray),0.3)] rounded p-3 reveal-trigger hover:bg-[hsla(var(--dharma-gray),0.1)] transition-colors"
               >
                 <div className="flex justify-between items-center">
                   <h3 className="font-mono text-[hsl(var(--dharma-amber))]">{log.title}</h3>
                   <div className="text-xs text-[hsl(var(--dharma-gray))]">
-                    {isUnlocked ? 'AVAILABLE' : 'LOCKED'}
+                    AVAILABLE
                   </div>
                 </div>
                 
-                {isUnlocked && (
-                  <div className={`mt-2 ${playingLog === id ? '' : 'hidden-content'}`}>
-                    <div className="text-xs text-[hsl(var(--dharma-gray))] mb-2">
-                      {log.description}
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <button 
-                        onClick={() => playingLog === id ? handlePause(id) : handlePlay(id)}
-                        className="mr-2 text-[hsl(var(--dharma-amber))] hover:text-[hsl(var(--dharma-green))]"
-                      >
-                        {playingLog === id ? '❚❚' : '►'}
-                      </button>
-                      
-                      <input 
-                        type="range" 
-                        className="audio-player flex-1" 
-                        min="0" 
-                        max="100" 
-                        value={progress[id] || 0}
-                        onChange={(e) => handleSliderChange(id, parseInt(e.target.value))}
-                      />
-                      
-                      <audio 
-                        ref={(el) => audioRefs.current[id] = el}
-                        src={log.src}
-                        onTimeUpdate={() => handleTimeUpdate(id)}
-                        onEnded={() => setPlayingLog(null)}
-                        hidden
-                      />
-                      
-                      <span className="ml-2 text-xs text-[hsl(var(--dharma-gray))]">
-                        {audioRefs.current[id] ? 
-                          `${formatTime(audioRefs.current[id]!.currentTime)}/${formatTime(audioRefs.current[id]!.duration || 0)}` : 
-                          `0:00/${log.duration}`
-                        }
-                      </span>
-                    </div>
+                <div className={`mt-2 ${playingLog === id ? '' : 'hidden-content'}`}>
+                  <div className="text-xs text-[hsl(var(--dharma-gray))] mb-2">
+                    {log.description}
                   </div>
-                )}
+                  
+                  <div className="flex items-center">
+                    <button 
+                      onClick={() => playingLog === id ? handlePause(id) : handlePlay(id)}
+                      className="mr-2 text-[hsl(var(--dharma-amber))] hover:text-[hsl(var(--dharma-green))]"
+                    >
+                      {playingLog === id ? '❚❚' : '►'}
+                    </button>
+                    
+                    <input 
+                      type="range" 
+                      className="audio-player flex-1" 
+                      min="0" 
+                      max="100" 
+                      value={progress[id] || 0}
+                      onChange={(e) => handleSliderChange(id, parseInt(e.target.value))}
+                    />
+                    
+                    <audio 
+                      ref={(el) => audioRefs.current[id] = el}
+                      src={log.src}
+                      onTimeUpdate={() => handleTimeUpdate(id)}
+                      onEnded={() => setPlayingLog(null)}
+                      hidden
+                    />
+                    
+                    <span className="ml-2 text-xs text-[hsl(var(--dharma-gray))]">
+                      {audioRefs.current[id] ? 
+                        `${formatTime(audioRefs.current[id]!.currentTime)}/${formatTime(audioRefs.current[id]!.duration || 0)}` : 
+                        `0:00/${log.duration}`
+                      }
+                    </span>
+                  </div>
+                </div>
               </div>
-            );
-          })}
+            ))}
+            
+          {/* If no logs yet, show mysterious message */}
+          {unlockedLogs.length === 0 && (
+            <div className="text-[hsl(var(--dharma-gray))] text-center py-6">
+              NO TRANSMISSION LOGS AVAILABLE
+            </div>
+          )}
         </div>
         
         <div className="mt-4 text-xs text-[hsl(var(--dharma-gray))] flex justify-between items-center">
           <span>{unlockedLogs.length} FILES AVAILABLE</span>
-          <button 
-            className="text-[hsl(var(--dharma-amber))] hover:text-[hsl(var(--dharma-green))] text-xs"
-            onClick={() => onLogPlay('scan')}
-          >
-            SCAN FOR MORE
-          </button>
+          {/* Only show scan option if user has unlocked previous logs */}
+          {unlockedLogs.length > 0 && unlockedLogs.length < Object.keys(audioLogs).length && (
+            <div className="flex items-center">
+              <button 
+                className="text-[hsl(var(--dharma-amber))] hover:text-[hsl(var(--dharma-green))] text-xs opacity-50 hover:opacity-100 transition-opacity"
+                onClick={() => onLogPlay('scan')}
+              >
+                {/* More mysterious label */}
+                ATTEMPT SIGNAL TRIANGULATION
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </motion.section>

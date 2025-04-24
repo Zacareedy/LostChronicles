@@ -4,7 +4,7 @@ import Logo from '@/components/Logo';
 import Loading from '@/components/Loading';
 import Terminal from '@/components/Terminal';
 import IslandMap from '@/components/IslandMap';
-import NumberSequence from '@/components/NumberSequence';
+
 import AudioLogs from '@/components/AudioLogs';
 import IncidentReports from '@/components/IncidentReports';
 import Countdown from '@/components/Countdown';
@@ -134,9 +134,7 @@ const Home: React.FC = () => {
           onStationClick={handleRevealStation} 
         />
         
-        <NumberSequence 
-          onCorrectSequence={handleCorrectSequence} 
-        />
+        {/* NumberSequence component removed as per user request */}
         
         <AudioLogs 
           unlockedLogs={unlockedLogs} 
