@@ -49,14 +49,29 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
 
   return (
     <div className="font-terminal text-[hsl(var(--dharma-amber))]">
-      <motion.div 
-        className={`text-2xl ${isWarning ? 'text-[hsl(var(--dharma-red))] animate-terminal-blink' : ''}`}
-        animate={isWarning ? { scale: [1, 1.05, 1] } : {}}
-        transition={{ repeat: Infinity, duration: 2 }}
-      >
-        {`${minutes.toString().padStart(3, '0')}:${seconds.toString().padStart(2, '0')}`}
-      </motion.div>
-      <div className="text-xs text-[hsl(var(--dharma-gray))]">SYSTEM PROTOCOL</div>
+      <div className="relative bg-[#1a1a1a] p-4 rounded-md border border-[#333] shadow-inner">
+        <div className="flex gap-[2px]">
+          {[...minutes.toString().padStart(3, '0'), ...seconds.toString().padStart(2, '0')].map((digit, i) => (
+            <motion.div
+              key={i}
+              className={`relative w-12 h-16 bg-black rounded-sm flex items-center justify-center overflow-hidden
+                ${i === 3 ? 'mr-[2px]' : ''}`}
+              animate={isWarning ? { 
+                backgroundColor: ['#1a1a1a', '#2a1515', '#1a1a1a'],
+                boxShadow: ['inset 0 2px 4px rgba(0,0,0,0.5)', 'inset 0 2px 4px rgba(255,0,0,0.2)', 'inset 0 2px 4px rgba(0,0,0,0.5)']
+              } : {}}
+              transition={{ repeat: Infinity, duration: 2 }}
+            >
+              <span className={`font-mono text-3xl ${isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-[hsl(var(--dharma-amber))]'}`}>
+                {digit}
+              </span>
+              <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#444] to-transparent opacity-50" />
+              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#444] to-transparent opacity-50" />
+            </motion.div>
+          ))}
+        </div>
+        <div className="mt-2 text-xs text-center text-[hsl(var(--dharma-gray))] tracking-wider">SYSTEM PROTOCOL</div>
+      </div>
     </div>
   );
 };

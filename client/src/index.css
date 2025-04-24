@@ -191,6 +191,11 @@
     border-radius: 50%;
     cursor: pointer;
   }
+
+  /* Countdown display effects */
+  .countdown-digit {
+    text-shadow: 0 0 8px rgba(227, 188, 77, 0.4);
+  }
 }
 
 @keyframes blink {
