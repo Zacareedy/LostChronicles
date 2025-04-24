@@ -13,42 +13,42 @@ export const STATIONS = {
     code: 'Station 3',
     description: 'Electromagnetic research facility',
     coordinates: '4° 8′ 15″ N, 16° 23′ 42″ W',
-    position: { top: '30%', left: '45%' }
+    position: { top: '45%', left: '50%' }  // Central area of island
   },
   pearl: {
     name: 'The Pearl',
     code: 'Station 5',
     description: 'Psychological research',
     coordinates: '8° 15′ 16″ N, 23° 42′ 4″ W',
-    position: { top: '60%', left: '25%' }
+    position: { top: '60%', left: '65%' }  // South-eastern area 
   },
   flame: {
     name: 'The Flame',
     code: 'Station 4',
     description: 'Communications station',
     coordinates: '15° 16′ 23″ N, 42° 4′ 8″ W',
-    position: { top: '20%', left: '70%' }
+    position: { top: '30%', left: '70%' }  // North-eastern area
   },
   arrow: {
     name: 'The Arrow',
     code: 'Station 1',
     description: 'Defense & armament',
     coordinates: '16° 23′ 42″ N, 4° 8′ 15″ W',
-    position: { top: '75%', left: '65%' }
+    position: { top: '38%', left: '25%' }  // Western side
   },
   staff: {
     name: 'The Staff',
     code: 'Station 6',
     description: 'Medical research station',
     coordinates: '23° 42′ 4″ N, 8° 15′ 16″ W',
-    position: { top: '40%', left: '80%' }
+    position: { top: '25%', left: '55%' }  // Northern area
   },
   orchid: {
     name: 'The Orchid',
     code: 'Station 7',
     description: 'Time displacement research',
     coordinates: '42° 4′ 8″ N, 15° 16′ 23″ W',
-    position: { top: '50%', left: '50%' }
+    position: { top: '75%', left: '38%' }  // Southern area
   }
 };
 

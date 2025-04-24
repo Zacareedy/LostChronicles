@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { STATIONS } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
-import lostMapImage from '@/assets/final_lost_map.jpeg';
+// Import our new map assets
+import coloredIslandMap from '@/assets/island_maps/colored_island_map.svg';
+import stationMarkers from '@/assets/island_maps/station_markers.svg';
 
 interface Station {
   name: string;
@@ -21,6 +23,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   const [hoveredStation, setHoveredStation] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState('--° --′ --″ N, --° --′ --″ W');
   const [mapStatus, setMapStatus] = useState('SCANNING FOR SIGNALS...');
+  const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     // Initial scan effect
@@ -46,11 +49,11 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       const station = STATIONS[stationName as keyof typeof STATIONS];
       setHoveredStation(stationName);
       setCoordinates(station.coordinates);
-      setMapStatus(`STATION: ${stationName.toUpperCase()}`);
+      setMapStatus(`STATION: ${station.name.toUpperCase()} (${station.code})`);
     } else {
       setHoveredStation(null);
       setCoordinates('--° --′ --″ N, --° --′ --″ W');
-      setMapStatus('SCANNING FOR SIGNALS...');
+      setMapStatus(discoveredStations.length > 0 ? 'SCANNING FOR SIGNALS...' : 'NO SIGNALS DETECTED');
     }
   };
 
@@ -98,6 +101,19 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       playSound('beep', 'short');
     }
   };
+
+  // Get the station marker icon based on station name
+  const getStationIcon = (stationName: string) => {
+    switch(stationName) {
+      case 'swan': return '#swan-station';
+      case 'pearl': return '#pearl-station';
+      case 'flame': return '#flame-station';
+      case 'arrow': return '#arrow-station';
+      case 'staff': return '#staff-station';
+      case 'orchid': return '#orchid-station';
+      default: return '#dharma-marker';
+    }
+  };
   
   return (
     <motion.section
@@ -120,9 +136,9 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         </div>
       </div>
       
-      <div className="p-4 relative h-72">
+      <div className="p-4 relative h-80">
         <div 
-          className="absolute inset-0 m-4 rounded overflow-hidden border border-[hsla(var(--dharma-gray),0.3)]"
+          className="absolute inset-0 m-2 rounded overflow-hidden border border-[hsla(var(--dharma-gray),0.3)]"
           ref={mapContainerRef}
           onMouseDown={handleMapMouseDown}
           onMouseMove={handleMapMouseMove}
@@ -130,7 +146,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
           onMouseLeave={handleMapMouseUp}
           style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
-          {/* Fan-created LOST map with scanning and fog effects */}
+          {/* Map container with panning/zooming */}
           <div className="relative w-full h-full overflow-hidden">
             <div 
               className="relative w-full h-full"
@@ -140,35 +156,35 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 transition: 'transform 0.3s ease'
               }}
             >
+              {/* Include the station markers SVG defs */}
+              <div style={{ position: 'absolute', width: 0, height: 0, visibility: 'hidden' }} 
+                   dangerouslySetInnerHTML={{ __html: `<svg>${stationMarkers}</svg>` }} />
+                   
+              {/* Island map SVG with enhanced features */}
               <div 
                 className="absolute w-[150%] h-[150%]"
                 style={{ 
                   transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
                   maxWidth: 'none',
-                  background: 'radial-gradient(circle at 50% 50%, hsl(180, 10%, 15%) 0%, hsl(180, 10%, 10%) 100%)',
-                  boxShadow: 'inset 0 0 100px rgba(0,0,0,0.9)',
-                  filter: 'contrast(1.2) sepia(0.1)'
                 }}
               >
-                {/* Island outline shape */}
-                <svg 
-                  viewBox="0 0 1000 1000" 
-                  className="w-full h-full opacity-30"
-                  style={{filter: 'blur(1px)'}}
-                >
-                  <path
-                    d="M300,200 C400,150 500,180 600,200 C700,220 800,300 850,400 C900,500 850,600 800,700 C750,800 600,850 500,800 C400,750 300,800 250,700 C200,600 150,500 200,400 C250,300 200,250 300,200 Z"
-                    fill="none"
-                    stroke="rgba(227, 188, 77, 0.1)"
-                    strokeWidth="2"
-                  />
-                </svg>
+                <img 
+                  src={coloredIslandMap} 
+                  alt="LOST Island Map" 
+                  className="w-full h-full object-contain"
+                  style={{
+                    filter: 'contrast(1.1) brightness(0.9)'
+                  }}
+                />
               </div>
               
               {/* Scan line effect */}
               <div 
                 className="absolute inset-0 z-10 animate-terminal-scan" 
-                style={{ boxShadow: 'inset 0 0 10px rgba(227, 188, 77, 0.3)' }}
+                style={{ 
+                  boxShadow: 'inset 0 0 10px rgba(227, 188, 77, 0.3)',
+                  transform: `translate(${mapOffset.x * 0.2}px, ${mapOffset.y * 0.2}px)`,
+                }}
               ></div>
               
               {/* Mysterious fog overlay that partially clears based on discovered stations */}
@@ -186,21 +202,25 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 style={{ transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)` }}
               ></div>
               
-              {/* Map locations */}
+              {/* Station markers with proper DHARMA logos */}
               {Object.entries(STATIONS).map(([key, station]) => {
                 const isDiscovered = discoveredStations.includes(key);
+                const stationIcon = getStationIcon(key);
                 
                 return (
                   <motion.div
                     key={key}
-                    className={`map-location ${isDiscovered ? 'discovered' : 'undiscovered'}`}
+                    className={`absolute ${isDiscovered ? 'cursor-pointer' : ''}`}
                     style={{ 
                       top: station.position.top, 
                       left: station.position.left,
+                      width: '40px',
+                      height: '40px',
                       opacity: isDiscovered ? 1 : 0,
                       pointerEvents: isDiscovered ? 'auto' : 'none',
                       transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                      zIndex: 20
+                      zIndex: 20,
+                      filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.7))'
                     }}
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ 
@@ -216,7 +236,16 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     onMouseEnter={() => handleStationHover(key)}
                     onMouseLeave={() => handleStationHover(null)}
                     onClick={() => handleStationClick(key)}
-                  />
+                  >
+                    <svg width="40" height="40" className="dharma-station-marker">
+                      <use href={stationIcon} className={isDiscovered ? 'animate-pulse' : ''} />
+                    </svg>
+                    {isDiscovered && hoveredStation === key && (
+                      <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-black bg-opacity-80 text-xs rounded text-white z-50">
+                        {station.name}
+                      </div>
+                    )}
+                  </motion.div>
                 );
               })}
               
