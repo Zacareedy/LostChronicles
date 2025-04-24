@@ -191,3 +191,60 @@
 .animate-flicker {
   animation: flicker 3s linear infinite;
 }
+
+.animate-terminal-flicker {
+  animation: flicker 3s linear infinite;
+}
+
+.animate-terminal-glitch {
+  animation: glitch 0.8s infinite;
+}
+
+.invisible-button {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Hidden Pearl station clue */
+.pearl-clue {
+  position: relative;
+  display: inline-block;
+  cursor: help;
+}
+
+.pearl-clue::after {
+  content: "?";
+  opacity: 0.05;
+  position: absolute;
+  top: 0;
+  right: -8px;
+  font-size: 8px;
+  color: hsl(var(--dharma-amber));
+}
+
+.pearl-clue:hover::after {
+  opacity: 0.3;
+}
+
+/* Hidden components that can be triggered */
+.hidden-trigger {
+  position: relative;
+  cursor: pointer;
+}
+
+.hidden-trigger::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.03);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.hidden-trigger:hover::before {
+  opacity: 1;
+}

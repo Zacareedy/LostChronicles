@@ -125,7 +125,8 @@ const Home: React.FC = () => {
       <main className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Terminal 
           onRevealPuzzle={handleRevealPuzzle} 
-          onRevealStation={handleRevealStation} 
+          onRevealStation={handleRevealStation}
+          onCorrectSequence={handleCorrectSequence}
         />
         
         <IslandMap 

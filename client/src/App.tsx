@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
+import SystemError from "@/pages/SystemError";
 import { AnimatePresence } from "framer-motion";
 
 function Router() {
@@ -12,6 +13,7 @@ function Router() {
     <AnimatePresence mode="wait">
       <Switch>
         <Route path="/" component={Home} />
+        <Route path="/system-error" component={SystemError} />
         <Route component={NotFound} />
       </Switch>
     </AnimatePresence>

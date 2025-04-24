@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { processCommand } from '@/lib/terminal';
 import { playSound } from '@/lib/audio';
+import { useLocation } from 'wouter';
 
 interface TerminalOutput {
   text: string;
@@ -11,9 +12,10 @@ interface TerminalOutput {
 interface TerminalProps {
   onRevealPuzzle: () => void;
   onRevealStation: (stationName: string) => void;
+  onCorrectSequence: () => void;
 }
 
-const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation }) => {
+const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, onCorrectSequence }) => {
   const [terminalOutput, setTerminalOutput] = useState<TerminalOutput[]>([
     { text: '> DHARMA INITIATIVE - SWAN STATION TERMINAL', type: 'output' },
     { text: '> AWAITING INPUT...', type: 'output' },
@@ -21,13 +23,31 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation }) 
   ]);
   const [input, setInput] = useState('');
   const [terminalStatus, setTerminalStatus] = useState('CONNECTED');
+  const [accessLevel, setAccessLevel] = useState(1);
   const terminalInputRef = useRef<HTMLInputElement>(null);
   const terminalOutputRef = useRef<HTMLDivElement>(null);
+  const [_, setLocation] = useLocation();
 
   useEffect(() => {
     // Set focus to input when component mounts
     if (terminalInputRef.current) {
       terminalInputRef.current.focus();
+    }
+    
+    // Check if user has previously activated system error
+    try {
+      const errorAllowed = localStorage.getItem('dharma_error_allowed');
+      if (errorAllowed === 'true') {
+        setAccessLevel(prev => Math.max(prev, 3));
+      }
+      
+      // Check for Pearl access
+      const pearlAccess = localStorage.getItem('dharma_pearl_access');
+      if (pearlAccess === 'true') {
+        setAccessLevel(prev => Math.max(prev, 4));
+      }
+    } catch (e) {
+      // Ignore localStorage errors
     }
   }, []);
 
@@ -35,6 +55,41 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation }) 
     // Scroll to bottom of terminal output when new content is added
     if (terminalOutputRef.current) {
       terminalOutputRef.current.scrollTop = terminalOutputRef.current.scrollHeight;
+    }
+  }, [terminalOutput]);
+
+  // Add some ambient terminal messages at random intervals
+  useEffect(() => {
+    const ambientMessages = [
+      '> [System monitoring active]',
+      '> [Electromagnetic anomaly detected]',
+      '> [Atmospheric analysis complete]',
+      '> [Protocol verification required]'
+    ];
+    
+    // Only show ambient messages if user has been active
+    if (terminalOutput.length > 5) {
+      const intervalId = setInterval(() => {
+        // 10% chance to show message
+        if (Math.random() < 0.1) {
+          const message = ambientMessages[Math.floor(Math.random() * ambientMessages.length)];
+          
+          // Remove cursor
+          setTerminalOutput(prev => prev.filter(item => item.type !== 'cursor'));
+          
+          // Add ambient message
+          setTerminalOutput(prev => [
+            ...prev,
+            { text: message, type: 'output' },
+            { text: '_', type: 'cursor' }
+          ]);
+          
+          // Play subtle beep
+          playSound('beep', 'short');
+        }
+      }, 30000); // Every 30 seconds
+      
+      return () => clearInterval(intervalId);
     }
   }, [terminalOutput]);
 
@@ -56,7 +111,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation }) 
     ]);
 
     // Process command and get response
-    const response = processCommand(userInput, onRevealPuzzle, onRevealStation);
+    const response = processCommand(userInput, onRevealPuzzle, onRevealStation, onCorrectSequence);
     
     // If clear command, clear terminal
     if (userInput.toLowerCase() === 'clear') {
@@ -83,13 +138,30 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation }) 
     if (userInput.toLowerCase().includes('scan')) {
       setTerminalStatus('SCANNING...');
       setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
+    } else if (userInput.toLowerCase() === 'override system-error') {
+      // Handle system error navigation
+      setTimeout(() => {
+        setLocation('/system-error');
+      }, 2000);
     } else if (userInput.toLowerCase().includes('login')) {
+      // Check different login patterns
       if (userInput.includes('4815162342')) {
         setTerminalStatus('ACCESS GRANTED');
+        setAccessLevel(prev => Math.max(prev, 3));
+      } else if (userInput.includes('dharma77')) {
+        setTerminalStatus('ACCESS GRANTED');
+        setAccessLevel(prev => Math.max(prev, 2));
+      } else if (userInput.includes('C22/DSTNGSHD-LBRT')) {
+        setTerminalStatus('ACCESS GRANTED');
+        setAccessLevel(prev => Math.max(prev, 4));
       } else {
         setTerminalStatus('ACCESS DENIED');
         setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
       }
+    } else if (userInput.toLowerCase() === '4 8 15 16 23 42') {
+      // Handle the numbers
+      setTerminalStatus('SYSTEM RESET');
+      setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
     }
   };
 
