@@ -53,17 +53,47 @@ const Home: React.FC = () => {
 
   const handleLogPlay = (logId: string) => {
     if (logId === 'scan') {
-      // Scan for more logs
+      // Make signal triangulation much more difficult and unpredictable
       if (unlockedLogs.length < 4) {
-        const allLogs = ['orientationVideo', 'distressSignal', 'radioTransmission', 'unknownSource'];
-        const remainingLogs = allLogs.filter(log => !unlockedLogs.includes(log));
-        const randomLog = remainingLogs[Math.floor(Math.random() * remainingLogs.length)];
+        // Only 30% chance of success - much harder than before
+        const successRate = 0.3;
         
-        playSound('beep');
-        setTimeout(() => {
-          playSound('success');
-          setUnlockedLogs(prev => [...prev, randomLog]);
-        }, 2000);
+        if (Math.random() < successRate) {
+          // Success path
+          const allLogs = ['orientationVideo', 'distressSignal', 'radioTransmission', 'unknownSource'];
+          const remainingLogs = allLogs.filter(log => !unlockedLogs.includes(log));
+          const randomLog = remainingLogs[Math.floor(Math.random() * remainingLogs.length)];
+          
+          // Longer sequence of sounds to build suspense
+          playSound('beep');
+          setTimeout(() => {
+            playSound('beep', 'short');
+            setTimeout(() => {
+              playSound('static', 'short');
+              setTimeout(() => {
+                playSound('success');
+                setUnlockedLogs(prev => [...prev, randomLog]);
+              }, 1500);
+            }, 1000);
+          }, 1000);
+        } else {
+          // Failure path
+          playSound('beep');
+          setTimeout(() => {
+            playSound('static', 'short');
+            setTimeout(() => {
+              playSound('fail');
+              // No logs unlocked, show failure message through terminal status
+              setSystemStatus('SIGNAL TRIANGULATION FAILED');
+              // Reset status after a while
+              setTimeout(() => {
+                if (systemStatus === 'SIGNAL TRIANGULATION FAILED') {
+                  setSystemStatus('SYSTEM OPERATIONAL');
+                }
+              }, 3000);
+            }, 1500);
+          }, 1000);
+        }
       } else {
         playSound('fail');
       }

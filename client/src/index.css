@@ -119,12 +119,44 @@
     transform: translate(-50%, -50%);
     cursor: pointer;
     transition: all 0.3s ease;
+    box-shadow: 0 0 5px hsla(var(--dharma-amber), 0.4);
   }
   
   .map-location:hover {
     width: 25px;
     height: 25px;
     background-color: hsla(var(--dharma-amber), 0.9);
+  }
+  
+  .map-location.discovered {
+    animation: pulse 2s infinite;
+  }
+  
+  .map-location.undiscovered {
+    opacity: 0;
+    pointer-events: none;
+  }
+  
+  /* Grid pattern for mysterious map */
+  .grid-pattern {
+    background-image: 
+      linear-gradient(rgba(0, 0, 0, 0.1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 0, 0, 0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: center center;
+    mix-blend-mode: overlay;
+  }
+  
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 hsla(var(--dharma-amber), 0.4);
+    }
+    70% {
+      box-shadow: 0 0 0 5px hsla(var(--dharma-amber), 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 hsla(var(--dharma-amber), 0);
+    }
   }
   
   .audio-player {
@@ -247,4 +279,18 @@
 
 .hidden-trigger:hover::before {
   opacity: 1;
+}
+
+/* Hidden coordinates and clues */
+.hidden-coordinates {
+  color: rgba(0,0,0,0.01);
+  user-select: none;
+  font-size: 0.7em;
+}
+
+.hidden-clue {
+  color: rgba(0,0,0,0.02);
+  opacity: 0.05;
+  cursor: help;
+  user-select: none;
 }
