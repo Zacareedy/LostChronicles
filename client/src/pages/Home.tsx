@@ -51,54 +51,109 @@ const Home: React.FC = () => {
     }
   };
 
+  // Track terminal commands for various unlocks
+  const [terminalHistory, setTerminalHistory] = useState<string[]>([]);
+  const [stationVisitOrder, setStationVisitOrder] = useState<string[]>([]);
+
+  // This one event handler now supports multiple unlock methods for different logs
   const handleLogPlay = (logId: string) => {
     if (logId === 'scan') {
-      // Make signal triangulation much more difficult and unpredictable
-      if (unlockedLogs.length < 4) {
-        // Only 30% chance of success - much harder than before
-        const successRate = 0.3;
-        
-        if (Math.random() < successRate) {
-          // Success path
-          const allLogs = ['orientationVideo', 'distressSignal', 'radioTransmission', 'unknownSource'];
-          const remainingLogs = allLogs.filter(log => !unlockedLogs.includes(log));
-          const randomLog = remainingLogs[Math.floor(Math.random() * remainingLogs.length)];
-          
-          // Longer sequence of sounds to build suspense
-          playSound('beep');
+      // Analyzing a signal no longer unlocks anything directly
+      // It only gives hints about how to unlock various logs
+      playSound('beep');
+      setTimeout(() => {
+        playSound('static', 'short');
+        setSystemStatus('SIGNAL ANALYSIS COMPLETE');
+        setTimeout(() => {
+          setSystemStatus('SYSTEM OPERATIONAL');
+        }, 3000);
+      }, 1500);
+    }
+  };
+
+  // Complex unlock method for orientation video (via terminal command)
+  const handleTerminalCommand = (command: string) => {
+    // Keep track of all terminal commands for log unlocking
+    setTerminalHistory(prev => [...prev, command.toLowerCase()]);
+    
+    const normalizedCommand = command.toLowerCase().trim();
+    
+    // Track the last 20 commands to check complex patterns
+    if (terminalHistory.length > 20) {
+      setTerminalHistory(prev => prev.slice(prev.length - 20));
+    }
+    
+    // Different unlock paths for different logs
+    
+    // Orientation video through "playback orientation" command
+    if (normalizedCommand === 'playback orientation' && !unlockedLogs.includes('orientationVideo')) {
+      playSound('beep');
+      setTimeout(() => {
+        playSound('success');
+        setUnlockedLogs(prev => [...prev, 'orientationVideo']);
+        setSystemStatus('ORIENTATION VIDEO LOADED');
+      }, 1500);
+    }
+    
+    // Distress signal through "tune 342.1" command
+    else if (normalizedCommand === 'tune 342.1' && !unlockedLogs.includes('distressSignal')) {
+      if (unlockedLogs.includes('orientationVideo')) {
+        playSound('static');
+        setTimeout(() => {
+          playSound('success');
+          setUnlockedLogs(prev => [...prev, 'distressSignal']);
+          setSystemStatus('FRENCH DISTRESS SIGNAL DETECTED');
+        }, 2000);
+      }
+    }
+    
+    // Radio transmission through coordinates command
+    else if (normalizedCommand.includes('4°8\'15"n') && 
+             normalizedCommand.includes('16°23\'42"w') && 
+             !unlockedLogs.includes('radioTransmission')) {
+      if (unlockedLogs.includes('distressSignal')) {
+        playSound('beep');
+        setTimeout(() => {
+          playSound('static');
           setTimeout(() => {
-            playSound('beep', 'short');
-            setTimeout(() => {
-              playSound('static', 'short');
-              setTimeout(() => {
-                playSound('success');
-                setUnlockedLogs(prev => [...prev, randomLog]);
-              }, 1500);
-            }, 1000);
-          }, 1000);
-        } else {
-          // Failure path
-          playSound('beep');
-          setTimeout(() => {
-            playSound('static', 'short');
-            setTimeout(() => {
-              playSound('fail');
-              // No logs unlocked, show failure message through terminal status
-              setSystemStatus('SIGNAL TRIANGULATION FAILED');
-              // Reset status after a while
-              setTimeout(() => {
-                if (systemStatus === 'SIGNAL TRIANGULATION FAILED') {
-                  setSystemStatus('SYSTEM OPERATIONAL');
-                }
-              }, 3000);
-            }, 1500);
-          }, 1000);
-        }
-      } else {
-        playSound('fail');
+            playSound('success');
+            setUnlockedLogs(prev => [...prev, 'radioTransmission']);
+            setSystemStatus('NUMBERS TRANSMISSION INTERCEPTED');
+          }, 1500);
+        }, 1000);
       }
     }
   };
+  
+  // Track station visit order for blackRock log unlock
+  useEffect(() => {
+    // Only track if a new station was just discovered
+    if (discoveredStations.length > stationVisitOrder.length) {
+      const newStation = discoveredStations[discoveredStations.length - 1];
+      setStationVisitOrder(prev => [...prev, newStation]);
+      
+      // Check if the correct sequence was followed (arrow,swan,flame,pearl,staff,orchid)
+      const correctSequence = ['arrow', 'swan', 'flame', 'pearl', 'staff', 'orchid'];
+      
+      // Check if we have at least 3 stations and they follow the correct order
+      let sequenceCorrectSoFar = true;
+      for (let i = 0; i < stationVisitOrder.length; i++) {
+        if (stationVisitOrder[i] !== correctSequence[i]) {
+          sequenceCorrectSoFar = false;
+          break;
+        }
+      }
+      
+      // If all stations visited in correct order, unlock Black Rock log
+      if (stationVisitOrder.length === correctSequence.length && 
+          sequenceCorrectSoFar && 
+          !unlockedLogs.includes('blackRock')) {
+        playSound('success');
+        setUnlockedLogs(prev => [...prev, 'blackRock']);
+        setSystemStatus('BLACK ROCK JOURNAL RECOVERED');
+      }
+    }
+  }, [discoveredStations]);
 
   const handleCorrectSequence = () => {
     // Reset countdown when correct sequence is entered
