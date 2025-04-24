@@ -140,16 +140,30 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 transition: 'transform 0.3s ease'
               }}
             >
-              <img 
-                src={lostMapImage} 
-                alt="LOST Island Map" 
-                className="absolute object-cover w-[150%] h-[150%]"
+              <div 
+                className="absolute w-[150%] h-[150%]"
                 style={{ 
                   transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                  filter: 'brightness(0.7) contrast(1.2) sepia(0.2)',
-                  maxWidth: 'none'
+                  maxWidth: 'none',
+                  background: 'radial-gradient(circle at 50% 50%, hsl(180, 10%, 15%) 0%, hsl(180, 10%, 10%) 100%)',
+                  boxShadow: 'inset 0 0 100px rgba(0,0,0,0.9)',
+                  filter: 'contrast(1.2) sepia(0.1)'
                 }}
-              />
+              >
+                {/* Island outline shape */}
+                <svg 
+                  viewBox="0 0 1000 1000" 
+                  className="w-full h-full opacity-30"
+                  style={{filter: 'blur(1px)'}}
+                >
+                  <path
+                    d="M300,200 C400,150 500,180 600,200 C700,220 800,300 850,400 C900,500 850,600 800,700 C750,800 600,850 500,800 C400,750 300,800 250,700 C200,600 150,500 200,400 C250,300 200,250 300,200 Z"
+                    fill="none"
+                    stroke="rgba(227, 188, 77, 0.1)"
+                    strokeWidth="2"
+                  />
+                </svg>
+              </div>
               
               {/* Scan line effect */}
               <div 
