@@ -123,6 +123,58 @@ NOTE: The psychological impact of extended duty at the Swan requires further stu
   }
 ];
 
+// Audio logs with specific unlock requirements
+export const AUDIO_LOGS = {
+  orientationVideo: {
+    title: "Swan Orientation Film",
+    description: "Dharma Initiative Swan Station orientation film from 1980",
+    duration: "3:15",
+    src: "/audio/swan-orientation.mp3",
+    unlockMethod: "default", // Already available by default
+    unlockRequirement: "none"
+  },
+  distressSignal: {
+    title: "French Distress Signal",
+    description: "Looping radio transmission in French, 16 years old",
+    duration: "1:38",
+    src: "/audio/french-signal.mp3",
+    unlockMethod: "terminal",
+    unlockRequirement: "Enter 'tune 342.1' into terminal to locate frequency"
+  },
+  radioTransmission: {
+    title: "Numbers Transmission",
+    description: "Mysterious broadcast repeating the numbers sequence",
+    duration: "0:42",
+    src: "/audio/numbers-broadcast.mp3",
+    unlockMethod: "coordinates",
+    unlockRequirement: "Enter the coordinates 4°8'15\"N 16°23'42\"W in the appropriate terminal command"
+  },
+  blackRock: {
+    title: "Black Rock Journal Entry",
+    description: "Audio diary found in ship manifest describing the island",
+    duration: "2:10",
+    src: "/audio/blackrock-log.mp3",
+    unlockMethod: "sequence",
+    unlockRequirement: "Visit all stations in the correct order: arrow, swan, flame, pearl, staff, orchid"
+  },
+  pearlTransmission: {
+    title: "Pearl Station Logs", 
+    description: "Surveillance audio from Pearl observers monitoring Swan station",
+    duration: "1:55",
+    src: "/audio/pearl-logs.mp3",
+    unlockMethod: "puzzle",
+    unlockRequirement: "Complete the hidden orientation film frame puzzle"
+  },
+  unknownSource: {
+    title: "Unknown Transmission",
+    description: "Static-filled broadcast of unknown origin",
+    duration: "1:22",
+    src: "/audio/unknown-source.mp3",
+    unlockMethod: "hidden",
+    unlockRequirement: "Click on the hidden dharma symbol in the footer 4,8,15,16,23,42 times in sequence"
+  }
+};
+
 // Loading screen messages
 export const LOADING_MESSAGES = [
   "Initializing protocols...",
