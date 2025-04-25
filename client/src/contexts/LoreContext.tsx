@@ -92,18 +92,36 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
   // UI state
   const [systemStatus, setSystemStatus] = useState('SYSTEM OPERATIONAL');
   
-  // Load state from localStorage on mount
+  // Load state from localStorage on mount and when localStorage changes
   useEffect(() => {
     try {
+      // Check for devmode unlocks
+      if (localStorage.getItem('dharma_all_stations') === 'true') {
+        setDiscoveredStations(['swan', 'pearl', 'flame', 'arrow', 'staff', 'orchid', 'hydra', 'lookout']);
+      }
+      
+      if (localStorage.getItem('dharma_pearl_access') === 'true') {
+        setUnlockedAudioLogs(prev => [...new Set([...prev, 'pearlTransmission'])]);
+      }
+      
+      if (localStorage.getItem('dharma_incident_unlocked') === 'true') {
+        setUnlockedReports(prev => [...new Set([...prev, 0])]);
+      }
+      
+      if (localStorage.getItem('dharma_surveillance_active') === 'true') {
+        setUnlockedReports(prev => [...new Set([...prev, 2])]);
+        setUnlockedAudioLogs(prev => [...new Set([...prev, 'distressSignal', 'radioTransmission'])]);
+      }
+
       const savedLore = localStorage.getItem('dharma_lore_state');
       if (savedLore) {
         const parsedState = JSON.parse(savedLore);
         
         // Restore state
-        setDiscoveredStations(parsedState.discoveredStations || ['swan']);
-        setUnlockedAudioLogs(parsedState.unlockedAudioLogs || ['orientationVideo']);
-        setUnlockedReports(parsedState.unlockedReports || []);
-        setVisitedLocations(parsedState.visitedLocations || ['swan']);
+        setDiscoveredStations(prev => [...new Set([...prev, ...(parsedState.discoveredStations || ['swan'])])]);
+        setUnlockedAudioLogs(prev => [...new Set([...prev, ...(parsedState.unlockedAudioLogs || ['orientationVideo'])])]);
+        setUnlockedReports(prev => [...new Set([...prev, ...(parsedState.unlockedReports || [])])]);
+        setVisitedLocations(prev => [...new Set([...prev, ...(parsedState.visitedLocations || ['swan'])])]);
         setProgressionLevel(parsedState.progressionLevel || {
           [ProgressionPath.DHARMA_HISTORY]: 1,
           [ProgressionPath.INCIDENT_INVESTIGATION]: 0,
