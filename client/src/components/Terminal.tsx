@@ -197,9 +197,6 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
               {line.text}
             </p>
           ))}
-        </div>
-        
-        <div className="mt-4 pt-4 border-t border-[hsla(var(--dharma-gray),0.3)]">
           <form onSubmit={handleSubmit} className="flex">
             <span className="mr-2">{'>'}</span>
             <input 
@@ -217,6 +214,9 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
               autoComplete="off"
             />
           </form>
+        </div>
+        
+        <div className="mt-4 pt-4 border-t border-[hsla(var(--dharma-gray),0.3)]">
         </div>
       </div>
       
