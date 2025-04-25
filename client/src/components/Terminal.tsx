@@ -210,10 +210,10 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
                 }
               }}
               className="bg-transparent flex-1 focus:outline-none" 
-              placeholder="Enter command"
+              placeholder=""
               autoComplete="off"
             />
-            {!input && <span className="absolute right-0 animate-terminal-blink">▋</span>}
+            {!input && <span className="absolute left-0 animate-terminal-blink">▋</span>}
           </form>
         </div>
       </div>
