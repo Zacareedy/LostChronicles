@@ -176,10 +176,10 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="lg:col-span-2 bg-[hsl(var(--dharma-black))] border border-[hsla(var(--dharma-gray),0.3)] rounded-lg overflow-hidden"
+      className="lg:col-span-2 dharma-panel"
     >
-      <div className="bg-[hsla(var(--dharma-gray),0.2)] p-2 flex justify-between items-center">
-        <h2 className="font-terminal text-[hsl(var(--dharma-amber))]">TERMINAL</h2>
+      <div className="dharma-panel-header">
+        <h2 className="dharma-panel-title">TERMINAL</h2>
         <div className="flex space-x-2">
           <div className="w-3 h-3 rounded-full bg-[hsl(var(--dharma-red))]"></div>
           <div className="w-3 h-3 rounded-full bg-[hsl(var(--dharma-amber))]"></div>
@@ -189,7 +189,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       
       <div 
         ref={terminalOutputRef}
-        className="p-4 h-72 overflow-auto font-terminal text-[hsl(var(--dharma-amber))] text-lg relative"
+        className="dharma-panel-content h-72 overflow-auto font-terminal text-[hsl(var(--dharma-amber))] text-lg relative"
       >
         <div className="space-y-2">
           {terminalOutput.filter(line => line.type !== 'cursor').map((line, index) => (

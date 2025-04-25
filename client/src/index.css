@@ -304,6 +304,43 @@
   opacity: 0.3;
 }
 
+/* DHARMA UI Component Styles - Standardized */
+.dharma-panel {
+  @apply bg-[hsl(var(--dharma-black))] border-2 border-[hsla(var(--dharma-gray),0.3)] rounded-lg overflow-hidden shadow-inner;
+}
+
+.dharma-panel-header {
+  @apply bg-[hsla(var(--dharma-gray),0.2)] p-2 flex justify-between items-center border-b border-[hsla(var(--dharma-gray),0.3)];
+}
+
+.dharma-panel-title {
+  @apply font-terminal text-[hsl(var(--dharma-amber))] tracking-wider;
+}
+
+.dharma-panel-content {
+  @apply p-4;
+}
+
+.dharma-item {
+  @apply border border-[hsla(var(--dharma-gray),0.3)] rounded p-3 hover:bg-[hsla(var(--dharma-gray),0.1)] transition-colors;
+}
+
+.dharma-badge {
+  @apply text-xs py-0.5 px-1.5 rounded;
+}
+
+.dharma-badge-amber {
+  @apply bg-[hsla(var(--dharma-amber),0.15)] text-[hsl(var(--dharma-amber))];
+}
+
+.dharma-badge-green {
+  @apply bg-[hsla(var(--dharma-green),0.15)] text-[hsl(var(--dharma-green))];
+}
+
+.dharma-badge-red {
+  @apply bg-[hsla(var(--dharma-red),0.15)] text-[hsl(var(--dharma-red))];
+}
+
 /* Hidden components that can be triggered */
 .hidden-trigger {
   position: relative;
