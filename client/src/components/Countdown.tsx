@@ -38,8 +38,44 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
     }
   }, [isReset, setIsReset]);
 
-  // Handle dev mode activation with The Numbers sequence
+  // Check for dev mode activation either via keyboard sequence or terminal command
   useEffect(() => {
+    // Check if dev mode was activated via terminal
+    const checkDevModeStatus = () => {
+      try {
+        const isDevModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+        if (isDevModeActive !== isDevMode) {
+          setIsDevMode(isDevModeActive);
+          if (isDevModeActive) {
+            playSound('success');
+          }
+        }
+        
+        // Check if countdown was set via terminal command
+        const wasCountdownSet = localStorage.getItem('countdown_was_set') === 'true';
+        if (wasCountdownSet) {
+          localStorage.removeItem('countdown_was_set'); // Clear flag
+          
+          // Update our local state with the new time
+          const startTime = localStorage.getItem('countdown_start');
+          if (startTime) {
+            const elapsed = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+            const remaining = (COUNTDOWN_MINUTES * 60 + COUNTDOWN_SECONDS) - elapsed;
+            setTimeRemaining(Math.max(0, remaining));
+            setIsWarning(remaining <= WARNING_THRESHOLD);
+          }
+        }
+      } catch (e) {
+        // Ignore localStorage errors
+        console.error("Error checking dev mode status:", e);
+      }
+    };
+    
+    // Check immediately and then set up interval to check periodically
+    checkDevModeStatus();
+    const intervalId = setInterval(checkDevModeStatus, 1000);
+    
+    // Also handle keyboard activation sequence
     const handleKeyDown = (e: KeyboardEvent) => {
       // Convert key to number if it's a digit
       const keyNum = parseInt(e.key);
@@ -56,7 +92,20 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
         if (devModeKeySequence.current.length === 6) {
           const isMatch = devModeKeySequence.current.every((num, index) => num === DHARMA_NUMBERS[index]);
           if (isMatch) {
-            setIsDevMode(prev => !prev);
+            const newDevModeState = !isDevMode;
+            setIsDevMode(newDevModeState);
+            
+            // Also store in localStorage for consistency with terminal command
+            try {
+              if (newDevModeState) {
+                localStorage.setItem('dharma_devmode_active', 'true');
+              } else {
+                localStorage.removeItem('dharma_devmode_active');
+              }
+            } catch (e) {
+              // Ignore localStorage errors
+            }
+            
             playSound('success');
             devModeKeySequence.current = []; // Reset sequence
           }
@@ -65,8 +114,11 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
     };
 
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      clearInterval(intervalId);
+    };
+  }, [isDevMode]);
   
   // Handle dev time input
   const handleDevTimeSubmit = (e: React.FormEvent) => {
@@ -181,6 +233,12 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
                 onClick={() => {
                   setIsDevMode(false);
                   playSound('beep');
+                  // Also update localStorage state
+                  try {
+                    localStorage.removeItem('dharma_devmode_active');
+                  } catch (e) {
+                    // Ignore localStorage errors
+                  }
                 }}
               >
                 ×

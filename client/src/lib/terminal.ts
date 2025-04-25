@@ -34,6 +34,20 @@ const commands: Record<string, Function> = {
       basicCommands.push('> access <protocol> - Access special protocols');
     }
     
+    // Show developer commands if dev mode is active
+    try {
+      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+      if (devModeActive) {
+        basicCommands.push('');
+        basicCommands.push('> DEVELOPER COMMANDS:');
+        basicCommands.push('> devmode - Toggle developer mode');
+        basicCommands.push('> setcountdown <minutes> <seconds> - Set countdown timer');
+        basicCommands.push('> setcountdown <seconds> - Set countdown timer in seconds');
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+    
     return basicCommands;
   },
   
@@ -425,6 +439,8 @@ const hiddenCommands: Record<string, Function> = {
       localStorage.setItem('dharma_surveillance_active', 'true');
       localStorage.setItem('dharma_all_stations', 'true');
       localStorage.setItem('dharma_lockdown', 'active');
+      // Also set developer mode for countdown
+      localStorage.setItem('dharma_devmode_active', 'true');
     } catch (e) {
       // Ignore localStorage errors
     }
@@ -440,8 +456,90 @@ const hiddenCommands: Record<string, Function> = {
       '> All stations unlocked',
       '> All audio logs available',
       '> All incident reports declassified',
-      '> System protocols bypassed'
+      '> System protocols bypassed',
+      '> Countdown timer control enabled',
+      '> Use "setcountdown <minutes> <seconds>" to adjust timer'
     ];
+  },
+  
+  'setcountdown': (args: string) => {
+    // Only allow in dev mode
+    try {
+      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+      if (!devModeActive) {
+        return [
+          '> ERROR: ACCESS DENIED',
+          '> Command requires developer mode',
+          '> Enter "devmode" to activate developer tools'
+        ];
+      }
+      
+      // Parse arguments
+      const parts = args.split(' ').filter(Boolean);
+      let minutes = 0;
+      let seconds = 0;
+      
+      if (parts.length === 1) {
+        // If just one number, treat as seconds total
+        seconds = parseInt(parts[0]);
+        if (isNaN(seconds) || seconds < 0) {
+          return [
+            '> ERROR: Invalid input',
+            '> Usage: setcountdown <seconds> or setcountdown <minutes> <seconds>'
+          ];
+        }
+        minutes = Math.floor(seconds / 60);
+        seconds = seconds % 60;
+      } else if (parts.length >= 2) {
+        // If two numbers, treat as minutes and seconds
+        minutes = parseInt(parts[0]);
+        seconds = parseInt(parts[1]);
+        
+        if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds > 59) {
+          return [
+            '> ERROR: Invalid input',
+            '> Usage: setcountdown <seconds> or setcountdown <minutes> <seconds>'
+          ];
+        }
+      } else {
+        return [
+          '> ERROR: Missing parameters',
+          '> Usage: setcountdown <seconds> or setcountdown <minutes> <seconds>'
+        ];
+      }
+      
+      // Calculate total seconds
+      const totalSeconds = minutes * 60 + seconds;
+      
+      // Store this in localStorage for the countdown component to use
+      const now = Date.now();
+      const calculatedStartTime = now - (6480 - totalSeconds) * 1000; // 108 minutes = 6480 seconds
+      localStorage.setItem('countdown_start', calculatedStartTime.toString());
+      localStorage.setItem('countdown_was_set', 'true');
+      
+      // Determine message based on time set
+      let riskLevel = 'NOMINAL';
+      if (totalSeconds <= 60) {
+        riskLevel = 'CRITICAL';
+      } else if (totalSeconds <= 180) {
+        riskLevel = 'HIGH';
+      } else if (totalSeconds <= 300) {
+        riskLevel = 'ELEVATED';
+      }
+      
+      return [
+        `> COUNTDOWN TIMER ADJUSTED`,
+        `> New time: ${minutes}:${seconds.toString().padStart(2, '0')}`,
+        `> Risk level: ${riskLevel}`,
+        totalSeconds <= 60 ? '> WARNING: System failure imminent' : ''
+      ].filter(Boolean);
+    } catch (e) {
+      // Ignore localStorage errors
+      return [
+        '> ERROR: Failed to set countdown',
+        '> System storage inaccessible'
+      ];
+    }
   }
 };
 
