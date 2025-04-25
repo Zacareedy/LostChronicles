@@ -76,15 +76,16 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
           {[...displayMinutes.toString().padStart(3, '0'), ...(displaySeconds ? seconds.toString().padStart(2, '0') : '00')].map((digit, i) => (
             <motion.div
               key={i}
-              className={`relative w-10 h-14 bg-black flex items-center justify-center overflow-hidden border-r border-[#1a1a1a]
+              className={`relative w-10 h-14 flex items-center justify-center overflow-hidden border-r border-[#1a1a1a]
+                ${i > 2 ? 'bg-[#e6e6e6]' : 'bg-black'} 
                 ${i === 3 ? 'mr-[2px] border-r-2 border-r-[#333]' : ''}`}
               animate={isWarning ? { 
-                backgroundColor: ['#1a1a1a', '#2a1515', '#1a1a1a'],
+                backgroundColor: i > 2 ? ['#e6e6e6', '#ffcccc', '#e6e6e6'] : ['#1a1a1a', '#2a1515', '#1a1a1a'],
                 boxShadow: ['inset 0 0 8px rgba(0,0,0,0.8)', 'inset 0 0 8px rgba(255,0,0,0.3)', 'inset 0 0 8px rgba(0,0,0,0.8)']
               } : {}}
               transition={{ repeat: Infinity, duration: 2 }}
             >
-              <span className={`font-mono text-2xl font-bold ${isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-[#e6e6e6]'}`}>
+              <span className={`font-mono text-2xl font-bold ${i > 2 ? 'text-black' : (isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-[#e6e6e6]')}`}>
                 {digit}
               </span>
               <div className="absolute inset-x-0 top-[45%] h-[1px] bg-[#111] opacity-80" />
