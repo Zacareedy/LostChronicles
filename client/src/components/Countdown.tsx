@@ -63,12 +63,17 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
 
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = timeRemaining % 60;
+  
+  // Only show seconds in last 4 minutes
+  const displaySeconds = minutes < 4;
+  // Add 1 minute delay before showing 107
+  const displayMinutes = Math.min(minutes, 108);
 
   return (
     <div className="font-terminal text-[hsl(var(--dharma-amber))]">
       <div className="relative bg-[#1a1a1a] p-2 rounded-md border border-[#333] shadow-inner">
         <div className="flex gap-[1px]">
-          {[...minutes.toString().padStart(3, '0'), ...seconds.toString().padStart(2, '0')].map((digit, i) => (
+          {[...displayMinutes.toString().padStart(3, '0'), ...(displaySeconds ? seconds.toString().padStart(2, '0') : '00')].map((digit, i) => (
             <motion.div
               key={i}
               className={`relative w-8 h-10 bg-black rounded-sm flex items-center justify-center overflow-hidden
