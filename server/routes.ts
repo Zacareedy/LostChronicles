@@ -2,7 +2,7 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertProgressDataSchema, insertTerminalLogSchema } from "@shared/schema";
+import { insertProgressDataSchema, insertTerminalLogSchema, insertAudioFileSchema } from "@shared/schema";
 
 // Add type declaration at the file level
 declare global {
@@ -292,6 +292,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching incident reports:", error);
       res.status(500).json({ message: "Failed to fetch incident reports" });
+    }
+  });
+  
+  // API route to handle audio file uploads
+  app.post('/api/files/audio', getOrCreateUser, async (req, res) => {
+    try {
+      // Check dev mode authentication
+      const isDeveloper = req.body.devToken === 'dharma-dev-1977';
+      if (!isDeveloper) {
+        return res.status(403).json({ message: "Developer access required for file uploads" });
+      }
+      
+      const { logId, fileData, mimeType, fileName } = req.body;
+      
+      // Validate required fields
+      if (!logId || !fileData || !mimeType || !fileName) {
+        return res.status(400).json({ 
+          message: "Missing required fields", 
+          required: ['logId', 'fileData', 'mimeType', 'fileName'] 
+        });
+      }
+      
+      // Validate the data
+      const validatedData = insertAudioFileSchema.parse({
+        logId,
+        fileData,
+        mimeType,
+        fileName
+      });
+      
+      // Save the audio file
+      const savedFile = await storage.saveAudioFile(validatedData);
+      
+      // Return success without the actual file data to reduce response size
+      res.json({ 
+        success: true, 
+        file: { 
+          id: savedFile.id,
+          logId: savedFile.logId,
+          fileName: savedFile.fileName,
+          mimeType: savedFile.mimeType,
+          uploadedAt: savedFile.uploadedAt
+        } 
+      });
+    } catch (error) {
+      console.error("Error uploading audio file:", error);
+      res.status(500).json({ message: "Failed to upload audio file" });
+    }
+  });
+  
+  // API route to get a specific audio file
+  app.get('/api/files/audio/:logId', async (req, res) => {
+    try {
+      const { logId } = req.params;
+      
+      // Get the audio file
+      const audioFile = await storage.getAudioFile(logId);
+      
+      if (!audioFile) {
+        return res.status(404).json({ message: "Audio file not found" });
+      }
+      
+      // Return the file with Content-Type header
+      res.setHeader('Content-Type', audioFile.mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${audioFile.fileName}"`);
+      
+      // For base64 encoded files, decode them before sending
+      if (audioFile.fileData.startsWith('data:')) {
+        // Handle data URLs
+        const base64Data = audioFile.fileData.split(',')[1];
+        const buffer = Buffer.from(base64Data, 'base64');
+        return res.send(buffer);
+      }
+      
+      // If it's already binary or other format, send as is
+      res.send(audioFile.fileData);
+    } catch (error) {
+      console.error("Error fetching audio file:", error);
+      res.status(500).json({ message: "Failed to fetch audio file" });
+    }
+  });
+  
+  // API route to get all audio files (metadata only, no file data)
+  app.get('/api/files/audio', async (req, res) => {
+    try {
+      // Get all audio files
+      const files = await storage.getAllAudioFiles();
+      
+      // Return only metadata, not the actual file data to reduce response size
+      const filesMeta = files.map(file => ({
+        id: file.id,
+        logId: file.logId,
+        fileName: file.fileName,
+        mimeType: file.mimeType,
+        uploadedAt: file.uploadedAt
+      }));
+      
+      res.json(filesMeta);
+    } catch (error) {
+      console.error("Error fetching audio files:", error);
+      res.status(500).json({ message: "Failed to fetch audio files" });
     }
   });
 

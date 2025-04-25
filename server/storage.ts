@@ -1,6 +1,7 @@
 import { users, 
          stations, 
-         audioLogs, 
+         audioLogs,
+         audioFiles,
          incidentReports, 
          progressData, 
          terminalLogs,
@@ -9,7 +10,9 @@ import { users,
          type Station, 
          type InsertStation, 
          type AudioLog, 
-         type InsertAudioLog, 
+         type InsertAudioLog,
+         type AudioFile,
+         type InsertAudioFile,
          type IncidentReport, 
          type InsertIncidentReport, 
          type ProgressData, 
@@ -40,6 +43,11 @@ export interface IStorage {
   getAudioLogs(): Promise<AudioLog[]>;
   unlockAudioLog(userId: number, logId: string): Promise<void>;
   getUnlockedAudioLogs(userId: number): Promise<string[]>;
+  
+  // Audio files methods
+  saveAudioFile(file: InsertAudioFile): Promise<AudioFile>;
+  getAudioFile(logId: string): Promise<AudioFile | undefined>;
+  getAllAudioFiles(): Promise<AudioFile[]>;
   
   // Incident reports methods
   getIncidentReports(): Promise<IncidentReport[]>;
@@ -271,6 +279,56 @@ export class DatabaseStorage implements IStorage {
     }
     
     return userData.logsUnlocked;
+  }
+  
+  // Audio files methods
+  async saveAudioFile(file: InsertAudioFile): Promise<AudioFile> {
+    // Check if there's already a file for this logId, if so, update it
+    const [existingFile] = await db
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.logId, file.logId));
+      
+    if (existingFile) {
+      // Update existing file
+      const [updatedFile] = await db
+        .update(audioFiles)
+        .set({
+          fileData: file.fileData,
+          mimeType: file.mimeType,
+          fileName: file.fileName,
+          uploadedAt: new Date()
+        })
+        .where(eq(audioFiles.id, existingFile.id))
+        .returning();
+      return updatedFile;
+    } else {
+      // Insert new file
+      const [savedFile] = await db
+        .insert(audioFiles)
+        .values({
+          ...file,
+          uploadedAt: new Date()
+        })
+        .returning();
+      return savedFile;
+    }
+  }
+  
+  async getAudioFile(logId: string): Promise<AudioFile | undefined> {
+    const [file] = await db
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.logId, logId));
+    return file;
+  }
+  
+  async getAllAudioFiles(): Promise<AudioFile[]> {
+    const files = await db
+      .select()
+      .from(audioFiles)
+      .orderBy(audioFiles.uploadedAt);
+    return files;
   }
 
   // Incident reports methods

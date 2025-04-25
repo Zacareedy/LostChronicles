@@ -135,6 +135,12 @@ const RecordItem = ({
 const FileUploadArea = ({ logId, onUpload }: { logId: string, onUpload: (id: string, file: File) => void }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle');
+  
+  // Check for developer mode
+  const isDeveloperMode = localStorage.getItem('dharma_devmode_active') === 'true';
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -153,7 +159,7 @@ const FileUploadArea = ({ logId, onUpload }: { logId: string, onUpload: (id: str
       const file = e.dataTransfer.files[0];
       if (file.type.startsWith('audio/') || file.type.startsWith('video/')) {
         setFileName(file.name);
-        onUpload(logId, file);
+        uploadFile(logId, file);
       }
     }
   };
@@ -162,8 +168,78 @@ const FileUploadArea = ({ logId, onUpload }: { logId: string, onUpload: (id: str
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
       setFileName(file.name);
-      onUpload(logId, file);
+      uploadFile(logId, file);
     }
+  };
+  
+  const uploadFile = async (logId: string, file: File) => {
+    if (!isDeveloperMode) {
+      console.log('Developer mode required for file uploads');
+      setUploadStatus('error');
+      return;
+    }
+    
+    try {
+      setIsUploading(true);
+      setUploadStatus('uploading');
+      
+      // Convert file to base64
+      const base64 = await fileToBase64(file);
+      
+      // Upload to server
+      const response = await fetch('/api/files/audio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          logId,
+          fileData: base64,
+          mimeType: file.type,
+          fileName: file.name,
+          devToken: 'dharma-dev-1977' // Developer authentication token
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to upload file');
+      }
+      
+      // Get response data
+      const data = await response.json();
+      
+      // Update UI
+      setUploadStatus('success');
+      setUploadProgress(100);
+      
+      // Also call the original onUpload for any additional handling
+      onUpload(logId, file);
+      
+      // Play a success sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+      oscillator.connect(audioContext.destination);
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.1);
+      
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      setUploadStatus('error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+  
+  // Helper function to convert File to base64
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
   
   return (
