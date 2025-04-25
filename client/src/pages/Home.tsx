@@ -136,9 +136,10 @@ const Home: React.FC = () => {
           onStationClick={handleRevealStation} 
         />
         
-        {/* New Lore Panel component */}
-        <LorePanel />
+        {/* Archives Panel */}
+        <LorePanel className="lg:col-span-3 mt-4" />
         
+        {/* Audio Logs Panel */}
         <AudioLogs 
           unlockedLogs={unlockedAudioLogs} 
           onLogPlay={handleLogPlay} 

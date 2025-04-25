@@ -18,51 +18,65 @@ export const STATIONS = {
   pearl: {
     name: 'The Pearl',
     code: 'Station 5',
-    description: 'Psychological research',
+    description: 'Psychological research and surveillance',
     coordinates: '8° 15′ 16″ N, 23° 42′ 4″ W',
-    position: { top: '60%', left: '55%' }  // As marked on reference map
+    position: { top: '64.62%', left: '37.58%' }  // Exact coordinates from map: 2255,3160
   },
   flame: {
     name: 'The Flame',
     code: 'Station 4',
     description: 'Communications station',
     coordinates: '15° 16′ 23″ N, 42° 4′ 8″ W',
-    position: { top: '24%', left: '67%' }  // As marked on reference map
+    position: { top: '24.56%', left: '44.07%' }  // Exact coordinates from map: 2644,1201
   },
   arrow: {
     name: 'The Arrow',
     code: 'Station 1',
     description: 'Defense & armament',
     coordinates: '16° 23′ 42″ N, 4° 8′ 15″ W',
-    position: { top: '33%', left: '24%' }  // As marked on reference map
+    position: { top: '19.61%', left: '44.82%' }  // Exact coordinates from map: 2689,959
   },
   staff: {
     name: 'The Staff',
     code: 'Station 6',
     description: 'Medical research station',
     coordinates: '23° 42′ 4″ N, 8° 15′ 16″ W',
-    position: { top: '34%', left: '78%' }  // As marked on reference map
+    position: { top: '58.36%', left: '35.17%' }  // Exact coordinates from map: 2110,2854
   },
   orchid: {
     name: 'The Orchid',
     code: 'Station 7',
     description: 'Time displacement research',
     coordinates: '42° 4′ 8″ N, 15° 16′ 23″ W',
-    position: { top: '76%', left: '46%' }  // As marked on reference map
+    position: { top: '41.29%', left: '28.15%' }  // Exact coordinates from map: 1689,2019
   },
   hydra: {
     name: 'The Hydra',
     code: 'Station 2',
     description: 'Zoological research',
     coordinates: '42° 8′ 15″ N, 15° 23′ 42″ W',
-    position: { top: '77%', left: '80%' }  // As marked on reference map
+    position: { top: '47.2%', left: '88.3%' }  // Exact coordinates from map: 5298,2308
+  },
+  lookingGlass: {
+    name: 'The Looking Glass',
+    code: 'Station 8',
+    description: 'Underwater station & jamming center',
+    coordinates: '17° 4′ 30″ N, 43° 15′ 20″ W',
+    position: { top: '75.83%', left: '74.67%' }  // Exact coordinates from map: 4480,3708
+  },
+  tempest: {
+    name: 'The Tempest',
+    code: 'Station 9',
+    description: 'Chemical weapons research & storage',
+    coordinates: '24° 8′ 15″ N, 32° 23′ 42″ W',
+    position: { top: '66.52%', left: '19.12%' }  // Exact coordinates from map: 1147,3253
   },
   lookout: {
     name: 'The Lookout',
     code: 'Position',
     description: 'Radio tower and signal transmission',
     coordinates: '23° 15′ 4″ N, 8° 42′ 16″ W',
-    position: { top: '20%', left: '36%' }  // As marked on reference map 
+    position: { top: '20%', left: '36%' }  // Keeping original position
   },
   blackRock: {
     name: 'Black Rock',
