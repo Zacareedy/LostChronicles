@@ -39,14 +39,14 @@
   --ring: 46 75% 59%;
   --radius: 0.5rem;
 
-  /* DHARMA terminal colors based on the reference images */
+  /* DHARMA terminal colors based on the reference images - unified green scheme */
   --dharma-black: 165 35% 5%;  /* Dark green-black background */
   --dharma-white: 120 40% 97%;
   --dharma-gray: 165 15% 20%;  /* Muted green-gray */
   --dharma-green: 160 100% 50%; /* Bright teal-green for terminal text */
-  --dharma-red: 0 100% 67%;
-  --dharma-amber: 36 100% 50%; /* Original amber for occasional highlights */
-  --dharma-blue: 210 100% 65%;
+  --dharma-bright-green: 160 100% 60%; /* Brighter green for highlights */
+  --dharma-dim-green: 160 60% 30%; /* Dimmer green for less important elements */
+  --dharma-error: 160 80% 40%; /* Green-tinted error messages */
   --dharma-light: 160 60% 85%; /* Lighter teal for some text */
   --crt-overlay: repeating-linear-gradient(
     0deg,
@@ -338,6 +338,94 @@
   user-select: none;
 }
 
+/* Old Computer Screen Effect */
+.crt-screen {
+  position: relative;
+  overflow: hidden;
+  background-color: hsl(var(--dharma-black));
+}
+
+.crt-screen:before {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background:
+    linear-gradient(
+      to bottom,
+      rgba(10, 40, 30, 0.1) 50%,
+      rgba(0, 20, 15, 0.2) 50%
+    );
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.crt-screen:after {
+  content: '';
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: radial-gradient(
+    circle at center,
+    transparent 70%,
+    rgba(10, 40, 30, 0.2) 100%
+  );
+  z-index: 101;
+  pointer-events: none;
+}
+
+/* Horizontal scan line */
+.scan-line {
+  position: absolute;
+  width: 100%;
+  height: 1px;
+  background-color: hsla(var(--dharma-green), 0.6);
+  box-shadow: 0 0 4px hsla(var(--dharma-green), 0.8);
+  z-index: 99;
+  pointer-events: none;
+  animation: scan 8s linear infinite;
+}
+
+@keyframes scan {
+  0% { top: 0%; }
+  100% { top: 100%; }
+}
+
+/* 70s Terminal Command Input */
+.terminal-command-line {
+  display: flex;
+  align-items: center;
+  font-family: 'VT323', monospace;
+  font-size: 1rem;
+  color: hsl(var(--dharma-green));
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: hsla(var(--dharma-gray), 0.1);
+  border: 1px solid hsla(var(--dharma-gray), 0.3);
+}
+
+.terminal-prompt {
+  color: hsl(var(--dharma-green));
+  margin-right: 0.5rem;
+}
+
+.terminal-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1em;
+  background-color: hsl(var(--dharma-green));
+  animation: blink 1s step-end infinite;
+  vertical-align: text-bottom;
+  margin-left: 0.2em;
+}
+
 /* 70s DHARMA Terminal Styles */
 .dharma-terminal {
   background-color: hsl(var(--dharma-black));
@@ -426,18 +514,18 @@
 }
 
 .dharma-classification-1 {
-  background-color: hsla(var(--dharma-green), 0.2);
+  background-color: hsla(var(--dharma-dim-green), 0.2);
   color: hsl(var(--dharma-green));
 }
 
 .dharma-classification-2 {
-  background-color: hsla(var(--dharma-amber), 0.2);
-  color: hsl(var(--dharma-amber));
+  background-color: hsla(var(--dharma-green), 0.3);
+  color: hsl(var(--dharma-green));
 }
 
 .dharma-classification-3 {
-  background-color: hsla(var(--dharma-red), 0.2);
-  color: hsl(var(--dharma-red));
+  background-color: hsla(var(--dharma-bright-green), 0.3);
+  color: hsl(var(--dharma-bright-green));
 }
 
 /* Flip counter style like the DHARMA timer */
