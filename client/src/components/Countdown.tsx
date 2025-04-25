@@ -85,7 +85,7 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
               } : {}}
               transition={{ repeat: Infinity, duration: 2 }}
             >
-              <span className={`font-mono text-2xl font-bold ${i > 2 ? 'text-black' : (isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-[hsl(var(--dharma-bright-green))]')}`}>
+              <span className={`font-mono text-2xl font-bold ${i > 2 ? 'text-black' : (isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-white')}`}>
                 {digit}
               </span>
               <div className="absolute inset-x-0 top-[45%] h-[1px] bg-[#111] opacity-80" />

@@ -146,6 +146,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 className="absolute w-full h-full"
                 style={{ 
                   transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
+                  willChange: 'transform',
                 }}
               >
                 <img 
@@ -225,7 +226,6 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       height: '32px',
                       opacity: isDiscovered ? 1 : 0,
                       pointerEvents: isDiscovered ? 'auto' : 'none',
-                      transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
                       zIndex: 20,
                     }}
                     initial={{ scale: 0, opacity: 0 }}

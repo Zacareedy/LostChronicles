@@ -189,7 +189,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       
       <div 
         ref={terminalOutputRef}
-        className="dharma-panel-content h-72 overflow-auto font-terminal text-[hsl(var(--dharma-amber))] text-lg relative"
+        className="dharma-panel-content h-72 overflow-auto font-terminal text-[hsl(var(--dharma-green))] text-lg relative"
       >
         <div className="space-y-2">
           {terminalOutput.filter(line => line.type !== 'cursor').map((line, index) => (
