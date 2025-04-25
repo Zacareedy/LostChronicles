@@ -138,10 +138,6 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
       <div className="scan-line"></div>
 
       <div className="dharma-terminal-header p-2 flex justify-between items-center">
-        <h2 className="font-terminal flex items-center text-sm tracking-wider">
-          <Terminal className="mr-2 h-4 w-4" />
-          DHARMA TERMINAL <span className="animate-terminal-blink ml-1">▋</span>
-        </h2>
         <div className="flex items-center gap-3">
           <span className="text-xs opacity-80 font-mono">{currentTime}</span>
           <div className="dharma-code text-xs">SL-3</div>
