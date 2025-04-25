@@ -178,26 +178,37 @@ const Home: React.FC = () => {
           onStationClick={handleRevealStation} 
         />
 
-        {/* Locations Panel */}
-        <LorePanel 
-          className="lg:col-span-3 mt-4" 
-          defaultSection="stations" 
-          showOnly="stations"
-        />
+        {/* Combined DHARMA Panel (for mobile) */}
+        <div className="md:hidden mt-4">
+          <LorePanel 
+            className="w-full" 
+            defaultSection="stations"
+          />
+        </div>
+        
+        {/* Individual Panels (for desktop) */}
+        <div className="hidden md:block">
+          {/* Locations Panel */}
+          <LorePanel 
+            className="lg:col-span-3 mt-4" 
+            defaultSection="stations" 
+            showOnly="stations"
+          />
 
-        {/* Databank Panel */}
-        <LorePanel 
-          className="lg:col-span-3 mt-4" 
-          defaultSection="files" 
-          showOnly="files" 
-        />
+          {/* Databank Panel */}
+          <LorePanel 
+            className="lg:col-span-3 mt-4" 
+            defaultSection="files" 
+            showOnly="files" 
+          />
 
-        {/* Comms Panel */}
-        <LorePanel 
-          className="lg:col-span-3 mt-4" 
-          defaultSection="signals" 
-          showOnly="signals"
-        />
+          {/* Comms Panel */}
+          <LorePanel 
+            className="lg:col-span-3 mt-4" 
+            defaultSection="signals" 
+            showOnly="signals"
+          />
+        </div>
       </main>
 
       {/* Footer with Station Info */}

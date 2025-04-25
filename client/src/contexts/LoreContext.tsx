@@ -101,16 +101,16 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
       }
       
       if (localStorage.getItem('dharma_pearl_access') === 'true') {
-        setUnlockedAudioLogs(prev => [...new Set([...prev, 'pearlTransmission'])]);
+        setUnlockedAudioLogs(prev => [...Array.from(new Set([...prev, 'pearlTransmission']))]);
       }
       
       if (localStorage.getItem('dharma_incident_unlocked') === 'true') {
-        setUnlockedReports(prev => [...new Set([...prev, 0])]);
+        setUnlockedReports(prev => [...Array.from(new Set([...prev, 0]))]);
       }
       
       if (localStorage.getItem('dharma_surveillance_active') === 'true') {
-        setUnlockedReports(prev => [...new Set([...prev, 2])]);
-        setUnlockedAudioLogs(prev => [...new Set([...prev, 'distressSignal', 'radioTransmission'])]);
+        setUnlockedReports(prev => [...Array.from(new Set([...prev, 2]))]);
+        setUnlockedAudioLogs(prev => [...Array.from(new Set([...prev, 'distressSignal', 'radioTransmission']))]);
       }
 
       const savedLore = localStorage.getItem('dharma_lore_state');
@@ -118,10 +118,10 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
         const parsedState = JSON.parse(savedLore);
         
         // Restore state
-        setDiscoveredStations(prev => [...new Set([...prev, ...(parsedState.discoveredStations || ['swan'])])]);
-        setUnlockedAudioLogs(prev => [...new Set([...prev, ...(parsedState.unlockedAudioLogs || ['orientationVideo'])])]);
-        setUnlockedReports(prev => [...new Set([...prev, ...(parsedState.unlockedReports || [])])]);
-        setVisitedLocations(prev => [...new Set([...prev, ...(parsedState.visitedLocations || ['swan'])])]);
+        setDiscoveredStations(prev => [...Array.from(new Set([...prev, ...(parsedState.discoveredStations || ['swan'])]))]);
+        setUnlockedAudioLogs(prev => [...Array.from(new Set([...prev, ...(parsedState.unlockedAudioLogs || ['orientationVideo'])]))]);
+        setUnlockedReports(prev => [...Array.from(new Set([...prev, ...(parsedState.unlockedReports || [])]))]);
+        setVisitedLocations(prev => [...Array.from(new Set([...prev, ...(parsedState.visitedLocations || ['swan'])]))]);
         setProgressionLevel(parsedState.progressionLevel || {
           [ProgressionPath.DHARMA_HISTORY]: 1,
           [ProgressionPath.INCIDENT_INVESTIGATION]: 0,
