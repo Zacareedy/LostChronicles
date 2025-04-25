@@ -287,6 +287,10 @@
   animation: glitch 0.8s infinite;
 }
 
+.animate-flash {
+  animation: flash 1.5s ease-out;
+}
+
 .invisible-button {
   position: absolute;
   opacity: 0;

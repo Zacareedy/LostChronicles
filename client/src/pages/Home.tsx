@@ -7,6 +7,8 @@ import IslandMap from '@/components/IslandMap';
 import LorePanel from '@/components/LorePanel';
 import Countdown from '@/components/Countdown';
 import HiddenPuzzle from '@/components/HiddenPuzzle';
+import SystemFailure from '@/components/SystemFailure';
+import PearlStationLog from '@/components/PearlStationLog';
 import { STATIONS } from '@/lib/constants';
 import { playSound, stopSound } from '@/lib/audio';
 import { useLore } from '@/contexts/LoreContext';
@@ -15,6 +17,12 @@ const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPuzzleVisible, setIsPuzzleVisible] = useState(false);
   const [isCountdownReset, setIsCountdownReset] = useState(false);
+  
+  // System failure states
+  const [isSystemFailure, setIsSystemFailure] = useState(false);
+  const [showPearlLog, setShowPearlLog] = useState(false);
+  const [failureTimestamp, setFailureTimestamp] = useState('');
+  const [showFailsafeContent, setShowFailsafeContent] = useState(false);
 
   // Get all state and actions from the LoreContext
   const { 
@@ -83,7 +91,44 @@ const Home: React.FC = () => {
   const handleCountdownFinish = () => {
     // Trigger system failure state
     playSound('alarm');
-    triggerSystemStatus('PROTOCOL EXECUTION REQUIRED', 0); // 0 means don't auto-reset
+    triggerSystemStatus('SYSTEM FAILURE', 0); // 0 means don't auto-reset
+    
+    // Generate timestamp for failure
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+    setFailureTimestamp(timestamp);
+    
+    // Activate system failure sequence
+    setIsSystemFailure(true);
+    
+    // If Pearl Station is unlocked, show the logging printout
+    if (discoveredStations.includes('pearl')) {
+      setTimeout(() => {
+        setShowPearlLog(true);
+      }, 5000);
+    }
+  };
+  
+  // Reset system after correct sequence entry during failure
+  const handleSystemReset = () => {
+    setIsSystemFailure(false);
+    setShowPearlLog(false);
+    setIsCountdownReset(true);
+    triggerSystemStatus('SYSTEM REBOOTING', 3000);
+  };
+  
+  // Handle failsafe key trigger
+  const handleFailsafeTrigger = () => {
+    setIsSystemFailure(false);
+    setShowPearlLog(false);
+    setShowFailsafeContent(true);
+    
+    // Unlock special content
+    unlockReport(3); // Unlock special incident report
+    unlockAudioLog('blackRockLog'); // Unlock special audio log
+    triggerLoreEvent('failsafe_triggered');
+    
+    // Trigger special event for failsafe
+    triggerSystemStatus('ELECTROMAGNETIC DISCHARGE INITIATED', 5000);
   };
 
   const handlePuzzleComplete = () => {
@@ -178,6 +223,41 @@ const Home: React.FC = () => {
         onClose={() => setIsPuzzleVisible(false)} 
         onComplete={handlePuzzleComplete}
       />
+      
+      {/* System Failure Sequence */}
+      <SystemFailure 
+        isActive={isSystemFailure}
+        onResetSequence={handleSystemReset}
+        onFailsafeTrigger={handleFailsafeTrigger}
+      />
+      
+      {/* Pearl Station Printout Log */}
+      <PearlStationLog 
+        isVisible={showPearlLog}
+        timestamp={failureTimestamp}
+      />
+      
+      {/* Failsafe Key Result Content - Only shown after triggering failsafe */}
+      {showFailsafeContent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+            className="max-w-2xl p-8 text-center text-white"
+          >
+            <h2 className="text-3xl font-terminal text-[hsl(var(--dharma-amber))] mb-6">FAILSAFE PROTOCOL EXECUTED</h2>
+            <p className="mb-4">The electromagnetic energy has been discharged.</p>
+            <p className="mb-8">New information has been unlocked in your databank.</p>
+            <button 
+              onClick={() => setShowFailsafeContent(false)}
+              className="px-6 py-2 bg-[hsla(var(--dharma-amber),0.2)] border border-[hsl(var(--dharma-amber))] text-[hsl(var(--dharma-amber))] rounded"
+            >
+              CONTINUE
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

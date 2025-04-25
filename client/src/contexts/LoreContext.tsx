@@ -371,6 +371,28 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
           }
         }
         break;
+        
+      case 'failsafe_triggered':
+        // When the failsafe key is turned
+        advanceProgression(ProgressionPath.DHARMA_HISTORY, 2);
+        advanceProgression(ProgressionPath.INCIDENT_INVESTIGATION, 2);
+        advanceProgression(ProgressionPath.ISLAND_SECRETS, 2);
+        
+        // Mark the failsafe event in the storyline
+        setStorylineFlags(prev => ({
+          ...prev,
+          failsafeTriggered: true,
+          energyDischarged: true
+        }));
+        
+        // Unlock the Orchid station if it's not already discovered
+        if (!discoveredStations.includes('orchid')) {
+          setTimeout(() => {
+            revealStation('orchid');
+            triggerSystemStatus('ORCHID STATION LOCATION DECLASSIFIED', 5000);
+          }, 6000);
+        }
+        break;
     }
   };
   
