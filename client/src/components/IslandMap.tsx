@@ -2,8 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { STATIONS } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
+import { DharmaLogos } from '@/assets/dharma-logos';
 // Import actual map image
 import plainIslandMap from '@/assets/island_maps/plain_lost_map.jpeg';
+// Add scanline effect specifically for the map
+import '@/styles/map-effects.css';
 
 interface Station {
   name: string;
@@ -114,8 +117,34 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     setIsDragging(false);
   };
 
-  // Render marker based on style
-  const renderMarker = (markerStyle: any) => {
+  // Render station marker with DHARMA logo
+  const renderMarker = (stationKey: string, markerStyle: any) => {
+    // Use station-specific DHARMA logo if it's a station
+    if (Object.keys(STATIONS).includes(stationKey)) {
+      // Map station key to logo variant
+      const stationToLogo: Record<string, string> = {
+        'swan': 'swan',
+        'pearl': 'pearl',
+        'flame': 'flame',
+        'arrow': 'arrow',
+        'staff': 'staff',
+        'orchid': 'orchid',
+        'hydra': 'dharma', // Use default for hydra
+        'lookingGlass': 'dharma', // Use default for looking glass
+      };
+      
+      // Get the logo variant for this station
+      const logoVariant = stationToLogo[stationKey] || 'dharma';
+      
+      return (
+        <div className="w-full h-full flex items-center justify-center dharma-station-marker 
+                        bg-black bg-opacity-60 rounded-full border-2 border-[hsl(var(--dharma-amber))]">
+          {DharmaLogos[logoVariant as keyof typeof DharmaLogos]({ className: "w-full h-full p-0.5" })}
+        </div>
+      );
+    }
+
+    // Fallback to original marker types for non-stations
     if (markerStyle.shape === 'circle') {
       return (
         <div 
@@ -239,6 +268,9 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     filter: 'contrast(1.1) brightness(0.9)'
                   }}
                 />
+                
+                {/* Add map-specific scanline effect */}
+                <div className="map-scanline absolute inset-0 z-10 pointer-events-none"></div>
 
                 {/* Station markers */}
                 {Object.entries(STATIONS).map(([key, station]) => {
@@ -273,7 +305,14 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       onMouseLeave={() => handleStationHover(null)}
                       onClick={() => handleStationClick(key)}
                     >
-                      {renderMarker(markerStyle)}
+                      {/* Render station markers using the Dharma logo components */}
+                      {Object.keys(STATIONS).includes(key) ? (
+                        renderMarker(key, markerStyle)
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-black border-2 border-white flex items-center justify-center text-white">
+                          ?
+                        </div>
+                      )}
 
                       {isDiscovered && hoveredStation === key && (
                         <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-black bg-opacity-80 text-xs rounded text-white z-50">
