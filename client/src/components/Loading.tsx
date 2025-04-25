@@ -1,36 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Logo from './Logo';
 import { LOADING_MESSAGES } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
-
-// 80-column terminal ASCII art for DHARMA Initiative logo from the 1970s era
-const dharmaAsciiArt = `
-+----------------------------------------------------------------------------------+
-|                                                                                  |
-|                                 +---------+                                      |
-|                                /           \\                                     |
-|                               /             \\                                    |
-|                              /               \\                                   |
-|                             /                 \\                                  |
-|                            /        .'.       \\                                 |
-|                           /        |   |       \\                                |
-|                          /          \\_/         \\                               |
-|                         |                       |                                |
-|                         |                       |                                |
-|                         |                       |                                |
-|                          \\         /\\         /                                 |
-|                           \\       /  \\       /                                  |
-|                            \\     /    \\     /                                   |
-|                             \\   /      \\   /                                    |
-|                              \\ /        \\ /                                     |
-|                               '---------'                                        |
-|                                                                                  |
-|                        D H A R M A   I N I T I A T I V E                        |
-|                          SWAN STATION TERMINAL V3.1                             |
-|                                                                                  |
-+----------------------------------------------------------------------------------+
-`;
+import dharmaLogoSvg from '@/assets/dharma-logo.svg';
 
 interface LoadingProps {
   onLoadComplete: () => void;
@@ -92,9 +64,24 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
           exit={{ opacity: 0 }}
           transition={{ duration: 1 }}
         >
-          {/* ASCII Art Logo */}
-          <div className="font-mono text-[hsl(var(--dharma-amber))] whitespace-pre mb-4 animate-flicker">
-            {dharmaAsciiArt}
+          {/* DHARMA Logo SVG */}
+          <div className="mb-8 animate-pulse relative w-64 h-64">
+            <img 
+              src={dharmaLogoSvg} 
+              alt="DHARMA Initiative Logo" 
+              className="w-full h-full" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.2)] to-transparent pointer-events-none"></div>
+            
+            {/* Text below SVG */}
+            <div className="absolute -bottom-8 left-0 right-0 text-center">
+              <div className="font-terminal text-[hsl(var(--dharma-amber))] text-xl tracking-wider">
+                DHARMA INITIATIVE
+              </div>
+              <div className="font-terminal text-[hsl(var(--dharma-green))] text-sm">
+                SWAN STATION TERMINAL V3.1
+              </div>
+            </div>
           </div>
           
           {/* Authentic 70s/80s era terminal style loading indicators */}
