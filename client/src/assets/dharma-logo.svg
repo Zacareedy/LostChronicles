@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   width="300"
+   height="300"
+   viewBox="0 0 300 300"
+   version="1.1"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <style>
+    .dharma-logo {
+      fill: #00ffcc;
+      stroke: #00ffcc;
+      stroke-width: 1px;
+    }
+    .scanlines {
+      fill: none;
+      stroke: #002211;
+      stroke-width: 0.5px;
+      opacity: 0.2;
+    }
+  </style>
+
+  <!-- Background scanlines for CRT effect -->
+  <g class="scanlines">
+    <rect x="0" y="0" width="300" height="300" fill="#001208" />
+    <!-- Horizontal scanlines -->
+    <g>
+      <path d="M0,1 H300 M0,3 H300 M0,5 H300 M0,7 H300 M0,9 H300 M0,11 H300 M0,13 H300 M0,15 H300 M0,17 H300 M0,19 H300 M0,21 H300 M0,23 H300" />
+      <path d="M0,25 H300 M0,27 H300 M0,29 H300 M0,31 H300 M0,33 H300 M0,35 H300 M0,37 H300 M0,39 H300 M0,41 H300 M0,43 H300 M0,45 H300 M0,47 H300" />
+      <path d="M0,49 H300 M0,51 H300 M0,53 H300 M0,55 H300 M0,57 H300 M0,59 H300 M0,61 H300 M0,63 H300 M0,65 H300 M0,67 H300 M0,69 H300 M0,71 H300" />
+      <path d="M0,73 H300 M0,75 H300 M0,77 H300 M0,79 H300 M0,81 H300 M0,83 H300 M0,85 H300 M0,87 H300 M0,89 H300 M0,91 H300 M0,93 H300 M0,95 H300" />
+      <path d="M0,97 H300 M0,99 H300 M0,101 H300 M0,103 H300 M0,105 H300 M0,107 H300 M0,109 H300 M0,111 H300 M0,113 H300 M0,115 H300 M0,117 H300" />
+      <path d="M0,119 H300 M0,121 H300 M0,123 H300 M0,125 H300 M0,127 H300 M0,129 H300 M0,131 H300 M0,133 H300 M0,135 H300 M0,137 H300 M0,139 H300" />
+      <path d="M0,141 H300 M0,143 H300 M0,145 H300 M0,147 H300 M0,149 H300 M0,151 H300 M0,153 H300 M0,155 H300 M0,157 H300 M0,159 H300 M0,161 H300" />
+      <path d="M0,163 H300 M0,165 H300 M0,167 H300 M0,169 H300 M0,171 H300 M0,173 H300 M0,175 H300 M0,177 H300 M0,179 H300 M0,181 H300 M0,183 H300" />
+      <path d="M0,185 H300 M0,187 H300 M0,189 H300 M0,191 H300 M0,193 H300 M0,195 H300 M0,197 H300 M0,199 H300 M0,201 H300 M0,203 H300 M0,205 H300" />
+      <path d="M0,207 H300 M0,209 H300 M0,211 H300 M0,213 H300 M0,215 H300 M0,217 H300 M0,219 H300 M0,221 H300 M0,223 H300 M0,225 H300 M0,227 H300" />
+      <path d="M0,229 H300 M0,231 H300 M0,233 H300 M0,235 H300 M0,237 H300 M0,239 H300 M0,241 H300 M0,243 H300 M0,245 H300 M0,247 H300 M0,249 H300" />
+      <path d="M0,251 H300 M0,253 H300 M0,255 H300 M0,257 H300 M0,259 H300 M0,261 H300 M0,263 H300 M0,265 H300 M0,267 H300 M0,269 H300 M0,271 H300" />
+      <path d="M0,273 H300 M0,275 H300 M0,277 H300 M0,279 H300 M0,281 H300 M0,283 H300 M0,285 H300 M0,287 H300 M0,289 H300 M0,291 H300 M0,293 H300" />
+      <path d="M0,295 H300 M0,297 H300 M0,299 H300" />
+    </g>
+  </g>
+
+  <!-- DHARMA logo - octagonal shape -->
+  <g class="dharma-logo">
+    <!-- Octagon outer shape -->
+    <path d="M150,40 L240,70 L270,150 L240,230 L150,260 L60,230 L30,150 L60,70 Z" 
+          fill="none" stroke-width="6" />
+    
+    <!-- Inner octagons for each bagua trigram segment -->
+    <path d="M150,70 L210,90 L230,150 L210,210 L150,230 L90,210 L70,150 L90,90 Z" 
+          fill="none" stroke-width="3" />
+    
+    <!-- Swan logo in center - stylized yin yang -->
+    <path d="M150,100 Q180,100 180,135 Q180,170 150,170 Q120,170 120,135 Q120,100 150,100 Z" 
+          fill="none" stroke-width="4" />
+    <path d="M150,115 Q165,115 165,135 Q165,155 150,155 Q135,155 135,135 Q135,115 150,115 Z" 
+          fill="none" stroke-width="4" />
+    
+    <!-- Swan curved shape -->
+    <path d="M140,130 Q170,125 165,155 Q135,160 140,130 Z" 
+          fill="#00ffcc" stroke="none" />
+    
+    <!-- I-Ching trigram marks (8 positions) -->
+    <!-- Top -->
+    <g transform="translate(150, 65)">
+      <line x1="-20" y1="0" x2="20" y2="0" stroke-width="4" />
+      <line x1="-20" y1="-8" x2="20" y2="-8" stroke-width="4" />
+      <line x1="-20" y1="-16" x2="20" y2="-16" stroke-width="4" />
+    </g>
+    
+    <!-- Top right -->
+    <g transform="translate(205, 90) rotate(45)">
+      <line x1="-20" y1="0" x2="-5" y2="0" stroke-width="4" />
+      <line x1="5" y1="0" x2="20" y2="0" stroke-width="4" />
+      <line x1="-20" y1="-8" x2="-5" y2="-8" stroke-width="4" />
+      <line x1="5" y1="-8" x2="20" y2="-8" stroke-width="4" />
+      <line x1="-20" y1="-16" x2="20" y2="-16" stroke-width="4" />
+    </g>
+    
+    <!-- Right -->
+    <g transform="translate(235, 150) rotate(90)">
+      <line x1="-20" y1="0" x2="20" y2="0" stroke-width="4" />
+      <line x1="-20" y1="-8" x2="-5" y2="-8" stroke-width="4" />
+      <line x1="5" y1="-8" x2="20" y2="-8" stroke-width="4" />
+      <line x1="-20" y1="-16" x2="-5" y2="-16" stroke-width="4" />
+      <line x1="5" y1="-16" x2="20" y2="-16" stroke-width="4" />
+    </g>
+    
+    <!-- Bottom right -->
+    <g transform="translate(205, 210) rotate(135)">
+      <line x1="-20" y1="0" x2="-5" y2="0" stroke-width="4" />
+      <line x1="5" y1="0" x2="20" y2="0" stroke-width="4" />
+      <line x1="-20" y1="-8" x2="20" y2="-8" stroke-width="4" />
+      <line x1="-20" y1="-16" x2="-5" y2="-16" stroke-width="4" />
+      <line x1="5" y1="-16" x2="20" y2="-16" stroke-width="4" />
+    </g>
+    
+    <!-- Bottom -->
+    <g transform="translate(150, 235) rotate(180)">
+      <line x1="-20" y1="0" x2="20" y2="0" stroke-width="4" />
+      <line x1="-20" y1="-8" x2="20" y2="-8" stroke-width="4" />
+      <line x1="-20" y1="-16" x2="20" y2="-16" stroke-width="4" />
+    </g>
+    
+    <!-- Bottom left -->
+    <g transform="translate(95, 210) rotate(225)">
+      <line x1="-20" y1="0" x2="20" y2="0" stroke-width="4" />
+      <line x1="-20" y1="-8" x2="-5" y2="-8" stroke-width="4" />
+      <line x1="5" y1="-8" x2="20" y2="-8" stroke-width="4" />
+      <line x1="-20" y1="-16" x2="20" y2="-16" stroke-width="4" />
+    </g>
+    
+    <!-- Left -->
+    <g transform="translate(65, 150) rotate(270)">
+      <line x1="-20" y1="0" x2="-5" y2="0" stroke-width="4" />
+      <line x1="5" y1="0" x2="20" y2="0" stroke-width="4" />
+      <line x1="-20" y1="-8" x2="20" y2="-8" stroke-width="4" />
+      <line x1="-20" y1="-16" x2="20" y2="-16" stroke-width="4" />
+    </g>
+    
+    <!-- Top left -->
+    <g transform="translate(95, 90) rotate(315)">
+      <line x1="-20" y1="0" x2="20" y2="0" stroke-width="4" />
+      <line x1="-20" y1="-8" x2="-5" y2="-8" stroke-width="4" />
+      <line x1="5" y1="-8" x2="20" y2="-8" stroke-width="4" />
+      <line x1="-20" y1="-16" x2="-5" y2="-16" stroke-width="4" />
+      <line x1="5" y1="-16" x2="20" y2="-16" stroke-width="4" />
+    </g>
+  </g>
+</svg>

@@ -43,6 +43,7 @@ const commands: Record<string, Function> = {
         basicCommands.push('> devmode - Toggle developer mode');
         basicCommands.push('> setcountdown <minutes> <seconds> - Set countdown timer');
         basicCommands.push('> setcountdown <seconds> - Set countdown timer in seconds');
+        basicCommands.push('> resetall - Reset all app data and return to initial state');
       }
     } catch (e) {
       // Ignore localStorage errors
@@ -587,6 +588,44 @@ const processCommand = (
   
   playSound('typing', 'short');
   
+  // Check for resetall developer command to reset all app data
+  if (input.trim().toLowerCase() === 'resetall') {
+    try {
+      // Check if developer mode is active
+      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+      if (!devModeActive) {
+        return ['> ERROR: This command requires developer mode. Use \'devmode\' first.'];
+      }
+      
+      // Clear all localStorage data
+      const savedDevMode = localStorage.getItem('dharma_devmode_active');
+      localStorage.clear();
+      
+      // Restore dev mode for convenience
+      if (savedDevMode === 'true') {
+        localStorage.setItem('dharma_devmode_active', 'true');
+      }
+      
+      // Reset countdown timer to initial state
+      const now = Date.now();
+      localStorage.setItem('countdown_start', now.toString());
+      
+      // Reset terminal state
+      accessLevel = 1;
+      isExecutingProtocol = false;
+      pendingAction = null;
+      
+      return [
+        '> SYSTEM RESET: All progress has been reset.',
+        '> Stations, logs, and reports have been wiped.',
+        '> Countdown timer has been reset to 108:00.',
+        '> Reload the page to complete reset process.'
+      ];
+    } catch (e) {
+      return ['> ERROR: Failed to reset the system.'];
+    }
+  }
+
   // Handle direct input of the DHARMA numbers
   if (input.trim() === DHARMA_NUMBERS.join(' ')) {
     return commands["4 8 15 16 23 42"](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
