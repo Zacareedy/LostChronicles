@@ -192,12 +192,12 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
         className="p-4 h-72 overflow-auto font-terminal text-[hsl(var(--dharma-amber))] text-lg relative"
       >
         <div className="space-y-2">
-          {terminalOutput.map((line, index) => (
-            <p key={index} className={line.type === 'cursor' ? 'animate-terminal-blink' : ''}>
+          {terminalOutput.filter(line => line.type !== 'cursor').map((line, index) => (
+            <p key={index}>
               {line.text}
             </p>
           ))}
-          <form onSubmit={handleSubmit} className="flex">
+          <form onSubmit={handleSubmit} className="flex relative">
             <span className="mr-2">{'>'}</span>
             <input 
               ref={terminalInputRef}
@@ -213,10 +213,8 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
               placeholder="Enter command"
               autoComplete="off"
             />
+            {!input && <span className="absolute right-0 animate-terminal-blink">▋</span>}
           </form>
-        </div>
-        
-        <div className="mt-4 pt-4 border-t border-[hsla(var(--dharma-gray),0.3)]">
         </div>
       </div>
       
