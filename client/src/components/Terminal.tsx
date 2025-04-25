@@ -18,9 +18,9 @@ interface TerminalProps {
 
 const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, onCorrectSequence, onCommand }) => {
   const [terminalOutput, setTerminalOutput] = useState<TerminalOutput[]>([
-    { text: '> DHARMA INITIATIVE - SWAN STATION TERMINAL', type: 'output' },
-    { text: '> AWAITING INPUT...', type: 'output' },
-    { text: '_', type: 'cursor' }
+    { text: '>DHARMA INITIATIVE - SWAN STATION TERMINAL', type: 'output' },
+    { text: '>AWAITING INPUT...', type: 'output' },
+    { text: '▋', type: 'cursor' }
   ]);
   const [input, setInput] = useState('');
   const [terminalStatus, setTerminalStatus] = useState('CONNECTED');
