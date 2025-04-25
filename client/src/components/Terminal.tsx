@@ -172,9 +172,11 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
         setTerminalStatus('ACCESS DENIED');
         setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
       }
-    } else if (userInput.toLowerCase() === '4 8 15 16 23 42') {
-      // Handle the numbers
+    } else if (userInput === '4 8 15 16 23 42') {
+      // Reset the countdown
+      handleCorrectSequence();
       setTerminalStatus('SYSTEM RESET');
+      playSound('success');
       setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
     }
   };
