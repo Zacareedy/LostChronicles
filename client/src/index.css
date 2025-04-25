@@ -39,15 +39,15 @@
   --ring: 46 75% 59%;
   --radius: 0.5rem;
 
-  /* DHARMA colors */
-  --dharma-black: 0 0% 0%;
+  /* DHARMA terminal colors based on the reference images */
+  --dharma-black: 165 35% 5%;  /* Dark green-black background */
   --dharma-white: 120 40% 97%;
-  --dharma-gray: 120 5% 75%;
-  --dharma-green: 120 100% 25%;
+  --dharma-gray: 165 15% 20%;  /* Muted green-gray */
+  --dharma-green: 160 100% 50%; /* Bright teal-green for terminal text */
   --dharma-red: 0 100% 67%;
-  --dharma-amber: 120 70% 45%;
+  --dharma-amber: 36 100% 50%; /* Original amber for occasional highlights */
   --dharma-blue: 210 100% 65%;
-  --dharma-light: 0 0% 83%;
+  --dharma-light: 160 60% 85%; /* Lighter teal for some text */
   --crt-overlay: repeating-linear-gradient(
     0deg,
     rgba(0, 0, 0, 0.15) 0px,
@@ -336,4 +336,131 @@
   opacity: 0.05;
   cursor: help;
   user-select: none;
+}
+
+/* 70s DHARMA Terminal Styles */
+.dharma-terminal {
+  background-color: hsl(var(--dharma-black));
+  color: hsl(var(--dharma-green));
+  font-family: 'VT323', monospace;
+  letter-spacing: 0.1em;
+  border: 1px solid hsla(var(--dharma-gray), 0.5);
+  box-shadow: 0 0 12px hsla(var(--dharma-green), 0.1);
+  text-transform: uppercase;
+}
+
+.dharma-terminal-header {
+  background-color: hsla(var(--dharma-gray), 0.3);
+  color: hsl(var(--dharma-green));
+  border-bottom: 1px solid hsla(var(--dharma-gray), 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-shadow: 0 0 10px hsla(var(--dharma-green), 0.7);
+}
+
+.dharma-terminal-content {
+  background-color: transparent;
+  color: hsl(var(--dharma-green));
+  letter-spacing: 0.05em;
+}
+
+.dharma-terminal-label {
+  color: hsl(var(--dharma-green));
+  opacity: 0.8;
+}
+
+.dharma-terminal-value {
+  color: hsl(var(--dharma-green));
+  opacity: 1;
+  text-shadow: 0 0 5px hsla(var(--dharma-green), 0.5);
+}
+
+.dharma-terminal-input {
+  background-color: hsla(var(--dharma-black), 0.7);
+  border: 1px solid hsla(var(--dharma-gray), 0.4);
+  color: hsl(var(--dharma-green));
+  outline: none;
+}
+
+.dharma-terminal-input:focus {
+  box-shadow: 0 0 0 2px hsla(var(--dharma-green), 0.3);
+}
+
+/* Code display for coords and technical info */
+.dharma-code {
+  font-family: 'VT323', monospace;
+  background-color: hsla(var(--dharma-gray), 0.1);
+  border: 1px solid hsla(var(--dharma-gray), 0.3);
+  color: hsl(var(--dharma-green));
+  padding: 0.2em 0.5em;
+  font-size: 0.9em;
+  letter-spacing: 0.1em;
+  display: inline-block;
+}
+
+/* Redacted style for classified info */
+.dharma-redacted {
+  position: relative;
+  color: transparent;
+  user-select: none;
+}
+
+.dharma-redacted::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: hsl(var(--dharma-green));
+  opacity: 0.8;
+}
+
+/* Classification levels */
+.dharma-classification {
+  font-size: 0.8em;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.1em 0.5em;
+  border-radius: 2px;
+}
+
+.dharma-classification-1 {
+  background-color: hsla(var(--dharma-green), 0.2);
+  color: hsl(var(--dharma-green));
+}
+
+.dharma-classification-2 {
+  background-color: hsla(var(--dharma-amber), 0.2);
+  color: hsl(var(--dharma-amber));
+}
+
+.dharma-classification-3 {
+  background-color: hsla(var(--dharma-red), 0.2);
+  color: hsl(var(--dharma-red));
+}
+
+/* Flip counter style like the DHARMA timer */
+.dharma-counter {
+  background-color: hsl(0, 0%, 10%);
+  color: hsl(0, 0%, 95%);
+  font-family: 'Space Mono', monospace;
+  font-weight: bold;
+  border: 2px solid hsl(0, 0%, 20%);
+  padding: 0.2em 0.1em;
+  text-align: center;
+  display: inline-block;
+  min-width: 2ch;
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+/* The little flip animation */
+.dharma-counter::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  top: 50%;
+  background-color: rgba(0, 0, 0, 0.3);
 }
