@@ -70,8 +70,8 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
   const displayMinutes = Math.min(minutes, 108);
 
   return (
-    <div className="font-terminal text-[hsl(var(--dharma-amber))]">
-      <div className="relative bg-[#1a1a1a] p-2 border border-[hsla(var(--dharma-gray),0.4)] shadow-inner">
+    <div className="font-terminal text-[hsl(var(--dharma-green))]">
+      <div className="relative bg-[#1a1a1a] p-2 border-2 border-[hsla(var(--dharma-green),0.3)] shadow-inner">
         <div className="flex">
           {[...displayMinutes.toString().padStart(3, '0'), ...(displaySeconds ? seconds.toString().padStart(2, '0') : '00')].map((digit, i) => (
             <motion.div
@@ -85,7 +85,7 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
               } : {}}
               transition={{ repeat: Infinity, duration: 2 }}
             >
-              <span className={`font-mono text-2xl font-bold ${i > 2 ? 'text-black' : (isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-[#e6e6e6]')}`}>
+              <span className={`font-mono text-2xl font-bold ${i > 2 ? 'text-black' : (isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-[hsl(var(--dharma-bright-green))]')}`}>
                 {digit}
               </span>
               <div className="absolute inset-x-0 top-[45%] h-[1px] bg-[#111] opacity-80" />

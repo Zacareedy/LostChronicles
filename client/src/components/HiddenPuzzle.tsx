@@ -98,25 +98,26 @@ const HiddenPuzzle: React.FC<HiddenPuzzleProps> = ({ isVisible, onClose, onCompl
           className="fixed inset-0 z-40 bg-[hsla(var(--dharma-black),0.9)] flex items-center justify-center"
         >
           <motion.div 
-            className="max-w-2xl w-full bg-[hsl(var(--dharma-black))] border border-[hsla(var(--dharma-gray),0.3)] rounded-lg p-6 relative"
+            className="max-w-2xl w-full dharma-panel relative"
             initial={{ scale: 0.9, y: 20 }}
             animate={{ scale: 1, y: 0 }}
             exit={{ scale: 0.9, y: 20 }}
           >
-            <button 
-              onClick={() => {
-                playSound('button');
-                onClose();
-              }}
-              className="absolute top-4 right-4 text-[hsl(var(--dharma-amber))] hover:text-[hsl(var(--dharma-red))]"
-            >
-              ×
-            </button>
+            <div className="dharma-panel-header">
+              <h2 className="dharma-panel-title text-[hsl(var(--dharma-green))]">VALENZETTI EQUATION</h2>
+              <button 
+                onClick={() => {
+                  playSound('button');
+                  onClose();
+                }}
+                className="text-[hsl(var(--dharma-green))] hover:text-[hsl(var(--dharma-red))]"
+              >
+                ×
+              </button>
+            </div>
             
-            <h2 className="font-terminal text-[hsl(var(--dharma-amber))] text-xl mb-4">VALENZETTI EQUATION</h2>
-            
-            <div className="border border-[hsla(var(--dharma-gray),0.3)] p-4 font-mono">
-              <p className="text-[hsl(var(--dharma-gray))] mb-4">Arrange the factors in the correct sequence to unlock the failsafe:</p>
+            <div className="dharma-panel-content text-[hsl(var(--dharma-green))]">
+              <p className="text-[hsl(var(--dharma-dim-green))] mb-4">Arrange the factors in the correct sequence to unlock the failsafe:</p>
               
               <div className="grid grid-cols-6 gap-2 mb-6">
                 {/* Draggable Number Tiles */}
@@ -171,7 +172,7 @@ const HiddenPuzzle: React.FC<HiddenPuzzleProps> = ({ isVisible, onClose, onCompl
               
               <div className="flex justify-center space-x-4">
                 <motion.button 
-                  className="px-4 py-2 bg-[hsla(var(--dharma-gray),0.2)] border border-[hsla(var(--dharma-gray),0.5)] text-[hsl(var(--dharma-amber))] hover:bg-[hsla(var(--dharma-red),0.2)] transition-colors"
+                  className="px-4 py-2 bg-[hsla(var(--dharma-gray),0.2)] border border-[hsla(var(--dharma-green),0.3)] text-[hsl(var(--dharma-green))] hover:bg-[hsla(var(--dharma-red),0.2)] transition-colors"
                   onClick={handleReset}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -180,7 +181,7 @@ const HiddenPuzzle: React.FC<HiddenPuzzleProps> = ({ isVisible, onClose, onCompl
                 </motion.button>
                 
                 <motion.button 
-                  className="px-4 py-2 bg-[hsla(var(--dharma-gray),0.2)] border border-[hsla(var(--dharma-gray),0.5)] text-[hsl(var(--dharma-amber))] hover:bg-[hsla(var(--dharma-green),0.2)] transition-colors"
+                  className="px-4 py-2 bg-[hsla(var(--dharma-gray),0.2)] border border-[hsla(var(--dharma-green),0.3)] text-[hsl(var(--dharma-green))] hover:bg-[hsla(var(--dharma-green),0.2)] transition-colors"
                   onClick={handleVerify}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
