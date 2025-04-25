@@ -4,31 +4,32 @@ import Logo from './Logo';
 import { LOADING_MESSAGES } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
 
-// ASCII art for DHARMA Initiative logo
+// 80-column terminal ASCII art for DHARMA Initiative logo from the 1970s era
 const dharmaAsciiArt = `
-  ┌───────────────────────────────┐
-  │                               │
-  │            ╱╲                 │
-  │           ╱  ╲                │
-  │          ╱ ╔╗ ╲               │
-  │         ╱ ╔╝║  ╲              │
-  │        ╱  ╚╗║   ╲             │
-  │       ╱    ╚╝    ╲            │
-  │      ╱─────────────╲          │
-  │      │     ┌┐      │          │
-  │      │     └┘      │          │
-  │      ╲─────────────╱          │
-  │       ╲    ╔╗    ╱            │
-  │        ╲   ║╚╗  ╱             │
-  │         ╲  ║╔╝ ╱              │
-  │          ╲ ╚╝ ╱               │
-  │           ╲  ╱                │
-  │            ╲╱                 │
-  │                               │
-  └───────────────────────────────┘
-  
-    T H E   D H A R M A   I N I T I A T I V E
-          SWAN STATION TERMINAL V3.1
++----------------------------------------------------------------------------------+
+|                                                                                  |
+|                                 +---------+                                      |
+|                                /           \\                                     |
+|                               /             \\                                    |
+|                              /               \\                                   |
+|                             /                 \\                                  |
+|                            /        .'.       \\                                 |
+|                           /        |   |       \\                                |
+|                          /          \\_/         \\                               |
+|                         |                       |                                |
+|                         |                       |                                |
+|                         |                       |                                |
+|                          \\         /\\         /                                 |
+|                           \\       /  \\       /                                  |
+|                            \\     /    \\     /                                   |
+|                             \\   /      \\   /                                    |
+|                              \\ /        \\ /                                     |
+|                               '---------'                                        |
+|                                                                                  |
+|                        D H A R M A   I N I T I A T I V E                        |
+|                          SWAN STATION TERMINAL V3.1                             |
+|                                                                                  |
++----------------------------------------------------------------------------------+
 `;
 
 interface LoadingProps {
@@ -96,40 +97,63 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
             {dharmaAsciiArt}
           </div>
           
-          {/* Authentic terminal style loading indicators */}
-          <div className="max-w-lg w-full px-8">
-            <div className="text-left font-terminal text-[hsl(var(--dharma-green))] text-sm mb-2">
-              SYSTEM INITIALIZATION: {Math.round(progress)}%
-            </div>
-            
-            <div className="w-full h-6 border border-[hsl(var(--dharma-green))] relative overflow-hidden mb-4">
-              <div 
-                className="h-full bg-[hsl(var(--dharma-green))] transition-all"
-                style={{ width: `${progress}%` }}
-              ></div>
-              <div 
-                className="absolute top-0 left-0 h-full w-full flex items-center justify-center text-black font-terminal text-sm"
-              >
-                {progress >= 100 ? 'COMPLETE' : 'INITIALIZING...'}
+          {/* Authentic 70s/80s era terminal style loading indicators */}
+          <div className="w-full max-w-3xl px-4">
+            <div className="text-left font-mono text-[hsl(var(--dharma-green))] text-sm mb-2 flex">
+              <div className="w-20">INIT:</div>
+              <div className="flex-1 overflow-hidden">
+                <div className="w-full h-4 relative overflow-hidden font-mono flex items-center">
+                  <div className="relative flex">
+                    {Array.from({ length: 50 }).map((_, i) => (
+                      <span key={i} className={`text-sm ${i < Math.round(progress / 2) ? 'text-[hsl(var(--dharma-green))]' : 'text-[rgba(0,0,0,0)]'}`}>█</span>
+                    ))}
+                  </div>
+                  <div className="absolute right-0 text-[hsl(var(--dharma-amber))]">
+                    {Math.round(progress)}%
+                  </div>
+                </div>
               </div>
             </div>
             
-            {/* Terminal-style log output */}
-            <div className="font-mono text-sm text-[hsl(var(--dharma-gray))] bg-black p-2 border border-[hsl(var(--dharma-green))] h-32 overflow-y-auto text-left">
+            <div className="text-left font-mono text-[hsl(var(--dharma-green))] text-sm mb-2 flex">
+              <div className="w-20">STATUS:</div>
+              <div className="flex-1 uppercase">
+                {progress >= 100 ? 'SYSTEM READY' : 'LOADING DHARMA OS v2.3.03'}
+              </div>
+            </div>
+            
+            {/* Terminal-style log output - authentic 80-column display */}
+            <div className="relative font-mono text-sm text-[hsl(var(--dharma-gray))] bg-black p-2 border border-[hsl(var(--dharma-green))] h-48 overflow-y-auto text-left whitespace-pre">
+              {/* Column guide (common in old terminals) */}
+              <div className="absolute top-0 w-full opacity-10 pointer-events-none text-[hsl(var(--dharma-green))] text-[8px] select-none">
+                {Array.from({ length: 8 }).map((_, i) => (
+                  <span key={i} className="inline-block w-[10ch] text-center">{(i+1)*10}</span>
+                ))}
+              </div>
+              
+              {/* Vertical line separator (common in old mainframes) */}
+              <div className="absolute left-[5ch] top-0 bottom-0 w-px bg-[hsl(var(--dharma-green))] opacity-10"></div>
+              
               {LOADING_MESSAGES.slice(0, messageIndex + 1).map((message, i) => (
-                <div key={i} className="mb-1">
-                  <span className="text-[hsl(var(--dharma-green))]">{'>'}</span> {message}
+                <div key={i} className="mb-1 flex">
+                  <span className="text-[hsl(var(--dharma-amber))] w-[5ch] text-right pr-2">{(i+1).toString().padStart(2, '0')}:</span>
+                  <span>{message}</span>
                 </div>
               ))}
               {progress < 100 && (
-                <div className="animate-pulse">
-                  <span className="text-[hsl(var(--dharma-green))]">{'>'}</span> <span className="animate-blink">_</span>
+                <div className="flex">
+                  <span className="text-[hsl(var(--dharma-amber))] w-[5ch] text-right pr-2">{(messageIndex+2).toString().padStart(2, '0')}:</span>
+                  <span className="animate-blink">_</span>
                 </div>
               )}
             </div>
             
-            <div className="text-right mt-2 font-terminal text-[hsl(var(--dharma-amber))] text-xs">
-              {progress >= 100 ? 'PRESS ANY KEY TO CONTINUE' : 'DO NOT POWER OFF SYSTEM'}
+            <div className="flex justify-between mt-2 font-mono text-[hsl(var(--dharma-green))] text-xs border-t border-b border-[hsla(var(--dharma-green),0.3)] py-1">
+              <div>DHARMA INITIATIVE © 1977-1984</div>
+              <div>SYSTEM LOAD: {(Math.min(progress/100, 0.95) + Math.random() * 0.05).toFixed(2)}</div>
+              <div className="text-[hsl(var(--dharma-amber))]">
+                {progress >= 100 ? '*** PRESS ANY KEY TO CONTINUE ***' : 'DO NOT POWER OFF SYSTEM'}
+              </div>
             </div>
           </div>
         </motion.div>
