@@ -145,9 +145,8 @@ const Home: React.FC = () => {
 
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* CRT Overlay effects */}
+      {/* CRT Overlay effects - keeping only the subtle CRT effect, removing scanline */}
       <div className="absolute inset-0 crt pointer-events-none z-50"></div>
-      <div className="scanline absolute inset-0 pointer-events-none z-40"></div>
 
       {/* Header with Dharma Logo */}
       <header className="pt-6 pb-2 px-6 flex justify-between items-center border-b border-[hsla(var(--dharma-gray),0.3)]">

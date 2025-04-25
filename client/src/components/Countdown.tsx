@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { COUNTDOWN_MINUTES, COUNTDOWN_SECONDS, WARNING_THRESHOLD } from '@/lib/constants';
+import { COUNTDOWN_MINUTES, COUNTDOWN_SECONDS, WARNING_THRESHOLD, DHARMA_NUMBERS } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
 
 interface CountdownProps {
@@ -11,6 +11,9 @@ interface CountdownProps {
 
 const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIsReset }) => {
   const [isWarning, setIsWarning] = useState(false);
+  const [isDevMode, setIsDevMode] = useState(false);
+  const [devTimeInput, setDevTimeInput] = useState('');
+  const devModeKeySequence = useRef<number[]>([]);
   const [timeRemaining, setTimeRemaining] = useState(() => {
     const startTime = localStorage.getItem('countdown_start');
     if (!startTime) {
@@ -35,8 +38,60 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
     }
   }, [isReset, setIsReset]);
 
+  // Handle dev mode activation with The Numbers sequence
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Convert key to number if it's a digit
+      const keyNum = parseInt(e.key);
+      if (!isNaN(keyNum) && e.ctrlKey && e.altKey) {
+        // Add to sequence
+        devModeKeySequence.current.push(keyNum);
+        
+        // Check if we have 6 numbers
+        if (devModeKeySequence.current.length > 6) {
+          devModeKeySequence.current.shift(); // Remove oldest number
+        }
+        
+        // Check if sequence matches The Numbers
+        if (devModeKeySequence.current.length === 6) {
+          const isMatch = devModeKeySequence.current.every((num, index) => num === DHARMA_NUMBERS[index]);
+          if (isMatch) {
+            setIsDevMode(prev => !prev);
+            playSound('success');
+            devModeKeySequence.current = []; // Reset sequence
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+  
+  // Handle dev time input
+  const handleDevTimeSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    const timeInSeconds = parseInt(devTimeInput);
+    if (!isNaN(timeInSeconds) && timeInSeconds >= 0) {
+      // Calculate a new start time that would result in this remaining time
+      const now = Date.now();
+      const calculatedStartTime = now - ((COUNTDOWN_MINUTES * 60 + COUNTDOWN_SECONDS) - timeInSeconds) * 1000;
+      
+      // Set the new start time
+      localStorage.setItem('countdown_start', calculatedStartTime.toString());
+      setTimeRemaining(timeInSeconds);
+      setIsWarning(timeInSeconds <= WARNING_THRESHOLD);
+      setDevTimeInput('');
+      playSound('beep');
+    }
+  };
+  
   useEffect(() => {
     const interval = setInterval(() => {
+      // Skip timer updates if dev mode is active
+      if (isDevMode) return;
+      
       const startTime = localStorage.getItem('countdown_start');
       if (startTime) {
         const elapsed = Math.floor((Date.now() - parseInt(startTime)) / 1000);
@@ -59,7 +114,7 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
     }, 1000);
     
     return () => clearInterval(interval);
-  }, [isWarning, onCountdownFinish]);
+  }, [isWarning, onCountdownFinish, isDevMode]);
 
   const minutes = Math.floor(timeRemaining / 60);
   const seconds = timeRemaining % 60;
@@ -73,7 +128,10 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
     <div className="font-terminal text-[hsl(var(--dharma-green))]">
       <div className="relative bg-[#1a1a1a] p-2 border-2 border-[hsla(var(--dharma-green),0.3)] shadow-inner">
         <div className="flex">
-          {[...displayMinutes.toString().padStart(3, '0'), ...(displaySeconds ? seconds.toString().padStart(2, '0') : '00')].map((digit, i) => (
+          {/* Timer display */}
+          {Array.from(displayMinutes.toString().padStart(3, '0')).concat(
+            displaySeconds ? Array.from(seconds.toString().padStart(2, '0')) : ['0', '0']
+          ).map((digit, i) => (
             <motion.div
               key={i}
               className={`relative w-10 h-14 flex items-center justify-center overflow-hidden border-r border-[#1a1a1a]
@@ -94,6 +152,74 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
             </motion.div>
           ))}
         </div>
+        
+        {/* Dev mode indicator and controls - activated with Ctrl+Alt+4+8+1+5+1+6+2+3+4+2 */}
+        {isDevMode && (
+          <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-black border border-[hsl(var(--dharma-amber))] z-50">
+            <div className="text-center text-xs mb-2 text-[hsl(var(--dharma-amber))]">
+              <span className="animate-pulse">● </span>
+              DEVELOPER MODE ACTIVE
+              <span className="animate-pulse"> ●</span>
+            </div>
+            <form onSubmit={handleDevTimeSubmit} className="flex items-center space-x-2">
+              <input
+                type="number"
+                value={devTimeInput}
+                onChange={(e) => setDevTimeInput(e.target.value)}
+                placeholder="Seconds remaining"
+                min="0"
+                className="flex-1 bg-black border border-[hsl(var(--dharma-green))] text-[hsl(var(--dharma-green))] px-2 py-1 text-xs"
+              />
+              <button 
+                type="submit"
+                className="bg-[hsla(var(--dharma-green),0.2)] text-[hsl(var(--dharma-green))] border border-[hsl(var(--dharma-green))] px-2 py-1 text-xs"
+              >
+                SET
+              </button>
+              <div 
+                className="text-[hsl(var(--dharma-amber))] cursor-pointer border border-[hsl(var(--dharma-amber))] px-2 py-1 text-xs"
+                onClick={() => {
+                  setIsDevMode(false);
+                  playSound('beep');
+                }}
+              >
+                ×
+              </div>
+            </form>
+            <div className="mt-2 text-[hsl(var(--dharma-green))] text-xs">
+              <div className="flex justify-between">
+                <button 
+                  onClick={() => handleDevTimeSubmit({ preventDefault: () => {} } as any)}
+                  className="border border-[hsl(var(--dharma-green))] px-1 hover:bg-[hsla(var(--dharma-green),0.1)]"
+                  onMouseDown={() => setDevTimeInput("10")}
+                >
+                  10s
+                </button>
+                <button 
+                  onClick={() => handleDevTimeSubmit({ preventDefault: () => {} } as any)}
+                  className="border border-[hsl(var(--dharma-green))] px-1 hover:bg-[hsla(var(--dharma-green),0.1)]"
+                  onMouseDown={() => setDevTimeInput("30")}
+                >
+                  30s
+                </button>
+                <button 
+                  onClick={() => handleDevTimeSubmit({ preventDefault: () => {} } as any)}
+                  className="border border-[hsl(var(--dharma-green))] px-1 hover:bg-[hsla(var(--dharma-green),0.1)]"
+                  onMouseDown={() => setDevTimeInput("60")}
+                >
+                  60s
+                </button>
+                <button 
+                  onClick={() => handleDevTimeSubmit({ preventDefault: () => {} } as any)}
+                  className="border border-[hsl(var(--dharma-amber))] px-1 hover:bg-[hsla(var(--dharma-amber),0.1)] text-[hsl(var(--dharma-amber))]"
+                  onMouseDown={() => setDevTimeInput("0")}
+                >
+                  0s (FAILURE)
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

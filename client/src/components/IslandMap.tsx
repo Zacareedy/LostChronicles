@@ -67,7 +67,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
   const [mapZoom, setMapZoom] = useState(1);
   const MIN_ZOOM = 1; // Prevent zooming out
-  const MAX_ZOOM = 1.5;
+  const MAX_ZOOM = 2.5; // Increased max zoom per user request
 
   // Get marker style based on station type
   const getMarkerStyle = (locationType: string) => {
