@@ -36,6 +36,15 @@ export const audioLogs = pgTable("audio_logs", {
   unlockedBy: integer("unlocked_by").references(() => users.id),
 });
 
+export const audioFiles = pgTable("audio_files", {
+  id: serial("id").primaryKey(),
+  logId: text("log_id").notNull(), // Corresponds to the key in AUDIO_LOGS constants
+  fileData: text("file_data").notNull(), // Base64 encoded file data
+  mimeType: text("mime_type").notNull(), // File mime type (audio/mp3, video/mp4, etc.)
+  fileName: text("file_name").notNull(),
+  uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
+});
+
 export const incidentReports = pgTable("incident_reports", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
@@ -77,6 +86,13 @@ export const insertAudioLogSchema = createInsertSchema(audioLogs).pick({
   description: true,
 });
 
+export const insertAudioFileSchema = createInsertSchema(audioFiles).pick({
+  logId: true,
+  fileData: true,
+  mimeType: true,
+  fileName: true,
+});
+
 export const insertIncidentReportSchema = createInsertSchema(incidentReports).pick({
   title: true,
   content: true,
@@ -102,6 +118,9 @@ export type InsertTerminalLog = z.infer<typeof insertTerminalLogSchema>;
 
 export type AudioLog = typeof audioLogs.$inferSelect;
 export type InsertAudioLog = z.infer<typeof insertAudioLogSchema>;
+
+export type AudioFile = typeof audioFiles.$inferSelect;
+export type InsertAudioFile = z.infer<typeof insertAudioFileSchema>;
 
 export type IncidentReport = typeof incidentReports.$inferSelect;
 export type InsertIncidentReport = z.infer<typeof insertIncidentReportSchema>;

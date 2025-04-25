@@ -95,22 +95,53 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
   // Load state from localStorage on mount and when localStorage changes
   useEffect(() => {
     try {
-      // Check for devmode unlocks
+      // Check for dev mode unlocked stations
       if (localStorage.getItem('dharma_all_stations') === 'true') {
         setDiscoveredStations(['swan', 'pearl', 'flame', 'arrow', 'staff', 'orchid', 'hydra', 'lookout']);
       }
       
-      if (localStorage.getItem('dharma_pearl_access') === 'true') {
-        setUnlockedAudioLogs(prev => [...Array.from(new Set([...prev, 'pearlTransmission']))]);
+      // Check for unlocked audio logs from localStorage
+      const unlockedLogsJson = localStorage.getItem('dharma_unlocked_audio_logs');
+      if (unlockedLogsJson) {
+        try {
+          const logIds = JSON.parse(unlockedLogsJson);
+          if (Array.isArray(logIds)) {
+            setUnlockedAudioLogs(logIds);
+          }
+        } catch (e) {
+          console.error('Error parsing audio logs:', e);
+        }
+      } else {
+        // Fall back to legacy flags
+        if (localStorage.getItem('dharma_pearl_access') === 'true') {
+          setUnlockedAudioLogs(prev => [...Array.from(new Set([...prev, 'pearlTransmission']))]);
+        }
+        
+        if (localStorage.getItem('dharma_surveillance_active') === 'true') {
+          setUnlockedAudioLogs(prev => [...Array.from(new Set([...prev, 'distressSignal', 'radioTransmission']))]);
+        }
       }
       
-      if (localStorage.getItem('dharma_incident_unlocked') === 'true') {
-        setUnlockedReports(prev => [...Array.from(new Set([...prev, 0]))]);
-      }
-      
-      if (localStorage.getItem('dharma_surveillance_active') === 'true') {
-        setUnlockedReports(prev => [...Array.from(new Set([...prev, 2]))]);
-        setUnlockedAudioLogs(prev => [...Array.from(new Set([...prev, 'distressSignal', 'radioTransmission']))]);
+      // Check for unlocked reports from localStorage
+      const unlockedReportsJson = localStorage.getItem('dharma_unlocked_reports');
+      if (unlockedReportsJson) {
+        try {
+          const reportIds = JSON.parse(unlockedReportsJson);
+          if (Array.isArray(reportIds)) {
+            setUnlockedReports(reportIds);
+          }
+        } catch (e) {
+          console.error('Error parsing reports:', e);
+        }
+      } else {
+        // Fall back to legacy flags
+        if (localStorage.getItem('dharma_incident_unlocked') === 'true') {
+          setUnlockedReports(prev => [...Array.from(new Set([...prev, 0]))]);
+        }
+        
+        if (localStorage.getItem('dharma_surveillance_active') === 'true') {
+          setUnlockedReports(prev => [...Array.from(new Set([...prev, 2]))]);
+        }
       }
 
       const savedLore = localStorage.getItem('dharma_lore_state');

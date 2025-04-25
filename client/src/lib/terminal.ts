@@ -434,14 +434,32 @@ const hiddenCommands: Record<string, Function> = {
     
     // Store all unlock flags in localStorage
     try {
+      // Unlock all special access and features
       localStorage.setItem('dharma_error_allowed', 'true');
       localStorage.setItem('dharma_pearl_access', 'true');
       localStorage.setItem('dharma_incident_unlocked', 'true');
       localStorage.setItem('dharma_surveillance_active', 'true');
-      localStorage.setItem('dharma_all_stations', 'true');
       localStorage.setItem('dharma_lockdown', 'active');
-      // Also set developer mode for countdown
+      
+      // Unlock all stations
+      localStorage.setItem('dharma_all_stations', 'true');
+      
+      // Unlock all audio logs
+      const allAudioLogIds = ['orientationVideo', 'distressSignal', 'radioTransmission', 
+                             'blackRock', 'pearlTransmission', 'unknownSource'];
+      localStorage.setItem('dharma_unlocked_audio_logs', JSON.stringify(allAudioLogIds));
+      
+      // Unlock all incident reports
+      const allReportIds = [0, 1, 2, 3, 4, 5]; // All available report IDs
+      localStorage.setItem('dharma_unlocked_reports', JSON.stringify(allReportIds));
+      
+      // Set developer mode flag
       localStorage.setItem('dharma_devmode_active', 'true');
+      
+      // Refresh the page to apply all changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
     } catch (e) {
       // Ignore localStorage errors
     }

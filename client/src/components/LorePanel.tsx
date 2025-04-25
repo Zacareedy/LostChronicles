@@ -449,22 +449,11 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
           </div>
         </div>
         
-        {/* Developer Instructions (only visible in dev mode) */}
+        {/* Developer mode indicator - no instructions visible to users */}
         {isDevMode && (
           <div className="border border-[hsl(var(--dharma-amber))] p-2 bg-[hsla(var(--dharma-black),0.5)] mt-2">
-            <div className="text-xs text-[hsl(var(--dharma-amber))] mb-2 uppercase font-bold">Developer Instructions</div>
-            <div className="text-[10px] space-y-1">
-              <p>To upload custom audio/video files:</p>
-              <ol className="list-decimal ml-4 space-y-1">
-                <li>Select any signal in the Signal Analysis section</li>
-                <li>Drag and drop an audio/video file onto the upload area or click to browse</li>
-                <li>Supported formats: MP3, WAV, MP4, WebM</li>
-                <li>Files are stored locally in your browser</li>
-                <li>To replace a file, simply upload a new one to the same signal</li>
-              </ol>
-              <p className="mt-2 border-t border-[hsla(var(--dharma-amber),0.3)] pt-1">
-                Dev mode is activated by typing "devmode" in the main terminal
-              </p>
+            <div className="text-xs text-[hsl(var(--dharma-amber))] text-center font-bold">
+              ADMIN MODE ACTIVE
             </div>
           </div>
         )}
