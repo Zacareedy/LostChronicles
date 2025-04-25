@@ -13,7 +13,7 @@ export const STATIONS = {
     code: 'Station 3',
     description: 'Electromagnetic research facility',
     coordinates: '4° 8′ 15″ N, 16° 23′ 42″ W',
-    position: { top: '55%', left: '45%' }  // As marked on reference map
+    position: { top: '75.48%', left: '32.23%' }  // Exact coordinates from map: 1934,3691
   },
   pearl: {
     name: 'The Pearl',
