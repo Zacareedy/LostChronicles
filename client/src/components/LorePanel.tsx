@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Terminal, Monitor, Radio, FileText, File } from 'lucide-react';
 import { useLore } from '@/contexts/LoreContext';
@@ -145,8 +144,36 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
       </div>
 
       <div className="flex flex-row h-full">
+        {/* Navigation Menu (only shown when multiple sections are allowed) */}
+        {!props.showOnly && (
+          <div className="w-28 border-r border-[hsla(var(--dharma-gray),0.2)] bg-[hsla(var(--dharma-gray),0.05)]">
+            <MenuItem 
+              label="STATIONS" 
+              isActive={activeSection === 'stations'} 
+              onClick={() => setActiveSection('stations')}
+            />
+            <MenuItem 
+              label="FILES" 
+              isActive={activeSection === 'files'} 
+              onClick={() => setActiveSection('files')}
+            />
+            <MenuItem 
+              label="SIGNALS" 
+              isActive={activeSection === 'signals'} 
+              onClick={() => setActiveSection('signals')}
+            />
+            <div className="dharma-terminal-info text-xs font-mono mt-4 px-2">
+              <div className="opacity-70 text-center mb-2">STATUS</div>
+              <div className="dharma-code text-[9px] p-1 text-center">
+                SYSTEM ACTIVE
+              </div>
+              <div className="dharma-panel-indicator mt-4 mx-auto"></div>
+            </div>
+          </div>
+        )}
+        
         {/* Content area */}
-        <div className="w-full h-full">
+        <div className={`${!props.showOnly ? 'w-[calc(100%-7rem)]' : 'w-full'} h-full`}>
           {/* DHARMA Stations Section */}
           {activeSection === 'stations' && (
             <div className="dharma-panel-content text-[hsl(var(--dharma-green))]">

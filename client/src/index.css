@@ -339,6 +339,42 @@
   @apply border border-[hsla(var(--dharma-gray),0.3)] rounded p-3 hover:bg-[hsla(var(--dharma-gray),0.1)] transition-colors;
 }
 
+.dharma-panel-indicator {
+  width: 20px;
+  height: 20px;
+  background-color: hsla(var(--dharma-green), 0.2);
+  border: 1px solid hsla(var(--dharma-green), 0.4);
+  border-radius: 50%;
+  position: relative;
+}
+
+.dharma-panel-indicator::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  width: 8px;
+  height: 8px;
+  background-color: hsl(var(--dharma-green));
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 .dharma-badge {
   @apply text-xs py-0.5 px-1.5 rounded;
 }
