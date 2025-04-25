@@ -40,7 +40,8 @@ const commands: Record<string, Function> = {
       if (devModeActive) {
         basicCommands.push('');
         basicCommands.push('> DEVELOPER COMMANDS:');
-        basicCommands.push('> devmode - Toggle developer mode');
+        basicCommands.push('> devmode - Activate developer mode');
+        basicCommands.push('> devmode-exit - Exit developer mode and restore previous state');
         basicCommands.push('> setcountdown <minutes> <seconds> - Set countdown timer');
         basicCommands.push('> setcountdown <seconds> - Set countdown timer in seconds');
         basicCommands.push('> resetall - Reset all app data and return to initial state');
@@ -434,6 +435,38 @@ const hiddenCommands: Record<string, Function> = {
     
     // Store all unlock flags in localStorage
     try {
+      // First, save the current state so we can restore it later
+      const saveCurrentState = () => {
+        // Store the original values
+        const originalState: Record<string, string | null> = {};
+        
+        // List of all flags we're about to modify
+        const flagsToSave = [
+          'dharma_error_allowed',
+          'dharma_pearl_access',
+          'dharma_incident_unlocked',
+          'dharma_surveillance_active',
+          'dharma_lockdown',
+          'dharma_all_stations',
+          'dharma_unlocked_audio_logs',
+          'dharma_unlocked_reports'
+        ];
+        
+        // Save the current values
+        flagsToSave.forEach(flag => {
+          originalState[flag] = localStorage.getItem(flag);
+        });
+        
+        // Also save the main lore state
+        originalState['dharma_lore_state'] = localStorage.getItem('dharma_lore_state');
+        
+        // Store this original state so we can restore it later
+        localStorage.setItem('dharma_pre_devmode_state', JSON.stringify(originalState));
+      };
+      
+      // Save current state before enabling dev mode
+      saveCurrentState();
+      
       // Unlock all special access and features
       localStorage.setItem('dharma_error_allowed', 'true');
       localStorage.setItem('dharma_pearl_access', 'true');
@@ -477,8 +510,71 @@ const hiddenCommands: Record<string, Function> = {
       '> All incident reports declassified',
       '> System protocols bypassed',
       '> Countdown timer control enabled',
-      '> Use "setcountdown <minutes> <seconds>" to adjust timer'
+      '> Use "setcountdown <minutes> <seconds>" to adjust timer',
+      '> Use "devmode-exit" to restore the previous application state'
     ];
+  },
+  
+  'devmode-exit': (args: string) => {
+    // Only available in dev mode
+    try {
+      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+      if (!devModeActive) {
+        return [
+          '> ERROR: Not in developer mode',
+          '> Developer mode must be active to exit it'
+        ];
+      }
+      
+      // Retrieve the saved pre-devmode state
+      const savedStateJson = localStorage.getItem('dharma_pre_devmode_state');
+      if (!savedStateJson) {
+        return [
+          '> ERROR: No previous state found',
+          '> Unable to restore previous configuration'
+        ];
+      }
+      
+      // Parse the saved state
+      const savedState = JSON.parse(savedStateJson);
+      
+      // Remove the dev mode flag first
+      localStorage.removeItem('dharma_devmode_active');
+      
+      // Restore the saved values for each flag
+      Object.entries(savedState).forEach(([key, value]) => {
+        if (value === null) {
+          localStorage.removeItem(key);
+        } else {
+          localStorage.setItem(key, value as string);
+        }
+      });
+      
+      // Reset access level
+      accessLevel = 1;
+      
+      // Refresh the page to apply the restored state
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      
+      return [
+        '> DEVELOPER MODE DEACTIVATED',
+        '> Restoring previous station access',
+        '> Restoring previous security clearance',
+        '> Restoring previous audio log access',
+        '> Returning to standard operational procedures',
+        '> System refresh in progress...'
+      ];
+    } catch (e) {
+      // Handle any errors
+      console.error('Error exiting developer mode:', e);
+      return [
+        '> ERROR: Failed to exit developer mode',
+        '> System state could not be restored',
+        '> Manual intervention required'
+      ];
+    }
   },
   
   'setcountdown': (args: string) => {
