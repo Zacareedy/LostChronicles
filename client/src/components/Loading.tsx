@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LOADING_MESSAGES } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
-import dharmaLogoSvg from '@/assets/dharma-logo-custom.svg';
+import dharmaLogoSvg from '@/assets/dharma-logo-original.svg';
 
 interface LoadingProps {
   onLoadComplete: () => void;
