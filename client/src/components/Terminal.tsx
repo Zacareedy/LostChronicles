@@ -145,10 +145,18 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       setTerminalStatus('SCANNING...');
       setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
     } else if (userInput.toLowerCase() === 'override system-error') {
-      // Handle system error navigation
-      setTimeout(() => {
-        setLocation('/system-error');
-      }, 2000);
+      if (accessLevel >= 2) {
+        // Reveal puzzle and navigate to system error
+        onRevealPuzzle();
+        setTimeout(() => {
+          setLocation('/system-error');
+        }, 2000);
+      } else {
+        setTerminalOutput(prev => [
+          ...prev,
+          { text: '> ACCESS DENIED: Requires security level 2', type: 'output' }
+        ]);
+      }
     } else if (userInput.toLowerCase().includes('login')) {
       // Check different login patterns
       if (userInput.includes('4815162342')) {
