@@ -4,8 +4,6 @@ import Logo from '@/components/Logo';
 import Loading from '@/components/Loading';
 import Terminal from '@/components/Terminal';
 import IslandMap from '@/components/IslandMap';
-import AudioLogs from '@/components/AudioLogs';
-import IncidentReports from '@/components/IncidentReports';
 import LorePanel from '@/components/LorePanel';
 import Countdown from '@/components/Countdown';
 import HiddenPuzzle from '@/components/HiddenPuzzle';
@@ -17,7 +15,7 @@ const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPuzzleVisible, setIsPuzzleVisible] = useState(false);
   const [isCountdownReset, setIsCountdownReset] = useState(false);
-  
+
   // Get all state and actions from the LoreContext
   const { 
     discoveredStations, 
@@ -77,7 +75,7 @@ const Home: React.FC = () => {
   const handleCorrectSequence = () => {
     // Reset countdown when correct sequence is entered
     setIsCountdownReset(true);
-    
+
     // Trigger lore event for sequence completion
     triggerLoreEvent('correct_sequence_entered');
   };
@@ -91,7 +89,7 @@ const Home: React.FC = () => {
   const handlePuzzleComplete = () => {
     // Trigger lore event for puzzle completion
     triggerLoreEvent('puzzle_complete');
-    
+
     // Close the puzzle modal
     setIsPuzzleVisible(false);
   };
@@ -105,7 +103,7 @@ const Home: React.FC = () => {
       {/* CRT Overlay effects */}
       <div className="absolute inset-0 crt pointer-events-none z-50"></div>
       <div className="scanline absolute inset-0 pointer-events-none z-40"></div>
-      
+
       {/* Header with Dharma Logo */}
       <header className="pt-6 pb-2 px-6 flex justify-between items-center border-b border-[hsla(var(--dharma-gray),0.3)]">
         <div className="flex items-center">
@@ -130,20 +128,10 @@ const Home: React.FC = () => {
           onCorrectSequence={handleCorrectSequence}
           onCommand={handleTerminalCommand}
         />
-        
+
         <IslandMap 
           discoveredStations={discoveredStations} 
           onStationClick={handleRevealStation} 
-        />
-        
-        {/* Audio Logs Panel */}
-        <AudioLogs 
-          unlockedLogs={unlockedAudioLogs} 
-          onLogPlay={handleLogPlay} 
-        />
-        
-        <IncidentReports 
-          unlockedReports={unlockedReports} 
         />
 
         {/* Locations Panel */}
@@ -152,14 +140,14 @@ const Home: React.FC = () => {
           defaultSection="stations" 
           showOnly="stations"
         />
-        
+
         {/* Databank Panel */}
         <LorePanel 
           className="lg:col-span-3 mt-4" 
           defaultSection="files" 
           showOnly="files" 
         />
-        
+
         {/* Comms Panel */}
         <LorePanel 
           className="lg:col-span-3 mt-4" 
@@ -167,7 +155,7 @@ const Home: React.FC = () => {
           showOnly="signals"
         />
       </main>
-      
+
       {/* Footer with Station Info */}
       <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-[hsl(var(--dharma-gray))] text-xs">
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center relative">
@@ -178,12 +166,12 @@ const Home: React.FC = () => {
             {systemStatus}
           </div>
           <div>SECURITY CLEARANCE LEVEL 4 · USER ID: [REDACTED]</div>
-          
+
           {/* Hidden Dharma Symbol for secret interaction */}
           <FooterEasterEgg onUnlockLog={() => unlockAudioLog('unknownSource')} />
         </div>
       </footer>
-      
+
       {/* Hidden Puzzle Modal */}
       <HiddenPuzzle 
         isVisible={isPuzzleVisible} 
@@ -202,18 +190,18 @@ interface FooterEasterEggProps {
 const FooterEasterEgg: React.FC<FooterEasterEggProps> = ({ onUnlockLog }) => {
   const [clicks, setClicks] = useState(0);
   const { triggerSystemStatus } = useLore();
-  
+
   // Reset clicks after a period of inactivity
   useEffect(() => {
     if (clicks > 0) {
       const timeout = setTimeout(() => {
         setClicks(0);
       }, 3000);
-      
+
       return () => clearTimeout(timeout);
     }
   }, [clicks]);
-  
+
   // Check for the correct sequence: 4-8-15-16-23-42 of clicks
   useEffect(() => {
     // Specifically looking for the 6th click (index 5)
@@ -222,12 +210,12 @@ const FooterEasterEgg: React.FC<FooterEasterEggProps> = ({ onUnlockLog }) => {
       triggerSystemStatus('UNKNOWN TRANSMISSION DETECTED', 3000);
     }
   }, [clicks, onUnlockLog, triggerSystemStatus]);
-  
+
   const handleClick = () => {
     playSound('beep', 'short');
     setClicks(prev => Math.min(prev + 1, 6));
   };
-  
+
   return (
     <div 
       className="absolute bottom-0 right-0 opacity-10 hover:opacity-30 cursor-pointer transition-opacity" 
