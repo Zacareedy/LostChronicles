@@ -9,6 +9,8 @@ import TapeSquare from "./TapeSquare"; // Added import
 
 interface LorePanelProps {
   className?: string;
+  defaultSection?: string;
+  showOnly?: 'stations' | 'files' | 'signals';
 }
 
 // Function to split station description and partially redact it
@@ -80,7 +82,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
     storylineFlags
   } = useLore();
 
-  const [activeSection, setActiveSection] = useState<string>('stations');
+  const [activeSection, setActiveSection] = useState<string>(props.defaultSection || 'stations');
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
   const [commandInput, setCommandInput] = useState<string>('');
@@ -146,27 +148,8 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
       </div>
 
       <div className="flex flex-row h-full">
-        {/* Left side - Old-school menu */}
-        <div className="w-1/4 border-r border-[hsla(var(--dharma-gray),0.3)]">
-          <MenuItem 
-            label="LOCATIONS" 
-            isActive={activeSection === 'stations'} 
-            onClick={() => setActiveSection('stations')} 
-          />
-          <MenuItem 
-            label="DATABANK" 
-            isActive={activeSection === 'files'} 
-            onClick={() => setActiveSection('files')} 
-          />
-          <MenuItem 
-            label="COMMS" 
-            isActive={activeSection === 'signals'} 
-            onClick={() => setActiveSection('signals')} 
-          />
-        </div>
-
-        {/* Right side - Content area */}
-        <div className="w-3/4 h-full">
+        {/* Content area */}
+        <div className="w-full h-full">
           {/* DHARMA Stations Section */}
           {activeSection === 'stations' && (
             <div className="dharma-terminal-content p-3">

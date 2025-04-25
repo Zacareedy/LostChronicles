@@ -136,9 +136,6 @@ const Home: React.FC = () => {
           onStationClick={handleRevealStation} 
         />
         
-        {/* Archives Panel */}
-        <LorePanel className="lg:col-span-3 mt-4" />
-        
         {/* Audio Logs Panel */}
         <AudioLogs 
           unlockedLogs={unlockedAudioLogs} 
@@ -147,6 +144,27 @@ const Home: React.FC = () => {
         
         <IncidentReports 
           unlockedReports={unlockedReports} 
+        />
+
+        {/* Locations Panel */}
+        <LorePanel 
+          className="lg:col-span-3 mt-4" 
+          defaultSection="stations" 
+          showOnly="stations"
+        />
+        
+        {/* Databank Panel */}
+        <LorePanel 
+          className="lg:col-span-3 mt-4" 
+          defaultSection="files" 
+          showOnly="files" 
+        />
+        
+        {/* Comms Panel */}
+        <LorePanel 
+          className="lg:col-span-3 mt-4" 
+          defaultSection="signals" 
+          showOnly="signals"
         />
       </main>
       
