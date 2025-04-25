@@ -245,7 +245,7 @@ const FileUploadArea = ({ logId, onUpload }: { logId: string, onUpload: (id: str
   return (
     <div 
       className={`
-        mt-2 p-2 border border-dashed 
+        mt-2 p-2 border border-dashed relative
         ${isDragging ? 'border-[hsl(var(--dharma-green))]' : 'border-[hsla(var(--dharma-gray),0.3)]'} 
         ${isDragging ? 'bg-[hsla(var(--dharma-green),0.05)]' : 'bg-[hsla(var(--dharma-gray),0.05)]'}
         text-center text-xs
@@ -254,9 +254,45 @@ const FileUploadArea = ({ logId, onUpload }: { logId: string, onUpload: (id: str
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {fileName ? (
-        <div className="text-[hsl(var(--dharma-green))]">
-          File loaded: {fileName}
+      {!isDeveloperMode && (
+        <div className="absolute inset-0 flex items-center justify-center bg-[rgba(0,0,0,0.8)] z-10">
+          <div className="text-[hsl(var(--dharma-amber))] text-xs">DEVELOPER MODE REQUIRED</div>
+        </div>
+      )}
+      
+      {isUploading ? (
+        <div className="py-1">
+          <div className="mb-1 text-[hsl(var(--dharma-amber))]">UPLOADING: {fileName}</div>
+          <div className="h-1 w-full bg-[hsla(var(--dharma-gray),0.2)]">
+            <div 
+              className="h-full bg-[hsl(var(--dharma-green))]" 
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+        </div>
+      ) : uploadStatus === 'success' ? (
+        <div className="py-1">
+          <div className="text-[hsl(var(--dharma-green))]">
+            FILE UPLOADED: {fileName}
+          </div>
+          <div className="text-[9px] text-[hsla(var(--dharma-gray),0.7)] mt-1">
+            File will be available for all users
+          </div>
+        </div>
+      ) : uploadStatus === 'error' ? (
+        <div className="py-1">
+          <div className="text-[hsl(var(--dharma-red))]">
+            ERROR UPLOADING FILE
+          </div>
+          <div className="text-[9px] text-[hsla(var(--dharma-gray),0.7)] mt-1">
+            Try again or check developer console
+          </div>
+          <button 
+            onClick={() => setUploadStatus('idle')}
+            className="text-[9px] mt-1 text-[hsl(var(--dharma-green))] underline"
+          >
+            Try Again
+          </button>
         </div>
       ) : (
         <>
@@ -269,6 +305,7 @@ const FileUploadArea = ({ logId, onUpload }: { logId: string, onUpload: (id: str
             accept="audio/*,video/*" 
             onChange={handleFileChange}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+            disabled={!isDeveloperMode}
           />
         </>
       )}
@@ -548,17 +585,57 @@ const AudioPlayback = ({ logId }: { logId: string }) => {
   
   // Check if we have a user-uploaded file for this log
   const [audioSrc, setAudioSrc] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [hasServerFile, setHasServerFile] = useState(false);
   
   useEffect(() => {
-    // Check localStorage for custom audio file
-    const storedFiles = JSON.parse(localStorage.getItem('dharmaUploadedFiles') || '{}');
-    if (storedFiles[logId]) {
-      setAudioSrc(storedFiles[logId]);
-    } else {
-      // Use the default audio source from constants
-      const defaultSource = AUDIO_LOGS[logId as keyof typeof AUDIO_LOGS]?.src;
-      setAudioSrc(defaultSource || null);
-    }
+    // First check if the file exists on the server
+    const checkServerFile = async () => {
+      try {
+        setIsLoading(true);
+        // We don't want to GET the actual file data yet - just check if it exists
+        const response = await fetch(`/api/files/audio?check=${logId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          const fileExists = data.files && data.files.some((file: any) => file.logId === logId);
+          
+          if (fileExists) {
+            // If the file exists, set the audio source to the API endpoint
+            setAudioSrc(`/api/files/audio/${logId}`);
+            setHasServerFile(true);
+            return; // No need to check localStorage
+          }
+        }
+        
+        // If no file on server, check localStorage as fallback
+        const storedFiles = JSON.parse(localStorage.getItem('dharmaUploadedFiles') || '{}');
+        if (storedFiles[logId]) {
+          setAudioSrc(storedFiles[logId]);
+          return;
+        }
+        
+        // If no localStorage file either, use the default audio source from constants
+        const defaultSource = AUDIO_LOGS[logId as keyof typeof AUDIO_LOGS]?.src;
+        setAudioSrc(defaultSource || null);
+        
+      } catch (error) {
+        console.error("Error checking server file:", error);
+        
+        // Fallback to localStorage and constants
+        const storedFiles = JSON.parse(localStorage.getItem('dharmaUploadedFiles') || '{}');
+        if (storedFiles[logId]) {
+          setAudioSrc(storedFiles[logId]);
+        } else {
+          const defaultSource = AUDIO_LOGS[logId as keyof typeof AUDIO_LOGS]?.src;
+          setAudioSrc(defaultSource || null);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    checkServerFile();
   }, [logId]);
   
   const formatTime = (seconds: number) => {
@@ -598,13 +675,27 @@ const AudioPlayback = ({ logId }: { logId: string }) => {
   
   return (
     <div className="mt-2">
-      <div className="text-xs mb-2 font-mono">PLAYBACK CONTROL:</div>
+      <div className="text-xs mb-2 font-mono">
+        <span>PLAYBACK CONTROL:</span>
+        {isLoading && (
+          <span className="ml-2 text-[hsl(var(--dharma-amber))]">LOADING...</span>
+        )}
+        {hasServerFile && (
+          <span className="ml-2 text-[9px] text-[hsl(var(--dharma-green))]">[SERVER]</span>
+        )}
+      </div>
       
       <div className="flex items-center">
         <button 
           onClick={handlePlayPause}
-          className="px-3 py-1 mr-2 bg-[hsla(var(--dharma-gray),0.1)] border border-[hsla(var(--dharma-gray),0.3)]
-                    text-[hsl(var(--dharma-green))] hover:bg-[hsla(var(--dharma-green),0.1)]"
+          disabled={isLoading || !audioSrc}
+          className={`
+            px-3 py-1 mr-2 border border-[hsla(var(--dharma-gray),0.3)]
+            ${isLoading || !audioSrc 
+              ? 'bg-[hsla(var(--dharma-gray),0.05)] text-[hsla(var(--dharma-gray),0.3)]' 
+              : 'bg-[hsla(var(--dharma-gray),0.1)] text-[hsl(var(--dharma-green))] hover:bg-[hsla(var(--dharma-green),0.1)]'
+            }
+          `}
         >
           {isPlaying ? '❚❚' : '►'}
         </button>
@@ -615,6 +706,7 @@ const AudioPlayback = ({ logId }: { logId: string }) => {
           max="100" 
           value={progress} 
           onChange={handleSeek}
+          disabled={isLoading || !audioSrc}
           className="flex-1 h-1 dharma-slider accent-[hsl(var(--dharma-green))]" 
         />
         
@@ -631,6 +723,18 @@ const AudioPlayback = ({ logId }: { logId: string }) => {
           onEnded={() => setIsPlaying(false)}
           onDurationChange={handleTimeUpdate}
         />
+      )}
+      
+      {!audioSrc && !isLoading && (
+        <div className="text-[10px] text-[hsl(var(--dharma-amber))] mt-2">
+          NO AUDIO DATA AVAILABLE
+        </div>
+      )}
+      
+      {hasServerFile && (
+        <div className="text-[9px] text-[hsla(var(--dharma-green),0.7)] mt-1">
+          Audio data available across all stations
+        </div>
       )}
     </div>
   );

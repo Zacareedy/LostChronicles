@@ -377,8 +377,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API route to get all audio files (metadata only, no file data)
   app.get('/api/files/audio', async (req, res) => {
     try {
+      const checkForLogId = req.query.check as string | undefined;
+      
       // Get all audio files
       const files = await storage.getAllAudioFiles();
+      
+      // If checking for a specific log ID
+      if (checkForLogId) {
+        const fileExists = files.some(file => file.logId === checkForLogId);
+        return res.json({
+          exists: fileExists,
+          files: files.map(file => ({
+            id: file.id,
+            logId: file.logId,
+            fileName: file.fileName,
+            mimeType: file.mimeType,
+            uploadedAt: file.uploadedAt
+          }))
+        });
+      }
       
       // Return only metadata, not the actual file data to reduce response size
       const filesMeta = files.map(file => ({
