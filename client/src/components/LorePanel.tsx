@@ -246,42 +246,38 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
     playSound('success');
   };
 
-  // Update time display every minute
+  // Update time display every minute and check for dev mode
   useEffect(() => {
+    // Update the clock display every minute
     const timer = setInterval(() => {
       setCurrentTime(getCurrentTime());
     }, 60000);
-
-    return () => clearInterval(timer);
-  }, []);
-
-  // Check keyboard combination for dev mode
-  useEffect(() => {
-    const keys: { [key: string]: boolean } = {};
-    const devSequence = ['Control', 'Alt', '4', '8', '1', '5', '1', '6', '2', '3', '4', '2'];
     
-    const checkDevSequence = () => {
-      return devSequence.every(key => keys[key]);
+    // Check for dev mode from localStorage (set by terminal command)
+    const checkDevMode = () => {
+      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+      setIsDevMode(devModeActive);
     };
     
-    const handleKeyDown = (e: KeyboardEvent) => {
-      keys[e.key] = true;
-      if (checkDevSequence()) {
-        setIsDevMode(true);
-        playSound('success');
+    // Check initially
+    checkDevMode();
+    
+    // Set up a listener for localStorage changes
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'dharma_devmode_active') {
+        checkDevMode();
       }
     };
     
-    const handleKeyUp = (e: KeyboardEvent) => {
-      keys[e.key] = false;
-    };
+    window.addEventListener('storage', handleStorageChange);
     
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    // Also poll regularly, in case the terminal updates localStorage in same window
+    const devModeChecker = setInterval(checkDevMode, 2000);
     
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      clearInterval(timer);
+      clearInterval(devModeChecker);
+      window.removeEventListener('storage', handleStorageChange);
     };
   }, []);
 
@@ -467,7 +463,7 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
                 <li>To replace a file, simply upload a new one to the same signal</li>
               </ol>
               <p className="mt-2 border-t border-[hsla(var(--dharma-amber),0.3)] pt-1">
-                Dev mode activated by keyboard sequence: Ctrl+Alt+4+8+1+5+1+6+2+3+4+2
+                Dev mode is activated by typing "devmode" in the main terminal
               </p>
             </div>
           </div>
