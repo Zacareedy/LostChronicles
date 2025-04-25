@@ -132,14 +132,14 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className={`dharma-terminal crt-screen rounded-md overflow-hidden ${className} relative`}
+      className={`dharma-panel crt-screen ${className} relative`}
     >
       {/* CRT Scan effect */}
       <div className="scan-line"></div>
 
-      <div className="dharma-terminal-header p-2 flex justify-between items-center">
+      <div className="dharma-panel-header bg-[hsla(var(--dharma-green),0.1)]">
         <div className="flex items-center gap-3">
-          <span className="text-xs opacity-80 font-mono">{currentTime}</span>
+          <span className="text-xs text-[hsl(var(--dharma-green))] font-mono">{currentTime}</span>
           <div className="dharma-code text-xs">SL-3</div>
         </div>
       </div>
@@ -149,7 +149,7 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
         <div className="w-full h-full">
           {/* DHARMA Stations Section */}
           {activeSection === 'stations' && (
-            <div className="dharma-terminal-content p-3">
+            <div className="dharma-panel-content text-[hsl(var(--dharma-green))]">
               {discoveredStationData.length > 0 ? (
                 <>
                   <div className="mb-3 border-b border-[hsla(var(--dharma-gray),0.3)] pb-2">
@@ -216,7 +216,7 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
 
           {/* Declassified Files Section */}
           {activeSection === 'files' && (
-            <div className="dharma-terminal-content p-3">
+            <div className="dharma-panel-content text-[hsl(var(--dharma-green))]">
               {unlockedReportData.length > 0 ? (
                 <>
                   <div className="mb-3 border-b border-[hsla(var(--dharma-gray),0.3)] pb-2">
@@ -282,7 +282,7 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
 
           {/* Signal Intercepts Section */}
           {activeSection === 'signals' && (
-            <div className="dharma-terminal-content p-3">
+            <div className="dharma-panel-content text-[hsl(var(--dharma-green))]">
               {unlockedAudioLogData.length > 0 ? (
                 <>
                   <div className="mb-3 border-b border-[hsla(var(--dharma-gray),0.3)] pb-2">
