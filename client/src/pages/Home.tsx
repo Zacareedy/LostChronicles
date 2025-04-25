@@ -160,7 +160,7 @@ const Home: React.FC = () => {
         <Countdown 
           onCountdownFinish={handleCountdownFinish} 
           isReset={isCountdownReset} 
-          setIsReset={setIsCountdownReset} 
+          setIsReset={setIsCountdownReset}
         />
       </header>
 
@@ -171,6 +171,7 @@ const Home: React.FC = () => {
           onRevealStation={handleRevealStation}
           onCorrectSequence={handleCorrectSequence}
           onCommand={handleTerminalCommand}
+          isSystemFailure={isSystemFailure}
         />
 
         <IslandMap 
