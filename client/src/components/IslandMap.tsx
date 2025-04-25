@@ -66,7 +66,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   const [mapOffset, setMapOffset] = useState({ x: 0, y: 0 });
   const [startDragPos, setStartDragPos] = useState({ x: 0, y: 0 });
   const [mapZoom, setMapZoom] = useState(1);
-  const MIN_ZOOM = 0.8;
+  const MIN_ZOOM = 1; // Prevent zooming out
   const MAX_ZOOM = 1.5;
   
   // Handle map dragging
@@ -126,7 +126,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       
       <div className="p-4 relative h-80">
         <div 
-          className="absolute inset-0 m-2 rounded overflow-hidden border border-[hsla(var(--dharma-gray),0.3)]"
+          className="absolute inset-0 m-2 rounded overflow-hidden border border-[hsla(var(--dharma-gray),0.3)] bg-black"
           ref={mapContainerRef}
           onMouseDown={handleMapMouseDown}
           onMouseMove={handleMapMouseMove}
