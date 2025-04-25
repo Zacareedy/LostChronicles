@@ -205,19 +205,6 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
                       </Collapsible>
                     ))}
                   </div>
-
-                  {/* Terminal Command Input */}
-                  <form onSubmit={handleCommandSubmit} className="terminal-command-line">
-                    <span className="terminal-prompt">$&gt;</span>
-                    <input
-                      type="text"
-                      value={commandInput}
-                      onChange={(e) => setCommandInput(e.target.value)}
-                      className="bg-transparent border-none outline-none text-[hsl(var(--dharma-green))] font-mono flex-1"
-                      placeholder="enter command..."
-                    />
-                    {!commandInput && <span className="terminal-cursor"></span>}
-                  </form>
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-48 text-center p-4">
@@ -226,19 +213,6 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
                   <div className="dharma-code text-xs mt-4 p-1">
                     &gt; ERROR CODE 108: DATA NOT FOUND
                   </div>
-
-                  {/* Terminal Command Input */}
-                  <form onSubmit={handleCommandSubmit} className="terminal-command-line mt-4 w-full max-w-xs">
-                    <span className="terminal-prompt">$&gt;</span>
-                    <input
-                      type="text"
-                      value={commandInput}
-                      onChange={(e) => setCommandInput(e.target.value)}
-                      className="bg-transparent border-none outline-none text-[hsl(var(--dharma-green))] font-mono flex-1"
-                      placeholder="enter command..."
-                    />
-                    {!commandInput && <span className="terminal-cursor"></span>}
-                  </form>
                 </div>
               )}
             </div>
@@ -296,19 +270,6 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
                       </Collapsible>
                     ))}
                   </div>
-
-                  {/* Terminal Command Input */}
-                  <form onSubmit={handleCommandSubmit} className="terminal-command-line">
-                    <span className="terminal-prompt">$&gt;</span>
-                    <input
-                      type="text"
-                      value={commandInput}
-                      onChange={(e) => setCommandInput(e.target.value)}
-                      className="bg-transparent border-none outline-none text-[hsl(var(--dharma-green))] font-mono flex-1"
-                      placeholder="enter command..."
-                    />
-                    {!commandInput && <span className="terminal-cursor"></span>}
-                  </form>
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-48 text-center p-4">
@@ -318,19 +279,6 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
                   <div className="dharma-code text-xs mt-4 p-1">
                     &gt; ERROR CODE 15: AUTHORIZATION FAILURE
                   </div>
-
-                  {/* Terminal Command Input */}
-                  <form onSubmit={handleCommandSubmit} className="terminal-command-line mt-4 w-full max-w-xs">
-                    <span className="terminal-prompt">$&gt;</span>
-                    <input
-                      type="text"
-                      value={commandInput}
-                      onChange={(e) => setCommandInput(e.target.value)}
-                      className="bg-transparent border-none outline-none text-[hsl(var(--dharma-green))] font-mono flex-1"
-                      placeholder="enter command..."
-                    />
-                    {!commandInput && <span className="terminal-cursor"></span>}
-                  </form>
                 </div>
               )}
             </div>
@@ -389,19 +337,6 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
                       </Collapsible>
                     ))}
                   </div>
-
-                  {/* Terminal Command Input */}
-                  <form onSubmit={handleCommandSubmit} className="terminal-command-line">
-                    <span className="terminal-prompt">$&gt;</span>
-                    <input
-                      type="text"
-                      value={commandInput}
-                      onChange={(e) => setCommandInput(e.target.value)}
-                      className="bg-transparent border-none outline-none text-[hsl(var(--dharma-green))] font-mono flex-1"
-                      placeholder="enter command..."
-                    />
-                    {!commandInput && <span className="terminal-cursor"></span>}
-                  </form>
                 </>
               ) : (
                 <div className="flex flex-col items-center justify-center h-48 text-center p-4">
@@ -413,19 +348,6 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
                     </div>
                     <div className="h-full w-2 bg-[hsla(var(--dharma-green),0.4)] absolute left-0 animate-terminal-scan"></div>
                   </div>
-
-                  {/* Terminal Command Input */}
-                  <form onSubmit={handleCommandSubmit} className="terminal-command-line mt-4 w-full max-w-xs">
-                    <span className="terminal-prompt">$&gt;</span>
-                    <input
-                      type="text"
-                      value={commandInput}
-                      onChange={(e) => setCommandInput(e.target.value)}
-                      className="bg-transparent border-none outline-none text-[hsl(var(--dharma-green))] font-mono flex-1"
-                      placeholder="enter command..."
-                    />
-                    {!commandInput && <span className="terminal-cursor"></span>}
-                  </form>
                 </div>
               )}
             </div>
