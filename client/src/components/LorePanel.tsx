@@ -72,7 +72,7 @@ const MenuItem = ({
   );
 };
 
-const LorePanel: React.FC<LorePanelProps> = () => {
+const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
   const { 
     discoveredStations,
     unlockedAudioLogs,
