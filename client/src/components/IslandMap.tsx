@@ -2,9 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { STATIONS } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
-// Import our new map assets
-import coloredIslandMap from '@/assets/island_maps/colored_island_map.svg';
-import stationMarkers from '@/assets/island_maps/station_markers.svg';
+// Import actual map image
+import plainIslandMap from '@/assets/island_maps/plain_lost_map.jpeg';
 
 interface Station {
   name: string;
@@ -23,7 +22,6 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   const [hoveredStation, setHoveredStation] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState('--° --′ --″ N, --° --′ --″ W');
   const [mapStatus, setMapStatus] = useState('SCANNING FOR SIGNALS...');
-  const svgRef = useRef<SVGSVGElement>(null);
 
   useEffect(() => {
     // Initial scan effect
@@ -101,19 +99,6 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       playSound('beep', 'short');
     }
   };
-
-  // Get the station marker icon based on station name
-  const getStationIcon = (stationName: string) => {
-    switch(stationName) {
-      case 'swan': return '#swan-station';
-      case 'pearl': return '#pearl-station';
-      case 'flame': return '#flame-station';
-      case 'arrow': return '#arrow-station';
-      case 'staff': return '#staff-station';
-      case 'orchid': return '#orchid-station';
-      default: return '#dharma-marker';
-    }
-  };
   
   return (
     <motion.section
@@ -149,27 +134,22 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
           {/* Map container with panning/zooming */}
           <div className="relative w-full h-full overflow-hidden">
             <div 
-              className="relative w-full h-full"
+              className="relative w-full h-full bg-black"
               style={{ 
                 transform: `scale(${mapZoom})`,
                 transformOrigin: 'center',
                 transition: 'transform 0.3s ease'
               }}
             >
-              {/* Include the station markers SVG defs */}
-              <div style={{ position: 'absolute', width: 0, height: 0, visibility: 'hidden' }} 
-                   dangerouslySetInnerHTML={{ __html: `<svg>${stationMarkers}</svg>` }} />
-                   
-              {/* Island map SVG with enhanced features */}
+              {/* Island map image */}
               <div 
-                className="absolute w-[150%] h-[150%]"
+                className="absolute w-full h-full"
                 style={{ 
                   transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                  maxWidth: 'none',
                 }}
               >
                 <img 
-                  src={coloredIslandMap} 
+                  src={plainIslandMap} 
                   alt="LOST Island Map" 
                   className="w-full h-full object-contain"
                   style={{
@@ -183,7 +163,6 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 className="absolute inset-0 z-10 animate-terminal-scan" 
                 style={{ 
                   boxShadow: 'inset 0 0 10px rgba(227, 188, 77, 0.3)',
-                  transform: `translate(${mapOffset.x * 0.2}px, ${mapOffset.y * 0.2}px)`,
                 }}
               ></div>
               
@@ -202,10 +181,9 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 style={{ transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)` }}
               ></div>
               
-              {/* Station markers with proper DHARMA logos */}
+              {/* Station markers */}
               {Object.entries(STATIONS).map(([key, station]) => {
                 const isDiscovered = discoveredStations.includes(key);
-                const stationIcon = getStationIcon(key);
                 
                 return (
                   <motion.div
@@ -214,13 +192,12 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     style={{ 
                       top: station.position.top, 
                       left: station.position.left,
-                      width: '40px',
-                      height: '40px',
+                      width: '32px',
+                      height: '32px',
                       opacity: isDiscovered ? 1 : 0,
                       pointerEvents: isDiscovered ? 'auto' : 'none',
                       transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
                       zIndex: 20,
-                      filter: 'drop-shadow(0 0 5px rgba(255, 255, 255, 0.7))'
                     }}
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ 
@@ -237,9 +214,13 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     onMouseLeave={() => handleStationHover(null)}
                     onClick={() => handleStationClick(key)}
                   >
-                    <svg width="40" height="40" className="dharma-station-marker">
-                      <use href={stationIcon} className={isDiscovered ? 'animate-pulse' : ''} />
-                    </svg>
+                    <div className="w-full h-full rounded-full bg-[hsla(var(--dharma-amber),0.8)] flex items-center justify-center border-2 border-white dharma-station-marker">
+                      {/* Station logo/number */}
+                      <span className="text-black font-bold text-xs">
+                        {station.code.replace('Station ', '')}
+                      </span>
+                    </div>
+                    
                     {isDiscovered && hoveredStation === key && (
                       <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-black bg-opacity-80 text-xs rounded text-white z-50">
                         {station.name}

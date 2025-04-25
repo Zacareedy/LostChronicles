@@ -148,21 +148,22 @@
   /* Dharma station markers */
   .dharma-station-marker {
     filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.7));
-  }
-  
-  .dharma-station-marker.animate-pulse {
     animation: marker-pulse 3s infinite;
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.7);
   }
   
   @keyframes marker-pulse {
     0% {
       filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
     }
     50% {
-      filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.8));
+      box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
     }
     100% {
       filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
+      box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
     }
   }
 
