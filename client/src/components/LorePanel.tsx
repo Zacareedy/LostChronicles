@@ -45,91 +45,93 @@ const TerminalLine = ({ text, delay = 0 }: { text: string, delay?: number }) => 
   );
 };
 
-// Green screen menu button
-const MenuButton = ({ 
-  label, 
-  isActive, 
-  onClick,
-  code
+// Green screen style section header
+const SectionHeader = ({ 
+  title, 
+  icon,
+  count
 }: { 
-  label: string, 
-  isActive: boolean, 
-  onClick: () => void,
-  code: string
+  title: string, 
+  icon: React.ReactNode,
+  count?: string | number
 }) => {
   return (
-    <div 
-      className={`
-        p-2 text-xs font-mono cursor-pointer mb-2
-        ${isActive 
-          ? 'bg-[hsla(var(--dharma-green),0.2)] text-[hsl(var(--dharma-green))] border border-[hsla(var(--dharma-green),0.5)]' 
-          : 'bg-[hsla(var(--dharma-gray),0.1)] text-[hsla(var(--dharma-green),0.7)] border border-[hsla(var(--dharma-gray),0.2)]'
-        }
-        hover:bg-[hsla(var(--dharma-green),0.1)]
-      `}
-      onClick={() => {
-        playSound('button', 'short');
-        onClick();
-      }}
-    >
-      <div className="flex items-center justify-between">
-        <span className="uppercase">{label}</span>
-        <span className="dharma-code text-[10px]">{code}</span>
+    <div className="border-b border-[hsla(var(--dharma-gray),0.3)] pb-1 mb-2 bg-[hsla(var(--dharma-green),0.05)]">
+      <div className="px-1 py-1 font-mono text-xs flex justify-between items-center">
+        <div className="flex items-center">
+          {icon}
+          <span className="ml-1 text-[hsl(var(--dharma-green))]">{title}</span>
+        </div>
+        {count !== undefined && (
+          <span className="dharma-code text-[10px]">{count}</span>
+        )}
       </div>
-      {isActive && (
-        <div className="h-1 bg-[hsla(var(--dharma-green),0.3)] mt-1"></div>
-      )}
     </div>
   );
 };
 
-// Represents a data row in the old-school green screen style
-const DataEntry = ({ 
-  label, 
+// Data item in a green-screen terminal style
+const RecordItem = ({ 
+  id,
+  title, 
   code, 
   status,
+  description,
   isSelected,
-  onClick,
-  children
+  onToggle,
+  renderDetails
 }: { 
-  label: string, 
+  id: string,
+  title: string, 
   code: string, 
   status?: string,
+  description?: string,
   isSelected: boolean,
-  onClick: () => void,
-  children?: React.ReactNode
+  onToggle: () => void,
+  renderDetails?: () => React.ReactNode
 }) => {
   return (
     <div className={`
-      mb-2 border border-[hsla(var(--dharma-gray),0.2)] font-mono text-xs
-      ${isSelected ? 'bg-[hsla(var(--dharma-green),0.1)]' : ''}
+      bg-[hsla(var(--dharma-black),0.7)] mb-2 
+      border-l-4 ${isSelected ? 'border-[hsl(var(--dharma-green))]' : 'border-[hsla(var(--dharma-gray),0.2)]'}
+      text-xs font-mono
     `}>
       <div 
-        className="p-2 flex justify-between cursor-pointer" 
+        className={`
+          px-2 py-1 flex justify-between cursor-pointer
+          ${isSelected ? 'bg-[hsla(var(--dharma-green),0.1)]' : 'hover:bg-[hsla(var(--dharma-green),0.05)]'}
+        `}
         onClick={() => {
           playSound('beep', 'short');
-          onClick();
+          onToggle();
         }}
       >
-        <div className="flex items-center gap-2">
-          <span className={`animate-terminal-blink mr-1 ${isSelected ? 'opacity-100' : 'opacity-0'}`}>{'>'}</span>
-          <span className="font-bold text-[hsl(var(--dharma-green))]">{code}</span>
-          <span>{label}</span>
+        <div className="flex items-center">
+          <span className={`inline-block w-2 mr-1 ${isSelected ? 'text-[hsl(var(--dharma-green))]' : 'opacity-0'}`}>{'>'}</span>
+          <span className="font-bold mr-2 text-[hsl(var(--dharma-green))]">{code}</span>
+          <span>{title}</span>
         </div>
         {status && (
-          <span className="dharma-code text-[10px]">{status}</span>
+          <span className="dharma-code text-[9px] ml-2">{status}</span>
         )}
       </div>
       
-      {isSelected && children && (
-        <div className="p-2 border-t border-[hsla(var(--dharma-gray),0.2)] bg-[hsla(var(--dharma-black),0.3)]">
-          {children}
+      {isSelected && description && (
+        <div className="px-2 py-1 text-[10px] text-[hsla(var(--dharma-green),0.8)] bg-[hsla(var(--dharma-gray),0.05)]">
+          {description}
+        </div>
+      )}
+      
+      {isSelected && renderDetails && (
+        <div className="p-2 bg-[hsla(var(--dharma-black),0.5)]">
+          {renderDetails()}
         </div>
       )}
     </div>
   );
 };
 
+// File Upload Area for developers
 const FileUploadArea = ({ logId, onUpload }: { logId: string, onUpload: (id: string, file: File) => void }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
@@ -208,8 +210,9 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
     triggerLoreEvent
   } = useLore();
 
-  const [currentView, setCurrentView] = useState<string>(props.defaultSection || 'root');
-  const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+  const [expandedStation, setExpandedStation] = useState<string | null>(null);
+  const [expandedReport, setExpandedReport] = useState<string | null>(null);
+  const [expandedSignal, setExpandedSignal] = useState<string | null>(null);
   const [isDevMode, setIsDevMode] = useState<boolean>(false);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
 
@@ -290,267 +293,12 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
     return `${hours}:${minutes}`;
   }
 
-  // Render content based on current view
-  const renderContent = () => {
-    // Root menu (main screen)
-    if (currentView === 'root') {
-      return (
-        <div className="p-3">
-          <div className="mb-4 text-center border-b border-[hsla(var(--dharma-gray),0.3)] pb-2">
-            <div className="text-sm text-[hsl(var(--dharma-green))] font-mono mb-1">DHARMA INITIATIVE</div>
-            <div className="text-xs text-[hsla(var(--dharma-gray),0.8)]">DATA RETRIEVAL SYSTEM</div>
-          </div>
-          
-          <div className="grid grid-cols-1 gap-2">
-            <MenuButton 
-              label="STATION DATABASE" 
-              isActive={false} 
-              onClick={() => setCurrentView('stations')}
-              code={`STAT-${discoveredStations.length}`}
-            />
-            <MenuButton 
-              label="INCIDENT REPORTS" 
-              isActive={false} 
-              onClick={() => setCurrentView('files')}
-              code={`FILE-${unlockedReports.length}`}
-            />
-            <MenuButton 
-              label="SIGNAL ANALYSIS" 
-              isActive={false} 
-              onClick={() => setCurrentView('signals')}
-              code={`SIG-${unlockedAudioLogs.length}`}
-            />
-          </div>
-          
-          <div className="mt-8 text-center">
-            <div className="dharma-code text-xs inline-block px-3 py-1">
-              <div className="text-[hsla(var(--dharma-gray),0.6)] mb-1">SYSTEM STATUS</div>
-              <div className="text-[hsl(var(--dharma-green))]">OPERATIONAL</div>
-            </div>
-            
-            {isDevMode && (
-              <div className="mt-4 text-xs text-[hsl(var(--dharma-amber))]">
-                DEVELOPER MODE ACTIVE
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-    
-    // Stations view
-    else if (currentView === 'stations') {
-      return (
-        <div className="p-3">
-          <div className="mb-4 border-b border-[hsla(var(--dharma-gray),0.3)] pb-2">
-            <div className="flex justify-between items-center">
-              <span className="dharma-terminal-label text-xs">
-                <Monitor className="inline h-3 w-3 mr-1" /> STATION DATABASE
-              </span>
-              <span className="dharma-code text-xs">
-                {discoveredStationData.length} RECORDS
-              </span>
-            </div>
-          </div>
-          
-          {discoveredStationData.length > 0 ? (
-            <div className="mb-4">
-              {discoveredStationData.map(station => (
-                <DataEntry
-                  key={station.key}
-                  label={station.name}
-                  code={station.code}
-                  status="OPERATIONAL"
-                  isSelected={selectedItemId === station.key}
-                  onClick={() => setSelectedItemId(selectedItemId === station.key ? null : station.key)}
-                >
-                  <div className="text-xs mb-2 font-mono">
-                    <span className="text-[hsla(var(--dharma-green),0.7)]">CLEARANCE LEVEL ALPHA</span>
-                  </div>
-
-                  <div className="text-xs mb-2 font-mono">
-                    <span className="opacity-70">STATUS:</span> <span className="opacity-90">OPERATIONAL</span>
-                  </div>
-
-                  <div className="text-xs mb-2">
-                    <span className="opacity-70">PURPOSE:</span> <span className="opacity-90">{redactDescription(station.description)}</span>
-                  </div>
-
-                  <div className="dharma-code mt-3 w-full text-xs font-mono p-1 text-center">
-                    {formatCoordinates(station.coordinates)}
-                  </div>
-                </DataEntry>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-40 text-center p-4">
-              <Monitor className="h-8 w-8 mb-4 opacity-50" />
-              <p className="font-terminal">NO LOCATION DATA</p>
-              <div className="dharma-code text-xs mt-4 p-1">
-                &gt; ERROR CODE 108: DATA NOT FOUND
-              </div>
-            </div>
-          )}
-          
-          <button 
-            className="text-xs font-mono text-[hsl(var(--dharma-amber))] bg-[hsla(var(--dharma-gray),0.1)] 
-                      border border-[hsla(var(--dharma-gray),0.3)] px-3 py-1 mt-4"
-            onClick={() => {
-              playSound('button', 'short');
-              setCurrentView('root');
-              setSelectedItemId(null);
-            }}
-          >
-            &lt; RETURN TO MENU
-          </button>
-        </div>
-      );
-    }
-    
-    // Files view
-    else if (currentView === 'files') {
-      return (
-        <div className="p-3">
-          <div className="mb-4 border-b border-[hsla(var(--dharma-gray),0.3)] pb-2">
-            <div className="flex justify-between items-center">
-              <span className="dharma-terminal-label text-xs">
-                <File className="inline h-3 w-3 mr-1" /> INCIDENT REPORTS
-              </span>
-              <span className="dharma-code text-xs">
-                MEM: {Math.floor(Math.random() * 40) + 60}K
-              </span>
-            </div>
-          </div>
-          
-          {unlockedReportData.length > 0 ? (
-            <div className="mb-4">
-              {unlockedReportData.map((report) => (
-                <DataEntry
-                  key={report.index}
-                  label={report.title}
-                  code={`FILE:${report.fileNumber}`}
-                  status={report.classification.replace('LEVEL ', 'L')}
-                  isSelected={selectedItemId === `report-${report.index}`}
-                  onClick={() => setSelectedItemId(selectedItemId === `report-${report.index}` ? null : `report-${report.index}`)}
-                >
-                  <div className="text-xs whitespace-pre-line">
-                    {report.content.split('\n').map((line, i) => (
-                      <TerminalLine 
-                        key={i} 
-                        text={line} 
-                        delay={i * 0.1} 
-                      />
-                    ))}
-                  </div>
-                </DataEntry>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-40 text-center p-4">
-              <File className="h-8 w-8 mb-4 opacity-50" />
-              <p className="font-terminal">ACCESS DENIED</p>
-              <p className="font-mono text-xs mt-2 opacity-70">SEC.CLEARANCE INADEQUATE</p>
-              <div className="dharma-code text-xs mt-4 p-1">
-                &gt; ERROR CODE 15: AUTHORIZATION FAILURE
-              </div>
-            </div>
-          )}
-          
-          <button 
-            className="text-xs font-mono text-[hsl(var(--dharma-amber))] bg-[hsla(var(--dharma-gray),0.1)] 
-                      border border-[hsla(var(--dharma-gray),0.3)] px-3 py-1 mt-4"
-            onClick={() => {
-              playSound('button', 'short');
-              setCurrentView('root');
-              setSelectedItemId(null);
-            }}
-          >
-            &lt; RETURN TO MENU
-          </button>
-        </div>
-      );
-    }
-    
-    // Signals view
-    else if (currentView === 'signals') {
-      return (
-        <div className="p-3">
-          <div className="mb-4 border-b border-[hsla(var(--dharma-gray),0.3)] pb-2">
-            <div className="flex justify-between items-center">
-              <span className="dharma-terminal-label text-xs">
-                <TapeSquare className="inline h-3 w-3 mr-1" /> SIGNAL ANALYSIS
-              </span>
-              <span className="dharma-code text-xs">
-                {unlockedAudioLogData.length} RECORDS
-              </span>
-            </div>
-          </div>
-          
-          {unlockedAudioLogData.length > 0 ? (
-            <div className="mb-4">
-              {unlockedAudioLogData.map(log => (
-                <DataEntry
-                  key={log.key}
-                  label={log.title}
-                  code={`REC:${log.key.toUpperCase().slice(0, 6)}`}
-                  status={log.duration}
-                  isSelected={selectedItemId === log.key}
-                  onClick={() => setSelectedItemId(selectedItemId === log.key ? null : log.key)}
-                >
-                  <div className="text-xs mb-3">
-                    {log.description}
-                  </div>
-                  
-                  {/* Audio Playback Control */}
-                  <AudioPlayback logId={log.key} />
-                  
-                  {/* Dev Mode: File Upload Option */}
-                  {isDevMode && (
-                    <FileUploadArea 
-                      logId={log.key} 
-                      onUpload={handleFileUpload} 
-                    />
-                  )}
-                </DataEntry>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center h-40 text-center p-4">
-              <TapeSquare className="h-8 w-8 mb-4 opacity-50" />
-              <p className="font-terminal">NO SIGNALS DETECTED</p>
-              <div className="w-full max-w-xs h-6 mt-4 bg-[hsla(var(--dharma-gray),0.1)] relative">
-                <div className="absolute inset-0 flex items-center justify-center text-xs opacity-50">
-                  SCANNING...
-                </div>
-                <div className="h-full w-2 bg-[hsla(var(--dharma-green),0.4)] absolute left-0 animate-terminal-scan"></div>
-              </div>
-            </div>
-          )}
-          
-          <button 
-            className="text-xs font-mono text-[hsl(var(--dharma-amber))] bg-[hsla(var(--dharma-gray),0.1)] 
-                      border border-[hsla(var(--dharma-gray),0.3)] px-3 py-1 mt-4"
-            onClick={() => {
-              playSound('button', 'short');
-              setCurrentView('root');
-              setSelectedItemId(null);
-            }}
-          >
-            &lt; RETURN TO MENU
-          </button>
-        </div>
-      );
-    }
-    
-    return null;
-  };
-
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className={`dharma-panel crt-screen ${className} relative`}
+      className={`dharma-panel crt-screen ${className} relative overflow-y-auto`}
     >
       {/* CRT Scan effect */}
       <div className="scan-line"></div>
@@ -558,11 +306,173 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
       <div className="dharma-panel-header bg-[hsla(var(--dharma-green),0.1)]">
         <div className="flex items-center justify-between px-2">
           <span className="text-xs text-[hsl(var(--dharma-green))] font-mono">{currentTime}</span>
-          <div className="dharma-code text-xs">SYS.3.01</div>
+          <div className="flex items-center">
+            <div className="dharma-code text-xs mr-2">DHARMA INITIATIVE</div>
+            {isDevMode && (
+              <div className="text-[9px] text-[hsl(var(--dharma-amber))] font-bold font-mono">
+                [DEV MODE]
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {renderContent()}
+      <div className="px-3 py-2 grid gap-5">
+        {/* SECTION: STATION DATABASE */}
+        <div className="pb-1">
+          <SectionHeader 
+            title="STATION DATABASE" 
+            icon={<Monitor className="h-3 w-3" />}
+            count={discoveredStationData.length}
+          />
+          
+          <div className="bg-[hsla(var(--dharma-black),0.3)]">
+            {discoveredStationData.length > 0 ? (
+              <div className="space-y-1 max-h-[180px] overflow-y-auto p-1">
+                {discoveredStationData.map(station => (
+                  <RecordItem
+                    key={station.key}
+                    id={station.key}
+                    title={station.name}
+                    code={station.code}
+                    status="OPERATIONAL"
+                    isSelected={expandedStation === station.key}
+                    onToggle={() => setExpandedStation(expandedStation === station.key ? null : station.key)}
+                    renderDetails={() => (
+                      <div className="space-y-2">
+                        <div className="text-xs font-mono">
+                          <span className="text-[hsla(var(--dharma-green),0.7)]">CLEARANCE LEVEL ALPHA</span>
+                        </div>
+                        <div className="text-xs">
+                          <span className="opacity-70">PURPOSE:</span> <span className="opacity-90">{redactDescription(station.description)}</span>
+                        </div>
+                        <div className="dharma-code mt-1 w-full text-xs font-mono p-1 text-center">
+                          {formatCoordinates(station.coordinates)}
+                        </div>
+                      </div>
+                    )}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-3 text-xs">
+                <p className="font-terminal">NO STATION DATA AVAILABLE</p>
+                <p className="text-[10px] opacity-70 mt-1">AWAITING INPUT...</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* SECTION: INCIDENT REPORTS */}
+        <div className="pb-1">
+          <SectionHeader 
+            title="INCIDENT REPORTS" 
+            icon={<File className="h-3 w-3" />}
+            count={unlockedReportData.length}
+          />
+          
+          <div className="bg-[hsla(var(--dharma-black),0.3)]">
+            {unlockedReportData.length > 0 ? (
+              <div className="space-y-1 max-h-[180px] overflow-y-auto p-1">
+                {unlockedReportData.map((report) => (
+                  <RecordItem
+                    key={`report-${report.index}`}
+                    id={`report-${report.index}`}
+                    title={report.title}
+                    code={`F${report.fileNumber.split('/')[1].slice(0, 5)}`}
+                    status={report.classification.replace('LEVEL ', 'L')}
+                    isSelected={expandedReport === `report-${report.index}`}
+                    onToggle={() => setExpandedReport(expandedReport === `report-${report.index}` ? null : `report-${report.index}`)}
+                    renderDetails={() => (
+                      <div className="text-xs whitespace-pre-line">
+                        {report.content.split('\n').map((line, i) => (
+                          <TerminalLine 
+                            key={i} 
+                            text={line} 
+                            delay={i * 0.05} 
+                          />
+                        ))}
+                      </div>
+                    )}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-3 text-xs">
+                <p className="font-terminal">ACCESS DENIED</p>
+                <p className="text-[10px] opacity-70 mt-1">SECURITY CLEARANCE INADEQUATE</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* SECTION: SIGNAL ANALYSIS */}
+        <div className="pb-1">
+          <SectionHeader 
+            title="SIGNAL ANALYSIS" 
+            icon={<TapeSquare className="h-3 w-3" />}
+            count={unlockedAudioLogData.length}
+          />
+          
+          <div className="bg-[hsla(var(--dharma-black),0.3)]">
+            {unlockedAudioLogData.length > 0 ? (
+              <div className="space-y-1 max-h-[200px] overflow-y-auto p-1">
+                {unlockedAudioLogData.map(log => (
+                  <RecordItem
+                    key={log.key}
+                    id={log.key}
+                    title={log.title}
+                    code={`SIG${log.key.slice(0, 3).toUpperCase()}`}
+                    status={log.duration}
+                    description={log.description}
+                    isSelected={expandedSignal === log.key}
+                    onToggle={() => setExpandedSignal(expandedSignal === log.key ? null : log.key)}
+                    renderDetails={() => (
+                      <>
+                        {/* Audio Playback Control */}
+                        <AudioPlayback logId={log.key} />
+                        
+                        {/* Dev Mode: File Upload Option */}
+                        {isDevMode && (
+                          <FileUploadArea 
+                            logId={log.key} 
+                            onUpload={handleFileUpload} 
+                          />
+                        )}
+                      </>
+                    )}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center p-3 text-xs">
+                <p className="font-terminal">NO SIGNALS DETECTED</p>
+                <p className="text-[10px] opacity-70 mt-1">SCANNING FREQUENCIES...</p>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Developer Instructions (only visible in dev mode) */}
+        {isDevMode && (
+          <div className="border border-[hsl(var(--dharma-amber))] p-2 bg-[hsla(var(--dharma-black),0.5)] mt-2">
+            <div className="text-xs text-[hsl(var(--dharma-amber))] mb-2 uppercase font-bold">Developer Instructions</div>
+            <div className="text-[10px] space-y-1">
+              <p>To upload custom audio/video files:</p>
+              <ol className="list-decimal ml-4 space-y-1">
+                <li>Select any signal in the Signal Analysis section</li>
+                <li>Drag and drop an audio/video file onto the upload area or click to browse</li>
+                <li>Supported formats: MP3, WAV, MP4, WebM</li>
+                <li>Files are stored locally in your browser</li>
+                <li>To replace a file, simply upload a new one to the same signal</li>
+              </ol>
+              <p className="mt-2 border-t border-[hsla(var(--dharma-amber),0.3)] pt-1">
+                Dev mode activated by keyboard sequence: Ctrl+Alt+4+8+1+5+1+6+2+3+4+2
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
     </motion.section>
   );
 };
