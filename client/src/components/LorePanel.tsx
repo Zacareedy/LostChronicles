@@ -488,13 +488,13 @@ const LorePanel: React.FC<LorePanelProps> = (props) => {
                     key={`report-${report.index}`}
                     id={`report-${report.index}`}
                     title={report.title}
-                    code={`F${report.fileNumber.split('/')[1].slice(0, 5)}`}
-                    status={report.classification.replace('LEVEL ', 'L')}
+                    code={report.fileNumber ? `F${report.fileNumber.split('/')[1]?.slice(0, 5)}` : 'F00000'}
+                    status={report.classification ? report.classification.replace('LEVEL ', 'L') : 'L0'}
                     isSelected={expandedReport === `report-${report.index}`}
                     onToggle={() => setExpandedReport(expandedReport === `report-${report.index}` ? null : `report-${report.index}`)}
                     renderDetails={() => (
                       <div className="text-xs whitespace-pre-line">
-                        {report.content.split('\n').map((line, i) => (
+                        {(report.content || 'NO CONTENT AVAILABLE').split('\n').map((line, i) => (
                           <TerminalLine 
                             key={i} 
                             text={line} 
