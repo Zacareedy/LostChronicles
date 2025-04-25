@@ -13,56 +13,63 @@ export const STATIONS = {
     code: 'Station 3',
     description: 'Electromagnetic research facility',
     coordinates: '4° 8′ 15″ N, 16° 23′ 42″ W',
-    position: { top: '50%', left: '52%' }  // Central area of island
+    position: { top: '42%', left: '42%' }  // Central area of island near mountain ridge
   },
   pearl: {
     name: 'The Pearl',
     code: 'Station 5',
     description: 'Psychological research',
     coordinates: '8° 15′ 16″ N, 23° 42′ 4″ W',
-    position: { top: '55%', left: '55%' }  // Near the Swan
+    position: { top: '47%', left: '47%' }  // Near the Swan
   },
   flame: {
     name: 'The Flame',
     code: 'Station 4',
     description: 'Communications station',
     coordinates: '15° 16′ 23″ N, 42° 4′ 8″ W',
-    position: { top: '28%', left: '65%' }  // North-eastern area
+    position: { top: '25%', left: '60%' }  // North-eastern area
   },
   arrow: {
     name: 'The Arrow',
     code: 'Station 1',
     description: 'Defense & armament',
     coordinates: '16° 23′ 42″ N, 4° 8′ 15″ W',
-    position: { top: '33%', left: '28%' }  // Western side
+    position: { top: '38%', left: '25%' }  // Western side
   },
   staff: {
     name: 'The Staff',
     code: 'Station 6',
     description: 'Medical research station',
     coordinates: '23° 42′ 4″ N, 8° 15′ 16″ W',
-    position: { top: '35%', left: '72%' }  // Eastern area
+    position: { top: '36%', left: '68%' }  // Eastern area
   },
   orchid: {
     name: 'The Orchid',
     code: 'Station 7',
     description: 'Time displacement research',
     coordinates: '42° 4′ 8″ N, 15° 16′ 23″ W',
-    position: { top: '72%', left: '48%' }  // Southern area
+    position: { top: '68%', left: '46%' }  // Southern area
   },
   hydra: {
     name: 'The Hydra',
     code: 'Station 2',
     description: 'Zoological research',
     coordinates: '42° 8′ 15″ N, 15° 23′ 42″ W',
-    position: { top: '84%', left: '76%' }  // Small island off main coast
+    position: { top: '82%', left: '82%' }  // Small island off main coast
   },
   lookout: {
     name: 'The Lookout',
     code: 'Position',
     description: 'Radio tower and signal transmission',
     coordinates: '23° 15′ 4″ N, 8° 42′ 16″ W',
-    position: { top: '22%', left: '38%' }  // Northern area
+    position: { top: '20%', left: '42%' }  // Northern area
+  },
+  blackRock: {
+    name: 'Black Rock',
+    code: 'Shipwreck',
+    description: 'Ancient slave ship mysteriously stranded inland',
+    coordinates: '30° 4′ 22″ N, 12° 38′ 17″ W',
+    position: { top: '50%', left: '22%' }  // Western jungle area
   }
 };
 

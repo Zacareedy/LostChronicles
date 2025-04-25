@@ -185,6 +185,35 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
               {Object.entries(STATIONS).map(([key, station]) => {
                 const isDiscovered = discoveredStations.includes(key);
                 
+                // Different marker styles for different location types
+                const getMarkerStyle = (locationType: string) => {
+                  if (locationType === 'Shipwreck') {
+                    return {
+                      background: 'hsla(0, 70%, 40%, 0.8)',
+                      borderColor: '#fff',
+                      shape: 'square',
+                      content: '⚓'
+                    };
+                  } else if (locationType === 'Position') {
+                    return {
+                      background: 'hsla(200, 70%, 40%, 0.8)',
+                      borderColor: '#fff',
+                      shape: 'triangle',
+                      content: '📡'
+                    };
+                  } else {
+                    return {
+                      background: 'hsla(var(--dharma-amber),0.8)',
+                      borderColor: '#fff',
+                      shape: 'circle',
+                      content: station.code.replace('Station ', '')
+                    };
+                  }
+                };
+
+                const markerStyle = getMarkerStyle(station.code);
+                const isSpecialShape = markerStyle.shape === 'triangle' || markerStyle.shape === 'square';
+                
                 return (
                   <motion.div
                     key={key}
@@ -214,12 +243,48 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     onMouseLeave={() => handleStationHover(null)}
                     onClick={() => handleStationClick(key)}
                   >
-                    <div className="w-full h-full rounded-full bg-[hsla(var(--dharma-amber),0.8)] flex items-center justify-center border-2 border-white dharma-station-marker">
-                      {/* Station logo/number */}
-                      <span className="text-black font-bold text-xs">
-                        {station.code.replace('Station ', '')}
-                      </span>
-                    </div>
+                    {markerStyle.shape === 'circle' && (
+                      <div 
+                        className="w-full h-full rounded-full flex items-center justify-center border-2 dharma-station-marker"
+                        style={{ 
+                          backgroundColor: markerStyle.background, 
+                          borderColor: markerStyle.borderColor 
+                        }}
+                      >
+                        <span className="text-black font-bold text-xs">
+                          {markerStyle.content}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {markerStyle.shape === 'square' && (
+                      <div 
+                        className="w-full h-full rounded-sm flex items-center justify-center border-2 dharma-station-marker"
+                        style={{ 
+                          backgroundColor: markerStyle.background, 
+                          borderColor: markerStyle.borderColor 
+                        }}
+                      >
+                        <span className="text-white font-bold text-xs">
+                          {markerStyle.content}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {markerStyle.shape === 'triangle' && (
+                      <div 
+                        className="w-full h-full rounded-sm flex items-center justify-center border-2 dharma-station-marker"
+                        style={{ 
+                          backgroundColor: markerStyle.background, 
+                          borderColor: markerStyle.borderColor,
+                          clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+                        }}
+                      >
+                        <span className="text-white font-bold text-xs translate-y-2">
+                          {markerStyle.content}
+                        </span>
+                      </div>
+                    )}
                     
                     {isDiscovered && hoveredStation === key && (
                       <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-black bg-opacity-80 text-xs rounded text-white z-50">
