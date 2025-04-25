@@ -67,22 +67,13 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
           <Logo size="lg" className="mb-8 animate-flicker" />
           <div className="font-terminal text-[hsl(var(--dharma-amber))] text-3xl mb-8">DHARMA INITIATIVE</div>
           <div className="font-terminal text-[hsl(var(--dharma-amber))] text-xl mb-4">LOADING SYSTEM...</div>
-          <div className="w-64 h-6 bg-[#0a0a0a] border-2 border-[hsla(var(--dharma-green),0.15)] overflow-hidden font-terminal text-xs flex items-center">
-            <motion.div 
-              className="h-full bg-[hsla(var(--dharma-green),0.2)] relative flex items-center"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ ease: "steps(15)" }}
-            >
-              <div className="absolute inset-0 flex items-center">
-                {Array.from({ length: 15 }).map((_, i) => (
-                  <div key={i} className="h-full w-[2px] bg-[hsl(var(--dharma-green))] mx-[6px]" />
-                ))}
-              </div>
-            </motion.div>
-            <span className="absolute w-full text-center text-[hsl(var(--dharma-green))]">
-              {Math.floor(progress)}%
-            </span>
+          <div className="font-terminal text-[hsl(var(--dharma-green))] flex items-center gap-2">
+            <span>LOADING</span>
+            <div className="w-48 inline-flex">
+              {Array.from({ length: Math.ceil((progress / 100) * 20) }).map((_, i) => (
+                <span key={i}>.</span>
+              ))}
+            </div>
           </div>
           <div className="font-mono text-sm text-[hsl(var(--dharma-gray))] mt-4">
             {LOADING_MESSAGES[messageIndex]}
