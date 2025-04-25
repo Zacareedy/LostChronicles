@@ -5,6 +5,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Terminal, Monitor, Radio, FileText, File } from 'lucide-react';
 import { useLore } from '@/contexts/LoreContext';
 import { INCIDENT_REPORTS, AUDIO_LOGS, STATIONS } from '@/lib/constants';
+import TapeSquare from "./TapeSquare"; // Added import
 
 interface LorePanelProps {
   className?: string;
@@ -13,15 +14,15 @@ interface LorePanelProps {
 // Function to split station description and partially redact it
 const redactDescription = (description: string): React.ReactNode => {
   const words = description.split(' ');
-  
+
   return words.map((word, index) => {
     // Randomly redact about 20-30% of words that are 4+ characters long
     const shouldRedact = word.length >= 4 && Math.random() < 0.3;
-    
+
     if (shouldRedact) {
       return <span key={index} className="dharma-redacted mr-1">{word}</span>;
     }
-    
+
     return <span key={index} className="mr-1">{word}</span>;
   });
 };
@@ -78,7 +79,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
     unlockedReports,
     storylineFlags
   } = useLore();
-  
+
   const [activeSection, setActiveSection] = useState<string>('stations');
   const [expandedItem, setExpandedItem] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(getCurrentTime());
@@ -105,10 +106,10 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
     const timer = setInterval(() => {
       setCurrentTime(getCurrentTime());
     }, 60000);
-    
+
     return () => clearInterval(timer);
   }, []);
-  
+
   // Format time as HH:MM in 24-hour format
   function getCurrentTime(): string {
     const now = new Date();
@@ -132,7 +133,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
     >
       {/* CRT Scan effect */}
       <div className="scan-line"></div>
-      
+
       <div className="dharma-terminal-header p-2 flex justify-between items-center">
         <h2 className="font-terminal flex items-center text-sm tracking-wider">
           <Terminal className="mr-2 h-4 w-4" />
@@ -143,7 +144,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
           <div className="dharma-code text-xs">SL-3</div>
         </div>
       </div>
-      
+
       <div className="flex flex-row h-full">
         {/* Left side - Old-school menu */}
         <div className="w-1/4 border-r border-[hsla(var(--dharma-gray),0.3)]">
@@ -163,7 +164,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
             onClick={() => setActiveSection('signals')} 
           />
         </div>
-        
+
         {/* Right side - Content area */}
         <div className="w-3/4 h-full">
           {/* DHARMA Stations Section */}
@@ -181,7 +182,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2 mb-4">
                     {discoveredStationData.map(station => (
                       <Collapsible 
@@ -199,20 +200,20 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                             <span className="dharma-code text-xs opacity-80">{station.name}</span>
                           </div>
                         </CollapsibleTrigger>
-                        
+
                         <CollapsibleContent className="dharma-collapsible-content">
                           <div className="text-xs mb-2 font-mono">
                             <span className="text-[hsla(var(--dharma-green),0.7)]">CLEARANCE LEVEL ALPHA</span>
                           </div>
-                          
+
                           <div className="text-xs mb-2 font-mono">
                             <span className="opacity-70">STATUS:</span> <span className="opacity-90">OPERATIONAL</span>
                           </div>
-                          
+
                           <div className="text-xs mb-2">
                             <span className="opacity-70">PURPOSE:</span> <span className="opacity-90">{redactDescription(station.description)}</span>
                           </div>
-                          
+
                           <div className="dharma-code mt-3 w-full text-xs font-mono p-1 text-center">
                             {formatCoordinates(station.coordinates)}
                           </div>
@@ -220,7 +221,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                       </Collapsible>
                     ))}
                   </div>
-                  
+
                   {/* Terminal Command Input */}
                   <form onSubmit={handleCommandSubmit} className="terminal-command-line">
                     <span className="terminal-prompt">$&gt;</span>
@@ -241,7 +242,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                   <div className="dharma-code text-xs mt-4 p-1">
                     &gt; ERROR CODE 108: DATA NOT FOUND
                   </div>
-                  
+
                   {/* Terminal Command Input */}
                   <form onSubmit={handleCommandSubmit} className="terminal-command-line mt-4 w-full max-w-xs">
                     <span className="terminal-prompt">$&gt;</span>
@@ -258,7 +259,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
               )}
             </div>
           )}
-          
+
           {/* Declassified Files Section */}
           {activeSection === 'files' && (
             <div className="dharma-terminal-content p-3">
@@ -274,7 +275,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3 mb-4">
                     {unlockedReportData.map((report) => (
                       <Collapsible 
@@ -294,10 +295,10 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                             </span>
                           </div>
                         </CollapsibleTrigger>
-                        
+
                         <CollapsibleContent className="dharma-collapsible-content">
                           <div className="text-xs font-mono mb-2">{report.title}</div>
-                          
+
                           <div className="text-xs whitespace-pre-line">
                             {report.content.split('\n').map((line, i) => (
                               <TerminalLine 
@@ -333,7 +334,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                   <div className="dharma-code text-xs mt-4 p-1">
                     &gt; ERROR CODE 15: AUTHORIZATION FAILURE
                   </div>
-                  
+
                   {/* Terminal Command Input */}
                   <form onSubmit={handleCommandSubmit} className="terminal-command-line mt-4 w-full max-w-xs">
                     <span className="terminal-prompt">$&gt;</span>
@@ -350,7 +351,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
               )}
             </div>
           )}
-          
+
           {/* Signal Intercepts Section */}
           {activeSection === 'signals' && (
             <div className="dharma-terminal-content p-3">
@@ -366,7 +367,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3 mb-4">
                     {unlockedAudioLogData.map(log => (
                       <Collapsible 
@@ -384,16 +385,16 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                             <span className="dharma-code text-xs">{log.duration}</span>
                           </div>
                         </CollapsibleTrigger>
-                        
+
                         <CollapsibleContent className="dharma-collapsible-content">
                           <div className="text-xs font-mono mb-2">
                             <span className="opacity-70">REC.ID:</span> <span className="opacity-90">{log.key.toUpperCase()}</span>
                           </div>
-                          
+
                           <div className="text-xs mb-3">
                             {log.description}
                           </div>
-                          
+
                           <div className="w-full h-8 bg-[hsla(var(--dharma-gray),0.1)] relative">
                             <div className="absolute top-0 left-0 h-full w-2 bg-[hsla(var(--dharma-green),0.4)]"></div>
                             <div className="absolute top-0 left-0 h-1/2 w-full flex items-center justify-center">
@@ -428,7 +429,7 @@ const LorePanel: React.FC<LorePanelProps> = ({ className }) => {
                     </div>
                     <div className="h-full w-2 bg-[hsla(var(--dharma-green),0.4)] absolute left-0 animate-terminal-scan"></div>
                   </div>
-                  
+
                   {/* Terminal Command Input */}
                   <form onSubmit={handleCommandSubmit} className="terminal-command-line mt-4 w-full max-w-xs">
                     <span className="terminal-prompt">$&gt;</span>
