@@ -411,7 +411,38 @@ const hiddenCommands: Record<string, Function> = {
     '> I am DHARMA INITIATIVE COMPUTER INTERFACE VERSION 4.07',
     '> You may call me DIC-4.0',
     '> I assist with station operation and protocol compliance'
-  ]
+  ],
+
+  'devmode': (args: string, onRevealPuzzle?: () => void) => {
+    // Set highest access level
+    accessLevel = 4;
+    
+    // Store all unlock flags in localStorage
+    try {
+      localStorage.setItem('dharma_error_allowed', 'true');
+      localStorage.setItem('dharma_pearl_access', 'true');
+      localStorage.setItem('dharma_incident_unlocked', 'true');
+      localStorage.setItem('dharma_surveillance_active', 'true');
+      localStorage.setItem('dharma_all_stations', 'true');
+      localStorage.setItem('dharma_lockdown', 'active');
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+
+    // Trigger puzzle reveal if provided
+    if (onRevealPuzzle) {
+      setTimeout(onRevealPuzzle, 1000);
+    }
+
+    return [
+      '> DEVELOPER MODE ACTIVATED',
+      '> Maximum security clearance granted',
+      '> All stations unlocked',
+      '> All audio logs available',
+      '> All incident reports declassified',
+      '> System protocols bypassed'
+    ];
+  }
 };
 
 // Process terminal command input and return response
