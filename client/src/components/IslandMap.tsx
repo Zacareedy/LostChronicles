@@ -88,6 +88,58 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     setIsDragging(false);
   };
   
+  // Render marker based on style
+  const renderMarker = (markerStyle: any) => {
+    if (markerStyle.shape === 'circle') {
+      return (
+        <div 
+          className="w-full h-full rounded-full flex items-center justify-center border-2 dharma-station-marker"
+          style={{ 
+            backgroundColor: markerStyle.background, 
+            borderColor: markerStyle.borderColor 
+          }}
+        >
+          <span className="text-black font-bold text-xs">
+            {markerStyle.content}
+          </span>
+        </div>
+      );
+    }
+    
+    if (markerStyle.shape === 'square') {
+      return (
+        <div 
+          className="w-full h-full rounded-sm flex items-center justify-center border-2 dharma-station-marker"
+          style={{ 
+            backgroundColor: markerStyle.background, 
+            borderColor: markerStyle.borderColor 
+          }}
+        >
+          <span className="text-white font-bold text-xs">
+            {markerStyle.content}
+          </span>
+        </div>
+      );
+    }
+    
+    if (markerStyle.shape === 'triangle') {
+      return (
+        <div 
+          className="w-full h-full rounded-sm flex items-center justify-center border-2 dharma-station-marker"
+          style={{ 
+            backgroundColor: markerStyle.background, 
+            borderColor: markerStyle.borderColor,
+            clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
+          }}
+        >
+          <span className="text-white font-bold text-xs translate-y-2">
+            {markerStyle.content}
+          </span>
+        </div>
+      );
+    }
+  };
+  
   // Handle map zoom
   const handleMapZoomIn = () => {
     if (mapZoom < MAX_ZOOM) {
@@ -161,6 +213,50 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     filter: 'contrast(1.1) brightness(0.9)'
                   }}
                 />
+                
+                {/* Station markers */}
+                {Object.entries(STATIONS).map(([key, station]) => {
+                  const isDiscovered = discoveredStations.includes(key);
+                  const markerStyle = getMarkerStyle(station.code);
+                  
+                  return (
+                    <motion.div
+                      key={key}
+                      className={`absolute ${isDiscovered ? 'cursor-pointer' : ''}`}
+                      style={{ 
+                        top: station.position.top, 
+                        left: station.position.left,
+                        width: '32px',
+                        height: '32px',
+                        opacity: isDiscovered ? 1 : 0,
+                        pointerEvents: isDiscovered ? 'auto' : 'none',
+                        zIndex: 20,
+                      }}
+                      initial={{ scale: 0, opacity: 0 }}
+                      animate={{ 
+                        scale: isDiscovered ? 1 : 0,
+                        opacity: isDiscovered ? 1 : 0
+                      }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 260,
+                        damping: 20
+                      }}
+                      whileHover={{ scale: 1.2 }}
+                      onMouseEnter={() => handleStationHover(key)}
+                      onMouseLeave={() => handleStationHover(null)}
+                      onClick={() => handleStationClick(key)}
+                    >
+                      {renderMarker(markerStyle)}
+                      
+                      {isDiscovered && hoveredStation === key && (
+                        <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-black bg-opacity-80 text-xs rounded text-white z-50">
+                          {station.name}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
               
               {/* Scan line effect */}
