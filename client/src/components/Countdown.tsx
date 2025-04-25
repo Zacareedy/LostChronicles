@@ -71,7 +71,7 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
 
   return (
     <div className="font-terminal text-[hsl(var(--dharma-amber))]">
-      <div className="relative bg-[#242424] p-3 rounded-sm border-2 border-[#333] shadow-lg">
+      <div className="relative bg-[#1a1a1a] p-2 border border-[hsla(var(--dharma-gray),0.4)] shadow-inner">
         <div className="flex">
           {[...displayMinutes.toString().padStart(3, '0'), ...(displaySeconds ? seconds.toString().padStart(2, '0') : '00')].map((digit, i) => (
             <motion.div
@@ -94,7 +94,6 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
             </motion.div>
           ))}
         </div>
-        <div className="mt-3 text-xs text-center text-[hsl(var(--dharma-gray))] tracking-[0.2em] opacity-80">SYSTEM PROTOCOL</div>
       </div>
     </div>
   );

@@ -121,7 +121,7 @@ const Home: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 [&>*]:rounded-none [&>*]:border [&>*]:border-[#333]">
+      <main className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 [&>*]:border [&>*]:border-[hsla(var(--dharma-gray),0.4)] [&>*]:bg-[#1a1a1a]">
         <Terminal 
           onRevealPuzzle={handleRevealPuzzle} 
           onRevealStation={handleRevealStation}
