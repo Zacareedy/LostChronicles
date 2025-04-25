@@ -105,18 +105,18 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      className="bg-[hsl(var(--dharma-black))] border-2 border-[hsla(var(--dharma-green),0.3)] rounded-none overflow-hidden shadow-[0_0_15px_rgba(0,255,0,0.15)] relative before:content-[''] before:absolute before:inset-0 before:pointer-events-none before:z-50 before:bg-[var(--crt-overlay)]"
+      className="dharma-panel shadow-[0_0_15px_rgba(0,255,0,0.15)] relative before:content-[''] before:absolute before:inset-0 before:pointer-events-none before:z-50 before:bg-[var(--crt-overlay)]"
     >
-      <div className="bg-[hsla(var(--dharma-green),0.1)] p-2 flex justify-between items-center border-b-2 border-[hsla(var(--dharma-green),0.3)]">
-        <h2 className="font-terminal text-[hsl(var(--dharma-green))] tracking-wider">ISLAND MAP</h2>
+      <div className="dharma-panel-header border-b-2 border-[hsla(var(--dharma-green),0.3)] bg-[hsla(var(--dharma-green),0.1)]">
+        <h2 className="dharma-panel-title text-[hsl(var(--dharma-green))]">ISLAND MAP</h2>
         <div className="flex space-x-2">
           <button 
             onClick={handleMapZoomIn}
-            className="w-6 h-6 flex items-center justify-center bg-[hsla(var(--dharma-gray),0.2)] text-[hsl(var(--dharma-amber))] hover:bg-[hsla(var(--dharma-gray),0.3)]"
+            className="w-6 h-6 flex items-center justify-center bg-[hsla(var(--dharma-gray),0.2)] text-[hsl(var(--dharma-green))] hover:bg-[hsla(var(--dharma-gray),0.3)]"
           >+</button>
           <button 
             onClick={handleMapZoomOut}
-            className="w-6 h-6 flex items-center justify-center bg-[hsla(var(--dharma-gray),0.2)] text-[hsl(var(--dharma-amber))] hover:bg-[hsla(var(--dharma-gray),0.3)]"
+            className="w-6 h-6 flex items-center justify-center bg-[hsla(var(--dharma-gray),0.2)] text-[hsl(var(--dharma-green))] hover:bg-[hsla(var(--dharma-gray),0.3)]"
           >-</button>
         </div>
       </div>
@@ -335,7 +335,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         <div className="text-[hsl(var(--dharma-green))] tracking-wide">
           {discoveredStations.length > 0 ? `COORDINATES: ${coordinates}` : 'COORDINATES: --° --′ --″ N, --° --′ --″ W'}
         </div>
-        <div className="text-[hsl(var(--dharma-gray))]">
+        <div className="text-[hsl(var(--dharma-dim-green))]">
           {discoveredStations.length === 0 
             ? 'NO SIGNALS DETECTED' 
             : discoveredStations.length === Object.keys(STATIONS).length 

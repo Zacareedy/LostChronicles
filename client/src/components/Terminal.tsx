@@ -218,12 +218,12 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
         </div>
       </div>
       
-      <div className="bg-[hsla(var(--dharma-gray),0.1)] p-2 text-xs text-[hsl(var(--dharma-gray))] flex justify-between">
+      <div className="bg-[hsla(var(--dharma-gray),0.1)] p-2 text-xs text-[hsl(var(--dharma-green))] flex justify-between border-t border-[hsla(var(--dharma-gray),0.3)]">
         <span>Use command 'help' for available options</span>
         <span className={terminalStatus === 'ACCESS DENIED' 
           ? 'text-[hsl(var(--dharma-red))]' 
           : terminalStatus === 'ACCESS GRANTED' 
-          ? 'text-[hsl(var(--dharma-green))]' 
+          ? 'text-[hsl(var(--dharma-bright-green))]' 
           : ''}
         >
           {terminalStatus}
