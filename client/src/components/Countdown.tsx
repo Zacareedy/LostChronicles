@@ -71,28 +71,29 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
 
   return (
     <div className="font-terminal text-[hsl(var(--dharma-amber))]">
-      <div className="relative bg-[#1a1a1a] p-2 rounded-md border border-[#333] shadow-inner">
-        <div className="flex gap-[1px]">
+      <div className="relative bg-[#242424] p-3 rounded-sm border-2 border-[#333] shadow-lg">
+        <div className="flex">
           {[...displayMinutes.toString().padStart(3, '0'), ...(displaySeconds ? seconds.toString().padStart(2, '0') : '00')].map((digit, i) => (
             <motion.div
               key={i}
-              className={`relative w-8 h-10 bg-black rounded-sm flex items-center justify-center overflow-hidden
-                ${i === 3 ? 'mr-[1px]' : ''}`}
+              className={`relative w-10 h-14 bg-black flex items-center justify-center overflow-hidden border-r border-[#1a1a1a]
+                ${i === 3 ? 'mr-[2px] border-r-2 border-r-[#333]' : ''}`}
               animate={isWarning ? { 
                 backgroundColor: ['#1a1a1a', '#2a1515', '#1a1a1a'],
-                boxShadow: ['inset 0 2px 4px rgba(0,0,0,0.5)', 'inset 0 2px 4px rgba(255,0,0,0.2)', 'inset 0 2px 4px rgba(0,0,0,0.5)']
+                boxShadow: ['inset 0 0 8px rgba(0,0,0,0.8)', 'inset 0 0 8px rgba(255,0,0,0.3)', 'inset 0 0 8px rgba(0,0,0,0.8)']
               } : {}}
               transition={{ repeat: Infinity, duration: 2 }}
             >
-              <span className={`font-mono text-xl ${isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-[hsl(var(--dharma-amber))]'}`}>
+              <span className={`font-mono text-2xl font-bold ${isWarning ? 'text-[hsl(var(--dharma-red))]' : 'text-[#e6e6e6]'}`}>
                 {digit}
               </span>
-              <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-[#444] to-transparent opacity-50" />
-              <div className="absolute inset-x-0 bottom-0 h-[1px] bg-gradient-to-r from-transparent via-[#444] to-transparent opacity-50" />
+              <div className="absolute inset-x-0 top-[45%] h-[1px] bg-[#111] opacity-80" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black opacity-20" />
+              <div className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-black via-[#333] to-black opacity-70" />
             </motion.div>
           ))}
         </div>
-        <div className="mt-2 text-xs text-center text-[hsl(var(--dharma-gray))] tracking-wider">SYSTEM PROTOCOL</div>
+        <div className="mt-3 text-xs text-center text-[hsl(var(--dharma-gray))] tracking-[0.2em] opacity-80">SYSTEM PROTOCOL</div>
       </div>
     </div>
   );
