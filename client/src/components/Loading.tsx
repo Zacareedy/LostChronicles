@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LOADING_MESSAGES } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
-import dharmaLogoSvg from '@/assets/dharma-logo-original.svg';
+import dharmaLogoSvg from '@/assets/dharma-logo-fixed.svg';
 
 interface LoadingProps {
   onLoadComplete: () => void;
@@ -65,13 +65,12 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
           transition={{ duration: 1 }}
         >
           {/* DHARMA Logo SVG */}
-          <div className="mb-8 animate-pulse relative w-64 h-64">
+          <div className="mb-8 relative w-64 h-64">
             <img 
               src={dharmaLogoSvg} 
               alt="DHARMA Initiative Logo" 
               className="w-full h-full" 
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[rgba(0,0,0,0.2)] to-transparent pointer-events-none"></div>
             
             {/* Text below SVG */}
             <div className="absolute -bottom-8 left-0 right-0 text-center">
