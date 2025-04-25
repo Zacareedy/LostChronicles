@@ -7,6 +7,7 @@ import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
 import SystemError from "@/pages/SystemError";
 import { AnimatePresence } from "framer-motion";
+import { LoreProvider } from "./contexts/LoreContext";
 
 function Router() {
   return (
@@ -24,8 +25,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Router />
+        <LoreProvider>
+          <Toaster />
+          <Router />
+        </LoreProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );
