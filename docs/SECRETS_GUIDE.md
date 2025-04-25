@@ -41,9 +41,7 @@
 1. Valenzetti Equation
    - Numbers sequence: 4,8,15,16,23,42
    - Unlocks after system error override
-2. Frame Puzzle
-   - Appears after entering Pearl surveillance mode
-   - Complete to unlock Pearl station logs
+   - Drag numbers into correct sequence to unlock electromagnetic anomaly report
 
 ## System Error Access
 1. Trigger system error:
@@ -51,15 +49,15 @@
    - Requires security level 2
 2. Memory dump location:
    - Click glitching text in debug output
-   - Reveals Pearl access code
+   - Reveals Pearl access code: C22/DSTNGSHD-LBRT
 
 ## Map Features
 1. Station Markers
-   - Only visible after discovering stations
-   - Hover for station details
-2. Signal Analysis
-   - Scan for undiscovered stations
-   - Coordinate triangulation requires level 2 access
+   - Markers become visible after discovering corresponding stations
+   - Hover for station details and coordinates
+2. Station Discovery
+   - Use terminal commands to unlock new stations
+   - Each station requires specific security clearance
 
 ## Countdown Protocol
 1. Reset Sequence
