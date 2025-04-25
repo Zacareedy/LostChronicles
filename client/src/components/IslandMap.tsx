@@ -26,7 +26,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   useEffect(() => {
     // Initial scan effect
     let scanInterval: NodeJS.Timeout;
-    
+
     if (discoveredStations.length > 0) {
       scanInterval = setInterval(() => {
         const randomStation = discoveredStations[Math.floor(Math.random() * discoveredStations.length)];
@@ -36,7 +36,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         }, 3000);
       }, 10000);
     }
-    
+
     return () => {
       if (scanInterval) clearInterval(scanInterval);
     };
@@ -68,13 +68,39 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   const [mapZoom, setMapZoom] = useState(1);
   const MIN_ZOOM = 1; // Prevent zooming out
   const MAX_ZOOM = 1.5;
-  
+
+  // Get marker style based on station type
+  const getMarkerStyle = (locationType: string) => {
+    if (locationType === 'Shipwreck') {
+      return {
+        background: 'hsla(0, 70%, 40%, 0.8)',
+        borderColor: '#fff',
+        shape: 'square',
+        content: '⚓'
+      };
+    } else if (locationType === 'Position') {
+      return {
+        background: 'hsla(200, 70%, 40%, 0.8)',
+        borderColor: '#fff',
+        shape: 'triangle',
+        content: '📡'
+      };
+    } else {
+      return {
+        background: 'hsla(var(--dharma-amber),0.8)',
+        borderColor: '#fff',
+        shape: 'circle',
+        content: locationType.replace('Station ', '')
+      };
+    }
+  };
+
   // Handle map dragging
   const handleMapMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
     setStartDragPos({ x: e.clientX - mapOffset.x, y: e.clientY - mapOffset.y });
   };
-  
+
   const handleMapMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     const newOffset = {
@@ -83,11 +109,11 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     };
     setMapOffset(newOffset);
   };
-  
+
   const handleMapMouseUp = () => {
     setIsDragging(false);
   };
-  
+
   // Render marker based on style
   const renderMarker = (markerStyle: any) => {
     if (markerStyle.shape === 'circle') {
@@ -105,7 +131,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         </div>
       );
     }
-    
+
     if (markerStyle.shape === 'square') {
       return (
         <div 
@@ -121,7 +147,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         </div>
       );
     }
-    
+
     if (markerStyle.shape === 'triangle') {
       return (
         <div 
@@ -139,7 +165,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       );
     }
   };
-  
+
   // Handle map zoom
   const handleMapZoomIn = () => {
     if (mapZoom < MAX_ZOOM) {
@@ -147,14 +173,14 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       playSound('beep', 'short');
     }
   };
-  
+
   const handleMapZoomOut = () => {
     if (mapZoom > MIN_ZOOM) {
       setMapZoom(prev => Math.max(MIN_ZOOM, prev - 0.1));
       playSound('beep', 'short');
     }
   };
-  
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}
@@ -175,7 +201,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
           >-</button>
         </div>
       </div>
-      
+
       <div className="p-4 relative h-80">
         <div 
           className="absolute inset-0 m-2 rounded overflow-hidden border border-[hsla(var(--dharma-gray),0.3)] bg-black"
@@ -198,7 +224,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
             >
               {/* Island map image */}
               <div 
-                className="absolute w-full h-full"
+                className="relative w-full h-full bg-black"
                 style={{ 
                   transform: `scale(${mapZoom}) translate(${mapOffset.x / mapZoom}px, ${mapOffset.y / mapZoom}px)`,
                   willChange: 'transform',
@@ -213,12 +239,12 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     filter: 'contrast(1.1) brightness(0.9)'
                   }}
                 />
-                
+
                 {/* Station markers */}
                 {Object.entries(STATIONS).map(([key, station]) => {
                   const isDiscovered = discoveredStations.includes(key);
                   const markerStyle = getMarkerStyle(station.code);
-                  
+
                   return (
                     <motion.div
                       key={key}
@@ -248,7 +274,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       onClick={() => handleStationClick(key)}
                     >
                       {renderMarker(markerStyle)}
-                      
+
                       {isDiscovered && hoveredStation === key && (
                         <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-black bg-opacity-80 text-xs rounded text-white z-50">
                           {station.name}
@@ -258,7 +284,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   );
                 })}
               </div>
-              
+
               {/* Scan line effect */}
               <div 
                 className="absolute inset-0 z-10 animate-terminal-scan" 
@@ -266,7 +292,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   boxShadow: 'inset 0 0 10px rgba(227, 188, 77, 0.3)',
                 }}
               ></div>
-              
+
               {/* Mysterious fog overlay that partially clears based on discovered stations */}
               <div 
                 className="absolute inset-0 bg-gradient-to-br from-[rgba(0,0,0,0.7)] to-[rgba(0,0,0,0.4)]"
@@ -275,126 +301,14 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`
                 }}
               />
-              
+
               {/* Grid patterns suggesting more locations */}
               <div 
                 className="absolute inset-0 grid-pattern opacity-30"
                 style={{ transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)` }}
               ></div>
-              
-              {/* Station markers */}
-              {Object.entries(STATIONS).map(([key, station]) => {
-                const isDiscovered = discoveredStations.includes(key);
-                
-                // Different marker styles for different location types
-                const getMarkerStyle = (locationType: string) => {
-                  if (locationType === 'Shipwreck') {
-                    return {
-                      background: 'hsla(0, 70%, 40%, 0.8)',
-                      borderColor: '#fff',
-                      shape: 'square',
-                      content: '⚓'
-                    };
-                  } else if (locationType === 'Position') {
-                    return {
-                      background: 'hsla(200, 70%, 40%, 0.8)',
-                      borderColor: '#fff',
-                      shape: 'triangle',
-                      content: '📡'
-                    };
-                  } else {
-                    return {
-                      background: 'hsla(var(--dharma-amber),0.8)',
-                      borderColor: '#fff',
-                      shape: 'circle',
-                      content: station.code.replace('Station ', '')
-                    };
-                  }
-                };
 
-                const markerStyle = getMarkerStyle(station.code);
-                const isSpecialShape = markerStyle.shape === 'triangle' || markerStyle.shape === 'square';
-                
-                return (
-                  <motion.div
-                    key={key}
-                    className={`absolute ${isDiscovered ? 'cursor-pointer' : ''}`}
-                    style={{ 
-                      top: station.position.top, 
-                      left: station.position.left,
-                      width: '32px',
-                      height: '32px',
-                      opacity: isDiscovered ? 1 : 0,
-                      pointerEvents: isDiscovered ? 'auto' : 'none',
-                      zIndex: 20,
-                    }}
-                    initial={{ scale: 0, opacity: 0 }}
-                    animate={{ 
-                      scale: isDiscovered ? 1 : 0,
-                      opacity: isDiscovered ? 1 : 0
-                    }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 20
-                    }}
-                    whileHover={{ scale: 1.2 }}
-                    onMouseEnter={() => handleStationHover(key)}
-                    onMouseLeave={() => handleStationHover(null)}
-                    onClick={() => handleStationClick(key)}
-                  >
-                    {markerStyle.shape === 'circle' && (
-                      <div 
-                        className="w-full h-full rounded-full flex items-center justify-center border-2 dharma-station-marker"
-                        style={{ 
-                          backgroundColor: markerStyle.background, 
-                          borderColor: markerStyle.borderColor 
-                        }}
-                      >
-                        <span className="text-black font-bold text-xs">
-                          {markerStyle.content}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {markerStyle.shape === 'square' && (
-                      <div 
-                        className="w-full h-full rounded-sm flex items-center justify-center border-2 dharma-station-marker"
-                        style={{ 
-                          backgroundColor: markerStyle.background, 
-                          borderColor: markerStyle.borderColor 
-                        }}
-                      >
-                        <span className="text-white font-bold text-xs">
-                          {markerStyle.content}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {markerStyle.shape === 'triangle' && (
-                      <div 
-                        className="w-full h-full rounded-sm flex items-center justify-center border-2 dharma-station-marker"
-                        style={{ 
-                          backgroundColor: markerStyle.background, 
-                          borderColor: markerStyle.borderColor,
-                          clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)'
-                        }}
-                      >
-                        <span className="text-white font-bold text-xs translate-y-2">
-                          {markerStyle.content}
-                        </span>
-                      </div>
-                    )}
-                    
-                    {isDiscovered && hoveredStation === key && (
-                      <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-black bg-opacity-80 text-xs rounded text-white z-50">
-                        {station.name}
-                      </div>
-                    )}
-                  </motion.div>
-                );
-              })}
-              
+
               {/* Mysterious signal indicators for undiscovered stations */}
               {discoveredStations.length > 0 && discoveredStations.length < Object.keys(STATIONS).length && (
                 <div 
@@ -430,7 +344,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
           </div>
         </div>
       </div>
-      
+
       <div className="bg-[hsla(var(--dharma-green),0.1)] p-2 text-xs font-mono border-t-2 border-[hsla(var(--dharma-green),0.3)]">
         <div className="text-[hsl(var(--dharma-green))] tracking-wide">
           {discoveredStations.length > 0 ? `COORDINATES: ${coordinates}` : 'COORDINATES: --° --′ --″ N, --° --′ --″ W'}
