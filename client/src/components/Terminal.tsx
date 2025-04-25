@@ -14,9 +14,10 @@ interface TerminalProps {
   onRevealStation: (stationName: string) => void;
   onCorrectSequence: () => void;
   onCommand?: (command: string) => void; // Optional handler for terminal commands
+  isSystemFailure?: boolean; // Flag indicating if system failure is active
 }
 
-const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, onCorrectSequence, onCommand }) => {
+const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, onCorrectSequence, onCommand, isSystemFailure = false }) => {
   const [terminalOutput, setTerminalOutput] = useState<TerminalOutput[]>([
     { text: '>DHARMA INITIATIVE - SWAN STATION TERMINAL', type: 'output' },
     { text: '>AWAITING INPUT...', type: 'output' },
@@ -59,8 +60,68 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
     }
   }, [terminalOutput]);
 
+  // Handle system failure state
+  useEffect(() => {
+    if (isSystemFailure) {
+      // Clear existing cursor
+      setTerminalOutput(prev => prev.filter(item => item.type !== 'cursor'));
+      
+      // Set terminal status to system failure
+      setTerminalStatus('SYSTEM FAILURE');
+      
+      // Add system failure messages to terminal
+      const systemFailureMessages = [
+        '> [ALERT] ELECTROMAGNETIC CONTAINMENT BREACH',
+        '> [CRITICAL] SYSTEM FAILURE DETECTED',
+        '> [WARNING] DISCHARGE IMMINENT',
+        '> [ALERT] EXECUTE PROTOCOL IMMEDIATELY',
+        '> [CRITICAL] ENTER CODE: 4 8 15 16 23 42'
+      ];
+      
+      // Display messages with delays
+      systemFailureMessages.forEach((message, index) => {
+        setTimeout(() => {
+          // Remove cursor before adding new text
+          setTerminalOutput(prev => prev.filter(item => item.type !== 'cursor'));
+          
+          // Add failure message
+          setTerminalOutput(prev => [
+            ...prev,
+            { text: message, type: 'output' },
+            { text: '_', type: 'cursor' }
+          ]);
+          
+          // Play alarm sound with each message
+          playSound('beep', 'alarm');
+        }, 1200 * index); // Spaced out messages
+      });
+      
+      // Set up repeating SYSTEM FAILURE messages
+      const intervalId = setInterval(() => {
+        // Remove cursor before adding new text
+        setTerminalOutput(prev => prev.filter(item => item.type !== 'cursor'));
+        
+        // Add repeating failure message
+        setTerminalOutput(prev => [
+          ...prev,
+          { text: '> [SYSTEM FAILURE] ELECTROMAGNETIC DISCHARGE IMMINENT', type: 'output' },
+          { text: '_', type: 'cursor' }
+        ]);
+        
+        playSound('beep', 'alarm');
+      }, 8000); // Repeat every 8 seconds
+      
+      return () => {
+        clearInterval(intervalId);
+      };
+    }
+  }, [isSystemFailure]);
+
   // Add some ambient terminal messages at random intervals
   useEffect(() => {
+    // Skip ambient messages if in system failure mode
+    if (isSystemFailure) return;
+    
     const ambientMessages = [
       '> [System monitoring active]',
       '> [Electromagnetic anomaly detected]',
@@ -92,7 +153,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       
       return () => clearInterval(intervalId);
     }
-  }, [terminalOutput]);
+  }, [terminalOutput, isSystemFailure]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,7 +235,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       }
     } else if (userInput === '4 8 15 16 23 42') {
       // Reset the countdown
-      handleCorrectSequence();
+      onCorrectSequence();
       setTerminalStatus('SYSTEM RESET');
       playSound('success');
       setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
@@ -228,17 +289,43 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
         </div>
       </div>
       
+      {/* Terminal footer with status */}
       <div className="bg-[hsla(var(--dharma-gray),0.1)] p-2 text-xs text-[hsl(var(--dharma-green))] flex justify-between border-t border-[hsla(var(--dharma-gray),0.3)]">
         <span>Use command 'help' for available options</span>
-        <span className={terminalStatus === 'ACCESS DENIED' 
-          ? 'text-[hsl(var(--dharma-red))]' 
-          : terminalStatus === 'ACCESS GRANTED' 
-          ? 'text-[hsl(var(--dharma-bright-green))]' 
-          : ''}
-        >
+        <span className={
+          terminalStatus === 'ACCESS DENIED' 
+            ? 'text-[hsl(var(--dharma-red))]' 
+            : terminalStatus === 'ACCESS GRANTED' 
+              ? 'text-[hsl(var(--dharma-bright-green))]' 
+              : terminalStatus === 'SYSTEM FAILURE'
+                ? 'text-[hsl(var(--dharma-red))] font-bold animate-terminal-blink'
+                : ''
+        }>
           {terminalStatus}
         </span>
       </div>
+      
+      {/* System Failure Overlay */}
+      {isSystemFailure && (
+        <div className="absolute top-2 left-2 right-2 z-10 pointer-events-none">
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: [0.7, 0.9, 0.7],
+              y: [0, -3, 0]
+            }}
+            transition={{ 
+              repeat: Infinity, 
+              duration: 1.5 
+            }}
+            className="bg-transparent p-2 text-center"
+          >
+            <div className="font-terminal text-[hsl(var(--dharma-red))] text-4xl font-bold">
+              SYSTEM FAILURE
+            </div>
+          </motion.div>
+        </div>
+      )}
     </motion.section>
   );
 };
