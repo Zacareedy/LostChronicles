@@ -705,7 +705,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   {[...Array(100)].map((_, i) => (
                     <div 
                       key={`rain-${i}`}
-                      className="absolute w-px h-8 bg-cyan-400 opacity-20"
+                      className="absolute w-px h-8 bg-cyan-400 opacity-20 animate-rain"
                       style={{
                         left: `${Math.random() * 100}%`,
                         top: `${Math.random() * 100}%`,
@@ -729,7 +729,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   {[...Array(150)].map((_, i) => (
                     <div 
                       key={`storm-rain-${i}`}
-                      className="absolute w-px h-10 bg-cyan-400 opacity-30"
+                      className="absolute w-px h-10 bg-cyan-400 opacity-30 animate-rain"
                       style={{
                         left: `${Math.random() * 100}%`,
                         top: `${Math.random() * 100}%`,
@@ -774,6 +774,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       stroke="hsla(var(--dharma-amber), 0.4)" 
                       strokeWidth="2"
                       strokeDasharray="5,5"
+                      className="station-connection"
                     />
                   )}
                   

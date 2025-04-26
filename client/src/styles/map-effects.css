@@ -51,3 +51,66 @@
     linear-gradient(90deg, rgba(227, 188, 77, 0.1) 1px, transparent 1px);
   background-size: 40px 40px;
 }
+
+/* Fog animation */
+@keyframes fog {
+  0% {
+    opacity: 0.1;
+    transform: translateY(0) translateX(0);
+  }
+  50% {
+    opacity: 0.2;
+    transform: translateY(-10px) translateX(10px);
+  }
+  100% {
+    opacity: 0.1;
+    transform: translateY(0) translateX(0);
+  }
+}
+
+.animate-fog {
+  animation: fog 8s ease-in-out infinite;
+}
+
+/* Rain animation */
+@keyframes rain {
+  0% {
+    transform: translateY(-100%) translateX(-10%);
+    opacity: 0;
+  }
+  70%, 90% {
+    opacity: 0.3;
+  }
+  100% {
+    transform: translateY(200%) translateX(-30%);
+    opacity: 0;
+  }
+}
+
+/* Lightning animation */
+@keyframes lightning {
+  0%, 95%, 98% {
+    opacity: 0;
+  }
+  96%, 97% {
+    opacity: 0.8;
+  }
+  97.5% {
+    opacity: 0.3;
+  }
+}
+
+.animate-lightning {
+  animation: lightning 6s infinite;
+}
+
+/* Station connection line animation */
+@keyframes dash {
+  to {
+    stroke-dashoffset: 20;
+  }
+}
+
+.station-connection {
+  animation: dash 20s linear infinite;
+}
