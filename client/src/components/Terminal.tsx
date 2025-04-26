@@ -290,13 +290,8 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       transition={{ delay: 0.2 }}
       className="lg:col-span-2 dharma-panel"
     >
-      <div className="dharma-panel-header">
-        <h2 className="dharma-panel-title">TERMINAL</h2>
-        <div className="flex space-x-2">
-          <div className="w-3 h-3 rounded-full bg-[hsl(var(--dharma-red))]"></div>
-          <div className="w-3 h-3 rounded-full bg-[hsl(var(--dharma-amber))]"></div>
-          <div className="w-3 h-3 rounded-full bg-[hsl(var(--dharma-green))]"></div>
-        </div>
+      <div className="dharma-panel-header border-b border-[hsla(var(--dharma-gray),0.5)]">
+        <h2 className="dharma-panel-title tracking-[0.5em] text-sm">DHARMA TERMINAL v2.0</h2>
       </div>
       
       <div 
