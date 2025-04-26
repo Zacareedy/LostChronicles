@@ -1,0 +1,117 @@
+Absolutely — you’re clearly crafting a deep, layered mystery, so let’s push this even further with multi-step puzzle chains, realistic gating, and in-universe justifications for why things exist and how players interact with them. Below is an expansion of new features, lore, and puzzles, now designed with explicit user flows, access mechanics, and narrative logic — all fitting within the grounded-yet-eerie world of LOST.
+
+⸻
+
+1. Subnet Protocol Interface
+
+Lore Context:
+The DHARMA Initiative maintained a hidden inter-station messaging protocol after the Incident to avoid radio interception by hostile forces. Most logs were wiped, but fragments remain in old system caches.
+
+How It’s Accessed:
+	1.	At Security Level 3, user types diagnose /net.
+	2.	This outputs a corrupted file table with references to /mnt/net_link.sys and subnet.daemon.
+	3.	If they run exec subnet.daemon, it fails.
+	4.	Exploring /mnt/ and opening a non-obvious .readme file (found only by ls -a) reveals a hidden directory: .dharmanet/.
+	5.	In there: init_socket.sh — running it activates a flickering UI module: Subnet Interface.
+	6.	This brings up a minimal chat-based interface with broken conversations, mostly between engineers post-Incident. Some mention a “protocol candle”.
+
+How It Ties Together:
+	•	Some of these subnet logs contradict logs found elsewhere.
+	•	One message is from a user named Alvar.H — hinting the founder may still be active (or impersonated).
+	•	Several later puzzles require knowledge of the chat handle color codes from this system.
+
+⸻
+
+2. Numbers Transmission Receiver (Radio Puzzle)
+
+Lore Context:
+The Swan station’s numbers broadcast was only one of many. Several lesser-known broadcasts were used to encode and deliver other types of data, such as emergency protocols or time-lost reports.
+
+How It’s Accessed:
+	1.	User discovers a transmission.log file in /archive/swan/ only once they’ve visited at least three stations and entered their logs into the terminal (upload_log <station>).
+	2.	The log mentions: “Alternate frequency detected — unknown origin.”
+	3.	The map now shows a faint pulsing red dot in the sea near the island.
+	4.	Clicking this dot triggers a prompt: “Tune to nearby frequency?”
+	5.	Doing so unlocks a basic radio interface in the terminal: radio.listen(4.8) opens a crude UI component with knobs and waveform visual.
+
+Puzzle Flow:
+	•	Audio sounds like static. However, if the user tunes correctly (e.g., 4.8, 15.16, 23.42 MHz), each frequency plays a different loop of static.
+	•	The loops are not static: one includes Morse, one is a backmasked voice, one includes tones that create a QR code in a spectrogram.
+	•	They must extract, decode, and correlate all 3 layers to reveal the location of the “black box” near the crashed DHARMA cargo plane (see next).
+
+⸻
+
+3. The Black Box Archive
+
+Lore Context:
+The DHARMA supply plane that periodically dropped materials across the island crashed during an electromagnetic surge. A black box was recovered by the Pearl, but the audio was encrypted.
+
+How It’s Accessed:
+	1.	Once the radio puzzle is complete, the location of the crash appears on the island map.
+	2.	Visiting the site prompts the message: “Wreckage discovered. Recover?”
+	3.	This unlocks a video file in the terminal UI: /recovered/flightpath.mp4.
+
+Puzzle Flow:
+	•	The video is heavily corrupted. The player can’t “play” it. However, if they view it in fullscreen, mouse movement reveals hidden timeline blips.
+	•	Clicking each blip plays a second of static with embedded voice or reversed music.
+	•	Scrubbing through in a precise order (e.g., 8, 15, 16, 23, 42 sec marks) plays a secret message in real-time.
+	•	The full message is a voice log from a high-level DHARMA operative, warning that “Project Candle must be initiated before the temporal breach completes.”
+
+Result:
+	•	Unlocks Project Candle puzzle sequence.
+	•	Player gets Level 4 clearance only if they’ve also completed the Pearl station’s full observation log entry.
+
+⸻
+
+4. Project Candle (Timed Inter-Station Challenge)
+
+Lore Context:
+Referenced across many logs as a last-resort synchronization protocol. Only activatable when multiple stations operate in harmony. Failed to trigger during the Incident. Key to stopping the “temporal cascade.”
+
+How It’s Accessed:
+	1.	Player must:
+	•	Visit and fully log 3 specific stations (Swan, Flame, Pearl).
+	•	Discover an obscure terminal command: protocol.candle.activate()
+	2.	Command only works if they input it within 4 minutes of each other while switching stations on the map.
+
+Puzzle Flow:
+	•	Triggers a multi-screen challenge:
+	•	One station begins a countdown.
+	•	Another requires solving a “system sync puzzle” (dragging moving nodes to align over nodes using hints from audio logs).
+	•	The third displays a sentence that must be completed using keywords from the subnet chat system.
+
+Failing any part = full lockout for 24 hrs (narrative justification: system overload). Completing it:
+	•	Reveals a file called /final/valenzetti.key
+	•	Opening it shows only: LOOP_COUNT: 0
+
+⸻
+
+5. The Void Directory (Endgame Layer)
+
+Lore Context:
+An unlisted section of the DHARMA OS, referenced in a single corrupted file as “the fallback consciousness sync stack.” No one knows who made it, or why. Possibly not DHARMA at all.
+
+How It’s Accessed:
+	1.	After completing Project Candle, the user gets Level 4 access.
+	2.	In /logs/pearl/ appears a new file: whisper.backtrace.log
+	3.	The log includes:
+TRACE: /mnt/███/VOID -> /dev/ethereal.stack
+	4.	Inputting mount /dev/ethereal.stack outputs: VOID online.
+
+Puzzle Flow:
+	•	Terminal becomes visually unstable: ghosted letters, inverted colors, delayed input.
+	•	Terminal now runs a strange AI-like entity:
+	•	Prompts: “Why are you still here?”
+	•	Accepts only philosophical or emotional input (why, hope, is anyone alive)
+	•	After several cryptic exchanges, a final prompt:
+	•	“Would you like to end the loop?”
+	•	Yes = resets everything
+	•	No = output: LOOP_COUNT++
+
+Ending:
+	•	Player realizes the game can be replayed, but with subtle variations and “memories” (small lore changes, pre-unlocked messages, extra subnet logs)
+	•	The ARG never fully ends — just loops with deeper understanding.
+
+⸻
+
+Would you like an interactive puzzle prototype or terminal mockup for one of these? Or maybe branching narrative options for a Void AI interaction?

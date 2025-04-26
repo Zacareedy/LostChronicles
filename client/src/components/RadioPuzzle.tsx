@@ -1,6 +1,23 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Radio, Volume2, Play, Pause, SkipForward, SkipBack, Bookmark, BookmarkCheck, Info } from 'lucide-react';
+import { 
+  Radio, 
+  Volume2, 
+  Play, 
+  Pause, 
+  SkipForward, 
+  SkipBack, 
+  Bookmark, 
+  BookmarkCheck, 
+  Info, 
+  WaveSine,
+  FileAudio, 
+  Download,
+  Database,
+  AlertCircle,
+  CheckCircle,
+  Code
+} from 'lucide-react';
 import { playSound } from '@/lib/audio';
 
 interface RadioPuzzleProps {
@@ -9,7 +26,19 @@ interface RadioPuzzleProps {
   onComplete: () => void;
 }
 
+// Recorded Audio Sample Type
+interface AudioSample {
+  id: string;
+  frequency: number;
+  name: string;
+  type: 'morse' | 'voice' | 'tone';
+  description: string;
+  isDecoded: boolean;
+  clue: string;
+}
+
 const RadioPuzzle: React.FC<RadioPuzzleProps> = ({ isVisible, onClose, onComplete }) => {
+  // Basic state
   const [frequency, setFrequency] = useState<number>(108.0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(70);
@@ -19,15 +48,44 @@ const RadioPuzzle: React.FC<RadioPuzzleProps> = ({ isVisible, onClose, onComplet
   const [decodedMessage, setDecodedMessage] = useState<string>('');
   const [isCompleted, setIsCompleted] = useState<boolean>(false);
   
-  // The special frequency that contains the hidden message
-  const TARGET_FREQUENCY = 115.8;
+  // Advanced functionality
+  const [activeScanMode, setActiveScanMode] = useState<boolean>(false);
+  const [scanResults, setScanResults] = useState<string[]>([]);
+  const [recordedSamples, setRecordedSamples] = useState<AudioSample[]>([]);
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [selectedTab, setSelectedTab] = useState<'radio' | 'analysis'>('radio');
+  const [activeAnalysisSample, setActiveAnalysisSample] = useState<string | null>(null);
+  const [showSpectrogram, setShowSpectrogram] = useState<boolean>(false);
+  const [annotationText, setAnnotationText] = useState<string>('');
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // The special frequencies that contain hidden messages
+  const FREQUENCIES = {
+    NUMBERS: 4.8,
+    MORSE: 15.16,
+    VOICE: 23.42,
+    QR: 108.0
+  };
+  
   const SIGNAL_THRESHOLD = 80;
   
   // Update signal strength based on how close to target frequency
   useEffect(() => {
     if (!isVisible) return;
 
-    const distanceFromTarget = Math.abs(frequency - TARGET_FREQUENCY);
+    // Find the nearest special frequency
+    let nearestFrequency = FREQUENCIES.NUMBERS;
+    let minDistance = Math.abs(frequency - FREQUENCIES.NUMBERS);
+    
+    for (const [_, value] of Object.entries(FREQUENCIES)) {
+      const distance = Math.abs(frequency - value);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestFrequency = value;
+      }
+    }
+    
+    const distanceFromTarget = minDistance;
     
     // Calculate signal strength based on proximity to target
     let calculatedStrength = 0;
