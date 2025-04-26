@@ -16,15 +16,98 @@ interface Station {
   position: { top: string; left: string };
 }
 
+interface Coordinate {
+  lat: string;
+  long: string;
+  description: string;
+}
+
+interface HiddenLocation {
+  id: string;
+  name: string;
+  description: string;
+  coordinates: string;
+  position: { top: string; left: string };
+  discoveryMethod: 'coordinates' | 'puzzle' | 'time' | 'weather';
+  discoveryRequirement: string;
+  isDiscovered: boolean;
+}
+
 interface IslandMapProps {
   discoveredStations: string[];
   onStationClick: (stationName: string) => void;
+  onSecretDiscovery?: (secretId: string) => void;
 }
 
-const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClick }) => {
+const HIDDEN_LOCATIONS = [
+  {
+    id: 'crash-site',
+    name: 'Flight 815 Crash Site',
+    description: 'Location where the fuselage of Oceanic 815 crashed',
+    coordinates: '23° 4′ 20″ N, 16° 53′ 42″ W',
+    position: { top: '58%', left: '27%' },
+    discoveryMethod: 'coordinates' as const,
+    discoveryRequirement: '23.4N, 16.53W',
+    isDiscovered: false
+  },
+  {
+    id: 'caves',
+    name: 'The Caves',
+    description: 'Fresh water source and temporary shelter',
+    coordinates: '15° 33′ 42″ N, 12° 14′ 8″ W',
+    position: { top: '33%', left: '32%' },
+    discoveryMethod: 'coordinates' as const,
+    discoveryRequirement: '15.33N, 12.14W',
+    isDiscovered: false
+  },
+  {
+    id: 'radio-tower',
+    name: 'Radio Tower',
+    description: 'Source of Rousseau\'s transmission',
+    coordinates: '42° 33′ 15″ N, 15° 8′ 4″ W',
+    position: { top: '18%', left: '72%' },
+    discoveryMethod: 'puzzle' as const,
+    discoveryRequirement: 'radio',
+    isDiscovered: false
+  },
+  {
+    id: 'hatch-exterior',
+    name: 'The Hatch Exterior',
+    description: 'Original entrance to the Swan Station',
+    coordinates: '4° 18′ 15″ N, 16° 53′ 42″ W',
+    position: { top: '74%', left: '30%' },
+    discoveryMethod: 'time' as const,
+    discoveryRequirement: '108',
+    isDiscovered: false
+  },
+  {
+    id: 'lighthouse',
+    name: 'The Lighthouse',
+    description: 'Jacob\'s lighthouse with the mirrored signal beacon',
+    coordinates: '23° 42′ 8″ N, 42° 15′ 16″ W',
+    position: { top: '22%', left: '85%' },
+    discoveryMethod: 'weather' as const,
+    discoveryRequirement: 'storm',
+    isDiscovered: false
+  }
+];
+
+// Weather states
+type WeatherState = 'clear' | 'fog' | 'rain' | 'storm';
+
+const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClick, onSecretDiscovery }) => {
   const [hoveredStation, setHoveredStation] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState('--° --′ --″ N, --° --′ --″ W');
   const [mapStatus, setMapStatus] = useState('SCANNING FOR SIGNALS...');
+  
+  // New state for enhanced map features
+  const [hiddenLocations, setHiddenLocations] = useState(HIDDEN_LOCATIONS);
+  const [currentWeather, setCurrentWeather] = useState<WeatherState>('clear');
+  const [showCoordinateGrid, setShowCoordinateGrid] = useState(false);
+  const [flashingSignals, setFlashingSignals] = useState<string[]>([]);
+  const [timePhase, setTimePhase] = useState(0); // 0-107 minutes
+  const [mapEntities, setMapEntities] = useState<{id: string, position: {top: string, left: string}, isTracked: boolean}[]>([]);
+  const [targetCoordinates, setTargetCoordinates] = useState<{lat: string, long: string} | null>(null);
 
   useEffect(() => {
     // Initial scan effect
@@ -195,11 +278,16 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     }
   };
 
-  // Handle map zoom
+  // Handle map zoom with grid coordinates visibility
   const handleMapZoomIn = () => {
     if (mapZoom < MAX_ZOOM) {
       setMapZoom(prev => Math.min(MAX_ZOOM, prev + 0.1));
       playSound('beep', 'short');
+      
+      // Show coordinate grid when zoomed in past a certain threshold
+      if (mapZoom >= 1.5 && !showCoordinateGrid) {
+        setShowCoordinateGrid(true);
+      }
     }
   };
 
@@ -207,6 +295,157 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     if (mapZoom > MIN_ZOOM) {
       setMapZoom(prev => Math.max(MIN_ZOOM, prev - 0.1));
       playSound('beep', 'short');
+      
+      // Hide coordinate grid when zoomed out
+      if (mapZoom < 1.5 && showCoordinateGrid) {
+        setShowCoordinateGrid(false);
+      }
+    }
+  };
+
+  // Handle weather changes
+  useEffect(() => {
+    // Random weather changes
+    const weatherInterval = setInterval(() => {
+      const weatherOptions: WeatherState[] = ['clear', 'fog', 'rain', 'storm'];
+      const randomWeather = weatherOptions[Math.floor(Math.random() * weatherOptions.length)];
+      
+      // More likely to be clear weather
+      if (Math.random() < 0.7 && randomWeather !== 'clear') {
+        setCurrentWeather('clear');
+      } else {
+        setCurrentWeather(randomWeather);
+        
+        // Show notification about weather change
+        setMapStatus(`WEATHER UPDATE: ${randomWeather.toUpperCase()}`);
+        setTimeout(() => {
+          setMapStatus('SCANNING FOR SIGNALS...');
+        }, 3000);
+      }
+    }, 120000); // Every 2 minutes
+    
+    return () => clearInterval(weatherInterval);
+  }, []);
+
+  // Handle time-based events (108-minute cycle)
+  useEffect(() => {
+    const timeInterval = setInterval(() => {
+      setTimePhase(prev => (prev + 1) % 108);
+      
+      // Special events at certain time intervals
+      if (timePhase === 107) {
+        // End of cycle
+        setFlashingSignals(['swan']);
+        setTimeout(() => setFlashingSignals([]), 5000);
+      } else if (timePhase % 27 === 0) {
+        // Every 27 minutes
+        setMapStatus('PROTOCOL WARNING: SYSTEM CHECK REQUIRED');
+        setTimeout(() => setMapStatus('SCANNING FOR SIGNALS...'), 5000);
+      }
+    }, 60000); // Update every minute, simulating the countdown
+    
+    return () => clearInterval(timeInterval);
+  }, [timePhase]);
+
+  // Initialize moving entities
+  useEffect(() => {
+    // Create initial entities
+    setMapEntities([
+      {
+        id: 'entity-001',
+        position: { top: '45%', left: '30%' },
+        isTracked: false
+      },
+      {
+        id: 'entity-004', // Radinsky entity
+        position: { top: '60%', left: '40%' },
+        isTracked: false
+      }
+    ]);
+    
+    // Move entities randomly
+    const entityInterval = setInterval(() => {
+      setMapEntities(prev => prev.map(entity => {
+        // Don't move tracked entities - they follow a predetermined path
+        if (entity.isTracked) return entity;
+        
+        // Random movement
+        const currentTop = parseInt(entity.position.top);
+        const currentLeft = parseInt(entity.position.left);
+        
+        return {
+          ...entity,
+          position: {
+            top: `${Math.max(10, Math.min(90, currentTop + (Math.random() * 10 - 5)))}%`,
+            left: `${Math.max(10, Math.min(90, currentLeft + (Math.random() * 10 - 5)))}%`
+          }
+        };
+      }));
+    }, 30000);
+    
+    return () => clearInterval(entityInterval);
+  }, []);
+  
+  // Method to navigate to specific coordinates
+  const navigateToCoordinates = (lat: string, long: string) => {
+    setTargetCoordinates({ lat, long });
+    
+    // Convert coordinates to approximate position
+    // This would need a more sophisticated algorithm in a real app
+    // For demo purposes, we'll just show a marker
+    
+    // Check if these coordinates match any hidden locations
+    const matchedLocation = hiddenLocations.find(loc => 
+      loc.discoveryMethod === 'coordinates' && 
+      loc.discoveryRequirement.includes(lat) && 
+      loc.discoveryRequirement.includes(long)
+    );
+    
+    if (matchedLocation) {
+      // Mark as discovered
+      setHiddenLocations(prev => prev.map(loc => 
+        loc.id === matchedLocation.id ? { ...loc, isDiscovered: true } : loc
+      ));
+      
+      // Notify parent component
+      if (onSecretDiscovery) {
+        onSecretDiscovery(matchedLocation.id);
+      }
+      
+      // Set map status to show discovery
+      setMapStatus(`LOCATION DISCOVERED: ${matchedLocation.name.toUpperCase()}`);
+      playSound('success');
+      
+      // Reset map offset to focus on the discovered location
+      const top = parseInt(matchedLocation.position.top);
+      const left = parseInt(matchedLocation.position.left);
+      
+      setMapOffset({
+        x: -(left - 50) * 5, // Approximate centering
+        y: -(top - 50) * 5
+      });
+      setMapZoom(2.0); // Zoom in on discovery
+    }
+  };
+  
+  // Method to handle entity tracking
+  const trackEntity = (entityId: string) => {
+    setMapEntities(prev => prev.map(entity => 
+      entity.id === entityId ? { ...entity, isTracked: true } : entity
+    ));
+    
+    setMapStatus(`TRACKING ENTITY: ${entityId}`);
+    
+    // For demo purposes, if entity-004 is tracked, it leads to a special discovery
+    if (entityId === 'entity-004') {
+      // This would trigger the Radinsky discovery event
+      setTimeout(() => {
+        // Reveal swan station blueprints
+        setMapStatus('ENTITY TRACKING COMPLETE: SWAN STATION BLUEPRINTS UNLOCKED');
+        playSound('success');
+        
+        // In a real app, we would unlock a document or blueprint here
+      }, 10000);
     }
   };
 
@@ -276,6 +515,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 {Object.entries(STATIONS).map(([key, station]) => {
                   const isDiscovered = discoveredStations.includes(key);
                   const markerStyle = getMarkerStyle(station.code);
+                  const isFlashing = flashingSignals.includes(key);
 
                   return (
                     <motion.div
@@ -292,13 +532,15 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       }}
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ 
-                        scale: isDiscovered ? 1 : 0,
-                        opacity: isDiscovered ? 1 : 0
+                        scale: isDiscovered ? (isFlashing ? [1, 1.3, 1] : 1) : 0,
+                        opacity: isDiscovered ? (isFlashing ? [1, 0.5, 1] : 1) : 0
                       }}
                       transition={{
-                        type: "spring",
+                        type: isFlashing ? "tween" : "spring",
                         stiffness: 260,
-                        damping: 20
+                        damping: 20,
+                        repeat: isFlashing ? Infinity : 0,
+                        duration: isFlashing ? 0.5 : 0.3
                       }}
                       whileHover={{ scale: 1.2 }}
                       onMouseEnter={() => handleStationHover(key)}
@@ -314,14 +556,119 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                         </div>
                       )}
 
+                      {/* Show station name on hover */}
                       {isDiscovered && hoveredStation === key && (
                         <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-1 bg-black bg-opacity-80 text-xs rounded text-white z-50">
                           {station.name}
+                          {isFlashing && (
+                            <span className="ml-2 text-[hsl(var(--dharma-red))]">ALERT</span>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Show time-phase specific alternate names */}
+                      {isDiscovered && key === 'swan' && timePhase === 54 && (
+                        <div className="absolute whitespace-nowrap top-0 left-1/2 transform -translate-x-1/2 -mt-5 px-2 py-1 bg-black bg-opacity-80 text-[9px] rounded text-[hsl(var(--dharma-amber))] animate-pulse z-50">
+                          THE HATCH - PRIMARY FIELD SITE
                         </div>
                       )}
                     </motion.div>
                   );
                 })}
+                
+                {/* Hidden locations */}
+                {hiddenLocations.map((location) => (
+                  <motion.div
+                    key={location.id}
+                    className={`absolute ${location.isDiscovered ? 'cursor-pointer' : ''}`}
+                    style={{ 
+                      top: location.position.top, 
+                      left: location.position.left,
+                      width: '24px',
+                      height: '24px',
+                      opacity: location.isDiscovered ? 0.9 : 0,
+                      pointerEvents: location.isDiscovered ? 'auto' : 'none',
+                      zIndex: 19,
+                    }}
+                    initial={{ scale: 0 }}
+                    animate={{ 
+                      scale: location.isDiscovered ? 1 : 0,
+                      opacity: location.isDiscovered ? [0.7, 0.9, 0.7] : 0
+                    }}
+                    transition={{
+                      duration: 0.5,
+                      repeat: location.isDiscovered ? Infinity : 0,
+                      repeatType: "reverse"
+                    }}
+                    whileHover={{ scale: 1.2 }}
+                    onClick={() => {
+                      if (location.isDiscovered && onSecretDiscovery) {
+                        onSecretDiscovery(location.id);
+                      }
+                    }}
+                  >
+                    <div className="w-full h-full rounded-full bg-[hsla(var(--dharma-amber),0.6)] border border-white flex items-center justify-center">
+                      <span className="text-white text-[10px]">?</span>
+                    </div>
+                    
+                    {location.isDiscovered && (
+                      <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-0.5 bg-black bg-opacity-80 text-[9px] rounded text-white z-50">
+                        {location.name}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+                
+                {/* Moving entities */}
+                {mapEntities.map((entity) => (
+                  <motion.div
+                    key={entity.id}
+                    className="absolute w-3 h-3 rounded-full"
+                    style={{ 
+                      top: entity.position.top, 
+                      left: entity.position.left,
+                      backgroundColor: entity.isTracked ? 'hsl(var(--dharma-bright-green))' : 'hsl(var(--dharma-amber))',
+                      zIndex: 18,
+                      opacity: 0.7
+                    }}
+                    animate={{
+                      scale: [0.8, 1.2, 0.8],
+                      opacity: [0.5, 0.8, 0.5]
+                    }}
+                    transition={{
+                      duration: 2,
+                      repeat: Infinity,
+                      repeatType: "loop"
+                    }}
+                  />
+                ))}
+                
+                {/* Target coordinates marker */}
+                {targetCoordinates && (
+                  <motion.div
+                    className="absolute w-16 h-16 rounded-full pointer-events-none"
+                    style={{ 
+                      top: '50%',
+                      left: '50%',
+                      marginTop: '-32px',
+                      marginLeft: '-32px',
+                      zIndex: 15
+                    }}
+                    initial={{ scale: 0 }}
+                    animate={{
+                      scale: [0, 1.5, 1],
+                      opacity: [0, 0.8, 0]
+                    }}
+                    transition={{
+                      duration: 2,
+                      times: [0, 0.3, 1]
+                    }}
+                  >
+                    <div className="w-full h-full border-2 border-[hsl(var(--dharma-green))] rounded-full flex items-center justify-center animate-ping">
+                      <div className="w-1/2 h-1/2 border border-[hsl(var(--dharma-green))] rounded-full" />
+                    </div>
+                  </motion.div>
+                )}
               </div>
 
               {/* Scan line effect */}
@@ -332,19 +679,224 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 }}
               ></div>
 
+              {/* Weather Effects */}
+              {currentWeather === 'fog' && (
+                <div 
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ 
+                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
+                    zIndex: 40,
+                    mixBlendMode: 'overlay'
+                  }}
+                >
+                  <div className="absolute inset-0 bg-white opacity-20 animate-fog"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent opacity-10"></div>
+                </div>
+              )}
+              
+              {currentWeather === 'rain' && (
+                <div 
+                  className="absolute inset-0 pointer-events-none overflow-hidden"
+                  style={{ 
+                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
+                    zIndex: 40
+                  }}
+                >
+                  {[...Array(100)].map((_, i) => (
+                    <div 
+                      key={`rain-${i}`}
+                      className="absolute w-px h-8 bg-cyan-400 opacity-20"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 2}s`,
+                        animationDuration: `${0.5 + Math.random() * 0.5}s`
+                      }}
+                    ></div>
+                  ))}
+                </div>
+              )}
+              
+              {currentWeather === 'storm' && (
+                <div 
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ 
+                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
+                    zIndex: 40
+                  }}
+                >
+                  {/* Rain */}
+                  {[...Array(150)].map((_, i) => (
+                    <div 
+                      key={`storm-rain-${i}`}
+                      className="absolute w-px h-10 bg-cyan-400 opacity-30"
+                      style={{
+                        left: `${Math.random() * 100}%`,
+                        top: `${Math.random() * 100}%`,
+                        animationDelay: `${Math.random() * 2}s`,
+                        animationDuration: `${0.3 + Math.random() * 0.3}s`
+                      }}
+                    ></div>
+                  ))}
+                  
+                  {/* Lightning flashes that reveal hidden locations */}
+                  <div 
+                    className="absolute inset-0 bg-white animate-lightning opacity-0"
+                    style={{ mixBlendMode: 'overlay' }}
+                  >
+                    {/* During lightning, show the lighthouse location */}
+                    {hiddenLocations.find(loc => loc.id === 'lighthouse' && !loc.isDiscovered) && (
+                      <div 
+                        className="absolute w-6 h-6 border-2 border-white rounded-full animate-pulse"
+                        style={{ 
+                          top: hiddenLocations.find(loc => loc.id === 'lighthouse')?.position.top || '22%', 
+                          left: hiddenLocations.find(loc => loc.id === 'lighthouse')?.position.left || '85%' 
+                        }}
+                      ></div>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Station connections when multiple stations are discovered */}
+              {discoveredStations.length >= 2 && (
+                <svg 
+                  className="absolute inset-0 z-15 pointer-events-none"
+                  style={{ transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)` }}
+                >
+                  {/* Connection between Swan and Pearl */}
+                  {discoveredStations.includes('swan') && discoveredStations.includes('pearl') && (
+                    <line 
+                      x1={STATIONS.swan.position.left.replace('%', '') + '%'} 
+                      y1={STATIONS.swan.position.top.replace('%', '') + '%'} 
+                      x2={STATIONS.pearl.position.left.replace('%', '') + '%'} 
+                      y2={STATIONS.pearl.position.top.replace('%', '') + '%'} 
+                      stroke="hsla(var(--dharma-amber), 0.4)" 
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                    />
+                  )}
+                  
+                  {/* Connection between Pearl and Flame */}
+                  {discoveredStations.includes('pearl') && discoveredStations.includes('flame') && (
+                    <line 
+                      x1={STATIONS.pearl.position.left.replace('%', '') + '%'} 
+                      y1={STATIONS.pearl.position.top.replace('%', '') + '%'} 
+                      x2={STATIONS.flame.position.left.replace('%', '') + '%'} 
+                      y2={STATIONS.flame.position.top.replace('%', '') + '%'} 
+                      stroke="hsla(var(--dharma-amber), 0.4)" 
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                    />
+                  )}
+                  
+                  {/* Connection between Flame and Swan - forms a triangle */}
+                  {discoveredStations.includes('flame') && discoveredStations.includes('swan') && (
+                    <line 
+                      x1={STATIONS.flame.position.left.replace('%', '') + '%'} 
+                      y1={STATIONS.flame.position.top.replace('%', '') + '%'} 
+                      x2={STATIONS.swan.position.left.replace('%', '') + '%'} 
+                      y2={STATIONS.swan.position.top.replace('%', '') + '%'} 
+                      stroke="hsla(var(--dharma-amber), 0.4)" 
+                      strokeWidth="2"
+                      strokeDasharray="5,5"
+                    />
+                  )}
+                  
+                  {/* If all three stations are connected, show a hint at the center */}
+                  {discoveredStations.includes('swan') && 
+                   discoveredStations.includes('pearl') && 
+                   discoveredStations.includes('flame') && (
+                    <>
+                      {/* Calculate center of triangle */}
+                      <circle
+                        cx={(parseFloat(STATIONS.swan.position.left) + 
+                             parseFloat(STATIONS.pearl.position.left) + 
+                             parseFloat(STATIONS.flame.position.left)) / 3 + '%'}
+                        cy={(parseFloat(STATIONS.swan.position.top) + 
+                             parseFloat(STATIONS.pearl.position.top) + 
+                             parseFloat(STATIONS.flame.position.top)) / 3 + '%'}
+                        r="8"
+                        fill="hsla(var(--dharma-red), 0.2)"
+                        stroke="hsla(var(--dharma-red), 0.5)"
+                        strokeWidth="1"
+                        className="animate-pulse"
+                      />
+                      
+                      {/* Add a ? marker to hint at a hidden location */}
+                      <text
+                        x={(parseFloat(STATIONS.swan.position.left) + 
+                             parseFloat(STATIONS.pearl.position.left) + 
+                             parseFloat(STATIONS.flame.position.left)) / 3 + '%'}
+                        y={(parseFloat(STATIONS.swan.position.top) + 
+                             parseFloat(STATIONS.pearl.position.top) + 
+                             parseFloat(STATIONS.flame.position.top)) / 3 + '%'}
+                        fontSize="10"
+                        fill="white"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                      >
+                        ?
+                      </text>
+                    </>
+                  )}
+                </svg>
+              )}
+              
+              {/* Coordinate grid that appears on zoom */}
+              {showCoordinateGrid && (
+                <div 
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ 
+                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
+                    zIndex: 30 
+                  }}
+                >
+                  {/* Horizontal grid lines */}
+                  {[...Array(10)].map((_, i) => (
+                    <div 
+                      key={`h-grid-${i}`}
+                      className="absolute left-0 right-0 h-px bg-[hsla(var(--dharma-green),0.2)]"
+                      style={{ top: `${i * 10 + 5}%` }}
+                    >
+                      <span className="absolute left-1 top-1 text-[8px] text-[hsla(var(--dharma-green),0.7)]">
+                        {`${45 - i * 5}°N`}
+                      </span>
+                    </div>
+                  ))}
+                  
+                  {/* Vertical grid lines */}
+                  {[...Array(10)].map((_, i) => (
+                    <div 
+                      key={`v-grid-${i}`}
+                      className="absolute top-0 bottom-0 w-px bg-[hsla(var(--dharma-green),0.2)]"
+                      style={{ left: `${i * 10 + 5}%` }}
+                    >
+                      <span className="absolute top-1 left-1 text-[8px] text-[hsla(var(--dharma-green),0.7)]">
+                        {`${170 - i * 15}°W`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
               {/* Mysterious fog overlay that partially clears based on discovered stations */}
               <div 
                 className="absolute inset-0 bg-gradient-to-br from-[rgba(0,0,0,0.7)] to-[rgba(0,0,0,0.4)]"
                 style={{ 
                   opacity: Math.max(0.9 - (discoveredStations.length * 0.15), 0.1),
-                  transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`
+                  transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
+                  zIndex: currentWeather === 'fog' ? 25 : 35
                 }}
               />
 
               {/* Grid patterns suggesting more locations */}
               <div 
                 className="absolute inset-0 grid-pattern opacity-30"
-                style={{ transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)` }}
+                style={{ 
+                  transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
+                  zIndex: 20
+                }}
               ></div>
 
 

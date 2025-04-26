@@ -1,0 +1,96 @@
+ 1. Coordinate System & Hidden Points
+- Add visible latitude/longitude or grid coordinates on zoom.
+- Allow players to input coordinates manually into the terminal.
+- Some secrets (e.g., crash sites, caves, hidden bunkers) only appear when specific coordinates are entered, not by clicking normally.
+
+👉 Example:  
+Terminal Command: `goto 23.4N, 165.7W`  
+- Map pans & zooms automatically to an otherwise unmarked spot.
+- Maybe after a terminal confirmation, it reveals a minor marker.
+
+---
+
+ 2. Dynamic Marker Discovery
+- Not all markers are visible at the start.
+- New stations or objects (like the Staff, The Looking Glass, the orchid) only appear:
+  - After specific puzzles are solved
+  - After reaching a new security level
+  - At certain times (tied to the 108-minute cycle)
+
+
+ 3. Weather & Environmental Effects
+- Trigger ambient changes on the map:  
+  - Fog rolls in
+  - Thunderstorms
+  - Flickering lights on station markers
+- Certain conditions could temporarily reveal hidden clues on the map.
+
+👉 Example:  
+During a storm event → Lightning flashes reveal a ruined station outline for 2 seconds.
+
+
+4. Moving Entities or "Ghost" Signals
+- Occasionally a moving dot appears — like a person or an animal.
+- Players can track it via commands like `track.entity(id: 004)`.
+- If followed or intercepted (by predicting next coordinates), it leads to finding new lore.
+
+👉 Example:  
+One moving dot is Radinsky before his suicide → track him to unlock Swan control room blueprints.
+
+---
+
+ 5. Hidden Clickable Objects
+- Parts of the environment itself (e.g., waterfalls, mountain tops, beach wreckage) are clickable hotspots.
+- Clicking them without any hint is almost impossible — but terminal logs or decoded coordinates hint at their existence.
+
+👉 Example:  
+After interpreting a glyph that says "follow the water," you realize the river delta on the map is clickable.
+
+---
+
+ 7. Time-Sensitive Map States
+- Map changes subtly depending on the state of the world:
+  - During a lockdown
+  - When the countdown reaches certain multiples (e.g., every 27 minutes)
+  - After system failures
+
+👉 Example:  
+- During system lockdown, some station names flicker → one shows an alternate name:  
+  “The Swan” → briefly flickers as "The Hatch - Primary Field Site."
+
+---
+
+ 8. Cross-Station Connection Visualization
+- Once two or more stations are unlocked, a feature to draw connection lines.
+- These could reveal hidden relationships:
+  - Communication tunnels
+  - Electrical grid links
+  - Observation areas
+
+👉 Example:  
+- Connecting Swan → Flame → Pearl forms a triangle that hints at a central "missing" station.
+
+---
+
+ 9. Station Log Summaries
+- Clicking on a station could (later in progression) show a brief operational summary or maintenance logs.
+
+👉 Example:  
+- Click Swan → Log Summary:  
+  "Status: Operational. Psychological protocol active. Minor power anomalies recorded 48h ago."
+
+Later these could be used to solve puzzles ("Power anomaly means lockdown can be triggered manually").
+
+
+
+ 🔥 Bonus Interaction Concept:
+
+Map Terminal Commands
+
+Allow users to interact with the map via terminal, too:
+- `map.reveal_hidden()`
+- `map.trace(entity)`
+- `map.scan(frequency: 72Mhz)`
+- `map.analyze_topography(sector: C-7)`
+
+Executing these could create little flickers or distortions that reward very observant players without making the map feel "video gamey" or obvious.
