@@ -29,7 +29,8 @@ const commands: Record<string, Function> = {
     if (accessLevel >= 3) {
       basicCommands.push('> decrypt <file> - Decrypt classified files');
       basicCommands.push('> override <code> - Override system protocols');
-      basicCommands.push('> diagnose /sys - Run system diagnostics');
+      // diagnose /sys is removed as requested by users
+      // basicCommands.push('> diagnose /sys - Run system diagnostics');
     }
     
     if (accessLevel >= 4) {
@@ -400,48 +401,7 @@ const commands: Record<string, Function> = {
       return ['> ACCESS DENIED: Security level 3 required for system diagnostics'];
     }
     
-    if (args === '/sys') {
-      try {
-        // Check if this is dev mode
-        const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
-        
-        if (devModeActive) {
-          // In dev mode, show the full puzzle menu
-          localStorage.setItem('dharma_launch_puzzle_menu', 'true');
-          
-          return [
-            '> SYSTEM DIAGNOSTIC INITIALIZED (DEVELOPER MODE)',
-            '> Scanning for available modules...',
-            '> Multiple test protocols detected',
-            '> Launching diagnostic interface...',
-            '> NOTICE: Full access to all diagnostic modules enabled'
-          ];
-        } else {
-          // For regular users, always launch the subnet protocol from diagnose /sys
-          // as per specification
-          
-          // Launch the specific puzzle
-          localStorage.setItem('dharma_launch_puzzle', 'subnet');
-          
-          return [
-            '> SYSTEM DIAGNOSTIC INITIALIZED',
-            '> Scanning for available modules...',
-            '> Protocol match found',
-            '> Launching SUBNET PROTOCOL diagnostic module...'
-          ];
-        }
-      } catch (e) {
-        // If localStorage access fails, use default behavior
-        localStorage.setItem('dharma_launch_puzzle', 'hieroglyph');
-        
-        return [
-          '> SYSTEM DIAGNOSTIC INITIALIZED',
-          '> Scanning for available modules...',
-          '> Single protocol match found',
-          '> Launching diagnostic module...'
-        ];
-      }
-    } else if (args === '/net') {
+    if (args === '/net') {
       // The corrupted file table showing subnet.daemon as requested
       return [
         '> DHARMA INITIATIVE NETWORK DIAGNOSTIC',
@@ -461,7 +421,7 @@ const commands: Record<string, Function> = {
     } else {
       return [
         '> ERROR: Invalid diagnostic target',
-        '> Usage: diagnose /sys, diagnose /net',
+        '> Usage: diagnose /net',
         '> Other diagnostic targets unavailable in this terminal'
       ];
     }
@@ -494,11 +454,27 @@ const commands: Record<string, Function> = {
   },
   
   ls: (args: string) => {
-    // Basic file listing functionality
-    const showHidden = args === '-a' || args === '-la' || args === '-al';
+    // Parse arguments for ls command
+    let showHidden = false;
+    let dirPath = '';
+    
+    // Handle different argument formats
+    if (args.includes('-a')) {
+      showHidden = true;
+      // Extract the directory path after -a flag
+      const parts = args.split(' ');
+      for (const part of parts) {
+        if (part !== '-a' && part.trim() !== '') {
+          dirPath = part;
+          break;
+        }
+      }
+    } else {
+      dirPath = args;
+    }
     
     // Different directories have different contents
-    if (args === '/mnt' || args === '/mnt/') {
+    if (dirPath === '/mnt' || dirPath === '/mnt/') {
       if (showHidden) {
         return [
           '> DIRECTORY LISTING: /mnt',
@@ -516,7 +492,7 @@ const commands: Record<string, Function> = {
           '> dharma_config.dat'
         ];
       }
-    } else if (args === '/mnt/.dharmanet' || args === '/mnt/.dharmanet/') {
+    } else if (dirPath === '/mnt/.dharmanet' || dirPath === '/mnt/.dharmanet/') {
       return [
         '> DIRECTORY LISTING: /mnt/.dharmanet',
         '> .',
@@ -525,7 +501,7 @@ const commands: Record<string, Function> = {
         '> subnet_log.db',
         '> protocol_candle.ref'
       ];
-    } else if (!args || args === '.' || args === './') {
+    } else if (!dirPath || dirPath === '.' || dirPath === './') {
       // Root directory listing
       const files = [
         '> DIRECTORY LISTING: /',
@@ -544,7 +520,7 @@ const commands: Record<string, Function> = {
       return files;
     } else {
       return [
-        `> DIRECTORY LISTING: ${args}`,
+        `> DIRECTORY LISTING: ${dirPath}`,
         '> ERROR: Directory not found or permission denied'
       ];
     }
