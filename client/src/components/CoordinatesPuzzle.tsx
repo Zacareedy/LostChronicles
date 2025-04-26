@@ -257,7 +257,7 @@ const CoordinatesPuzzle: React.FC<CoordinatesPuzzleProps> = ({ isVisible, onClos
                       onChange={(e) => setUserLat(e.target.value)}
                       disabled={isCorrect}
                       className="w-full bg-[hsla(var(--dharma-black),0.5)] border border-[hsl(var(--dharma-gray))] p-2 text-xs text-[hsl(var(--dharma-green))]"
-                      placeholder={'0° 0\' 0.0"N'}
+                      placeholder="0° 0' 0.0″N"
                     />
                   </div>
                   
@@ -271,7 +271,7 @@ const CoordinatesPuzzle: React.FC<CoordinatesPuzzleProps> = ({ isVisible, onClos
                       onChange={(e) => setUserLong(e.target.value)}
                       disabled={isCorrect}
                       className="w-full bg-[hsla(var(--dharma-black),0.5)] border border-[hsl(var(--dharma-gray))] p-2 text-xs text-[hsl(var(--dharma-green))]"
-                      placeholder={'0° 0\' 0.0"W'}
+                      placeholder="0° 0' 0.0″W"
                     />
                   </div>
                 </div>

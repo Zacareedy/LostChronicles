@@ -9,6 +9,7 @@ import Countdown from '@/components/Countdown';
 import HiddenPuzzle from '@/components/HiddenPuzzle';
 import SystemFailure from '@/components/SystemFailure';
 import PearlStationLog from '@/components/PearlStationLog';
+import PuzzleController from '@/components/PuzzleController';
 import { STATIONS } from '@/lib/constants';
 import { playSound, stopSound } from '@/lib/audio';
 import { useLore } from '@/contexts/LoreContext';
@@ -246,6 +247,13 @@ const Home: React.FC = () => {
       <PearlStationLog 
         isVisible={showPearlLog}
         timestamp={failureTimestamp}
+      />
+      
+      {/* Puzzle Controller for ARG elements */}
+      <PuzzleController
+        onRevealStation={handleRevealStation}
+        onUnlockReport={unlockReport}
+        onUnlockAudioLog={unlockAudioLog}
       />
       
       {/* Failsafe Key Result Content - Only shown after triggering failsafe */}

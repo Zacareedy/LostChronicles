@@ -1,83 +1,133 @@
-import { Howl } from 'howler';
+/**
+ * Simple audio utility for playing sound effects
+ */
 
-// Sound effects
-const sounds: Record<string, Howl> = {
-  beep: new Howl({
-    src: ['https://s3-us-west-2.amazonaws.com/s.cdpn.io/3/error.mp3'],
-    volume: 0.3
-  }),
-  typing: new Howl({
-    src: ['https://freesound.org/data/previews/243/243380_4056007-lq.mp3'],
-    volume: 0.1,
-    sprite: {
-      short: [0, 300],
+const DEFAULT_VOLUME = 0.4;
+
+// Sound cache to prevent reloading sounds
+const soundCache: Record<string, HTMLAudioElement> = {};
+
+interface SoundOptions {
+  volume?: number;
+  loop?: boolean;
+}
+
+// Available sounds with their paths
+const sounds = {
+  beep: {
+    normal: '/sounds/beep.mp3',
+    success: '/sounds/beep-success.mp3',
+    warning: '/sounds/beep-warning.mp3',
+    short: '/sounds/beep-short.mp3',
+  },
+  click: '/sounds/click.mp3',
+  error: '/sounds/error.mp3',
+  success: '/sounds/success.mp3',
+  fail: '/sounds/fail.mp3',
+  alarm: '/sounds/alarm.mp3',
+  select: '/sounds/select.mp3',
+  static: '/sounds/static.mp3',
+  terminal: '/sounds/terminal.mp3',
+};
+
+type SoundKey = keyof typeof sounds;
+type BeepVariant = keyof typeof sounds.beep;
+
+/**
+ * Play a sound by key
+ */
+export function playSound(
+  key: SoundKey,
+  variant?: BeepVariant,
+  options: SoundOptions = {}
+): HTMLAudioElement | null {
+  try {
+    let soundPath = '';
+    
+    // Handle sounds with variants
+    if (key === 'beep' && variant) {
+      soundPath = sounds.beep[variant];
+    } else {
+      soundPath = typeof sounds[key] === 'string' 
+        ? sounds[key] as string
+        : (sounds[key] as any).normal;
     }
-  }),
-  countdown: new Howl({
-    src: ['https://freesound.org/data/previews/274/274625_5014597-lq.mp3'],
-    volume: 0.5
-  }),
-  success: new Howl({
-    src: ['https://freesound.org/data/previews/320/320654_5260872-lq.mp3'],
-    volume: 0.3
-  }),
-  fail: new Howl({
-    src: ['https://freesound.org/data/previews/276/276960_5014597-lq.mp3'],
-    volume: 0.3
-  }),
-  button: new Howl({
-    src: ['https://freesound.org/data/previews/521/521642_6142149-lq.mp3'],
-    volume: 0.2
-  }),
-  alarm: new Howl({
-    src: ['https://freesound.org/data/previews/198/198841_3633978-lq.mp3'],
-    volume: 0.3
-  }),
-  static: new Howl({
-    src: ['https://freesound.org/data/previews/67/67409_956211-lq.mp3'],
-    volume: 0.05,
-    loop: true
-  })
-};
-
-// Audio logs with transmission content
-const audioLogs: Record<string, { title: string, description: string, src: string, duration: string }> = {
-  orientationVideo: {
-    title: "Orientation Video",
-    description: "...I'm Dr. Marvin Candle, and this is the orientation film for Station 3 of the DHARMA Initiative...",
-    src: "https://freesound.org/data/previews/386/386738_7286332-lq.mp3",
-    duration: "2:42"
-  },
-  distressSignal: {
-    title: "Distress Signal",
-    description: "...please, they're all dead... it killed them all...",
-    src: "https://freesound.org/data/previews/459/459490_9482901-lq.mp3", 
-    duration: "1:15"
-  },
-  radioTransmission: {
-    title: "Radio Transmission",
-    description: "4...8...15...16...23...42... 4...8...15...16...23...42...",
-    src: "https://freesound.org/data/previews/459/459978_4625055-lq.mp3",
-    duration: "0:34"
-  },
-  unknownSource: {
-    title: "Unknown Source",
-    description: "[STATIC] ...don't turn it off... the bearing is 325... [STATIC]",
-    src: "https://freesound.org/data/previews/495/495223_6142149-lq.mp3",
-    duration: "1:02"
+    
+    // Create cache key
+    const cacheKey = `${key}${variant ? `-${variant}` : ''}`;
+    
+    // Check if sound exists in cache
+    if (!soundCache[cacheKey]) {
+      soundCache[cacheKey] = new Audio(soundPath);
+    }
+    
+    const sound = soundCache[cacheKey];
+    sound.volume = options.volume ?? DEFAULT_VOLUME;
+    sound.loop = options.loop ?? false;
+    
+    // Reset position if already playing
+    if (!sound.paused) {
+      sound.pause();
+      sound.currentTime = 0;
+    }
+    
+    sound.play().catch(err => {
+      console.warn(`Failed to play sound: ${key}`, err);
+    });
+    
+    return sound;
+  } catch (error) {
+    console.warn(`Error playing sound: ${key}`, error);
+    return null;
   }
-};
+}
 
-const playSound = (soundName: keyof typeof sounds, sprite?: string) => {
-  if (sprite) {
-    sounds[soundName].play(sprite);
-  } else {
-    sounds[soundName].play();
+/**
+ * Stop a currently playing sound
+ */
+export function stopSound(
+  key: SoundKey, 
+  variant?: BeepVariant
+): void {
+  try {
+    const cacheKey = `${key}${variant ? `-${variant}` : ''}`;
+    
+    if (soundCache[cacheKey]) {
+      soundCache[cacheKey].pause();
+      soundCache[cacheKey].currentTime = 0;
+    }
+  } catch (error) {
+    console.warn(`Error stopping sound: ${key}`, error);
   }
-};
+}
 
-const stopSound = (soundName: keyof typeof sounds) => {
-  sounds[soundName].stop();
-};
+/**
+ * Preload sounds for immediate playback
+ */
+export function preloadSounds(): void {
+  try {
+    // Preload main sounds
+    Object.entries(sounds).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        const audio = new Audio(value);
+        soundCache[key] = audio;
+      } else if (key === 'beep') {
+        // Preload beep variants
+        Object.entries(value).forEach(([variant, path]) => {
+          const audio = new Audio(path);
+          soundCache[`beep-${variant}`] = audio;
+        });
+      }
+    });
+    
+    console.log('Audio sounds preloaded');
+  } catch (error) {
+    console.warn('Error preloading sounds', error);
+  }
+}
 
-export { sounds, audioLogs, playSound, stopSound };
+export default {
+  playSound,
+  stopSound,
+  preloadSounds
+};
