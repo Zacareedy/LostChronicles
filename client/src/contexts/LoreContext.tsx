@@ -479,6 +479,7 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
       unlockedAudioLogs,
       unlockedReports,
       visitedLocations,
+      completedPuzzles,
       progressionLevel,
       storylineFlags,
       terminalHistory,
@@ -489,6 +490,7 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
       revealStation,
       unlockAudioLog,
       unlockReport,
+      completePuzzle,
       recordTerminalCommand,
       triggerSystemStatus
     }}>
