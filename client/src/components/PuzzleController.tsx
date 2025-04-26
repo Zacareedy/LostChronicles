@@ -107,6 +107,28 @@ const PuzzleController = forwardRef<PuzzleControllerRef, PuzzleControllerProps>(
         // Radio puzzle rewards
         onRevealStation('Flame');
         onUnlockAudioLog('orientation');
+        
+        // Add crash site to map after radio puzzle is completed
+        try {
+          localStorage.setItem('dharma_radio_puzzle_completed', 'true');
+          
+          // Add new hidden locations to the map
+          const hiddenLocations = JSON.parse(localStorage.getItem('dharma_hidden_locations') || '[]');
+          if (!hiddenLocations.includes('crash-site')) {
+            hiddenLocations.push('crash-site');
+            localStorage.setItem('dharma_hidden_locations', JSON.stringify(hiddenLocations));
+          }
+          
+          // Show a terminal message about the crash site
+          const terminalLogs = JSON.parse(localStorage.getItem('dharma_terminal_logs') || '[]');
+          terminalLogs.push({
+            message: '> [ALERT] Signal triangulation complete. Flight 815 crash site coordinates identified.',
+            timestamp: Date.now()
+          });
+          localStorage.setItem('dharma_terminal_logs', JSON.stringify(terminalLogs));
+        } catch (e) {
+          console.error('Error storing radio puzzle completion state:', e);
+        }
         break;
         
       case PuzzleType.COORDINATES:

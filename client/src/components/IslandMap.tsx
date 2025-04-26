@@ -46,8 +46,8 @@ const HIDDEN_LOCATIONS = [
     description: 'Location where the fuselage of Oceanic 815 crashed',
     coordinates: '23° 4′ 20″ N, 16° 53′ 42″ W',
     position: { top: '58%', left: '27%' },
-    discoveryMethod: 'coordinates' as const,
-    discoveryRequirement: '23.4N, 16.53W',
+    discoveryMethod: 'puzzle' as const,
+    discoveryRequirement: 'radio',
     isDiscovered: false
   },
   {
@@ -108,6 +108,27 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   const [timePhase, setTimePhase] = useState(0); // 0-107 minutes
   const [mapEntities, setMapEntities] = useState<{id: string, position: {top: string, left: string}, isTracked: boolean}[]>([]);
   const [targetCoordinates, setTargetCoordinates] = useState<{lat: string, long: string} | null>(null);
+  
+  // Check for newly unlocked locations based on puzzle completions
+  useEffect(() => {
+    try {
+      // Check if radio puzzle was completed
+      const radioPuzzleCompleted = localStorage.getItem('dharma_radio_puzzle_completed') === 'true';
+      
+      if (radioPuzzleCompleted) {
+        // Update crash site and radio tower locations
+        setHiddenLocations(prev => 
+          prev.map(loc => 
+            (loc.id === 'crash-site' || loc.id === 'radio-tower') && loc.discoveryMethod === 'puzzle' && loc.discoveryRequirement === 'radio'
+              ? { ...loc, isDiscovered: true }
+              : loc
+          )
+        );
+      }
+    } catch (e) {
+      console.error('Error checking for puzzle completions:', e);
+    }
+  }, []);
 
   useEffect(() => {
     // Initial scan effect
@@ -603,7 +624,38 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     whileHover={{ scale: 1.2 }}
                     onClick={() => {
                       if (location.isDiscovered && onSecretDiscovery) {
-                        onSecretDiscovery(location.id);
+                        // Special handling for crash site - launch the BlackBox puzzle
+                        if (location.id === 'crash-site') {
+                          // Show a recover modal
+                          if (confirm("Wreckage discovered. Recover black box?")) {
+                            playSound('success');
+                            
+                            // Add the recovered file to the virtual filesystem
+                            try {
+                              // Set a flag to indicate the black box was recovered
+                              localStorage.setItem('dharma_blackbox_recovered', 'true');
+                              
+                              // Add message to terminal logs
+                              const terminalLogs = JSON.parse(localStorage.getItem('dharma_terminal_logs') || '[]');
+                              terminalLogs.push({
+                                message: '> Black box data recovered: /recovered/flightpath.mp4',
+                                timestamp: Date.now()
+                              });
+                              localStorage.setItem('dharma_terminal_logs', JSON.stringify(terminalLogs));
+                              
+                              // Launch the black box puzzle
+                              localStorage.setItem('dharma_launch_puzzle', 'blackbox');
+                              
+                              // Notify puzzle controller
+                              onSecretDiscovery('blackbox');
+                            } catch (e) {
+                              console.error('Error storing black box recovery:', e);
+                            }
+                          }
+                        } else {
+                          // Regular location click
+                          onSecretDiscovery(location.id);
+                        }
                       }
                     }}
                   >
