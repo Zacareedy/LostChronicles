@@ -33,6 +33,51 @@ const PuzzleController: React.FC<PuzzleControllerProps> = ({
   const [activePuzzle, setActivePuzzle] = useState<PuzzleType>(PuzzleType.NONE);
   const [loopCount, setLoopCount] = useState<number>(0);
   
+  // Check if a puzzle should be opened from localStorage flags
+  useEffect(() => {
+    try {
+      const puzzleToActivate = localStorage.getItem('dharma_active_puzzle');
+      if (puzzleToActivate) {
+        // Clear the flag
+        localStorage.removeItem('dharma_active_puzzle');
+        
+        // Map the puzzle ID to a PuzzleType
+        let puzzleType: PuzzleType = PuzzleType.NONE;
+        
+        switch (puzzleToActivate) {
+          case 'hieroglyph':
+            puzzleType = PuzzleType.HIEROGLYPH;
+            break;
+          case 'radio':
+            puzzleType = PuzzleType.RADIO;
+            break;
+          case 'coordinates':
+            puzzleType = PuzzleType.COORDINATES;
+            break;
+          case 'subnet':
+            puzzleType = PuzzleType.SUBNET;
+            break;
+          case 'blackbox':
+            puzzleType = PuzzleType.BLACKBOX;
+            break;
+          case 'candle':
+            puzzleType = PuzzleType.CANDLE;
+            break;
+          case 'void':
+            puzzleType = PuzzleType.VOID;
+            break;
+        }
+        
+        if (puzzleType !== PuzzleType.NONE) {
+          // Open the puzzle
+          openPuzzle(puzzleType);
+        }
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }, []);
+  
   const openPuzzle = (puzzleType: PuzzleType) => {
     setActivePuzzle(puzzleType);
     playSound('beep');

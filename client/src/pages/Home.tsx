@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import Logo from '@/components/Logo';
 import Loading from '@/components/Loading';
@@ -10,6 +10,7 @@ import HiddenPuzzle from '@/components/HiddenPuzzle';
 import SystemFailure from '@/components/SystemFailure';
 import PearlStationLog from '@/components/PearlStationLog';
 import PuzzleController from '@/components/PuzzleController';
+import PuzzleLauncher from '@/components/PuzzleLauncher';
 import { STATIONS } from '@/lib/constants';
 import { playSound, stopSound } from '@/lib/audio';
 import { useLore } from '@/contexts/LoreContext';
@@ -18,6 +19,11 @@ const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isPuzzleVisible, setIsPuzzleVisible] = useState(false);
   const [isCountdownReset, setIsCountdownReset] = useState(false);
+  
+  // Puzzle launcher state
+  const [isPuzzleMenuVisible, setIsPuzzleMenuVisible] = useState(false);
+  const [activePuzzleId, setActivePuzzleId] = useState<string | null>(null);
+  const puzzleControllerRef = useRef<any>(null);
   
   // System failure states
   const [isSystemFailure, setIsSystemFailure] = useState(false);
@@ -45,6 +51,35 @@ const Home: React.FC = () => {
       stopSound('static');
     };
   }, []);
+  
+  // Check for puzzle launch flags in localStorage
+  useEffect(() => {
+    if (isLoading) return;
+    
+    // Check if system diagnostics (puzzle menu) should be opened
+    try {
+      const launchPuzzleMenu = localStorage.getItem('dharma_launch_puzzle_menu');
+      if (launchPuzzleMenu === 'true') {
+        // Clear the flag
+        localStorage.removeItem('dharma_launch_puzzle_menu');
+        // Show the puzzle launcher menu
+        setIsPuzzleMenuVisible(true);
+        triggerSystemStatus('DIAGNOSTIC INTERFACE ACTIVE', 3000);
+      }
+      
+      // Check if a specific puzzle should be launched directly
+      const puzzleToLaunch = localStorage.getItem('dharma_launch_puzzle');
+      if (puzzleToLaunch) {
+        // Clear the flag
+        localStorage.removeItem('dharma_launch_puzzle');
+        // Activate the puzzle
+        setActivePuzzleId(puzzleToLaunch);
+        triggerSystemStatus(`LAUNCHING ${puzzleToLaunch.toUpperCase()} INTERFACE`, 3000);
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }, [isLoading, triggerSystemStatus]);
 
   const handleLoadComplete = () => {
     setIsLoading(false);
@@ -139,6 +174,29 @@ const Home: React.FC = () => {
     // Close the puzzle modal
     setIsPuzzleVisible(false);
   };
+  
+  // Handle launching a puzzle from the launcher menu
+  const handleLaunchPuzzle = (puzzleId: string) => {
+    setActivePuzzleId(puzzleId);
+    triggerSystemStatus(`LAUNCHING ${puzzleId.toUpperCase()} INTERFACE`, 3000);
+    playSound('click');
+  };
+  
+  // Handle puzzle-specific commands detected in activePuzzleId
+  useEffect(() => {
+    if (!activePuzzleId) return;
+    
+    // Pass the command to PuzzleController by setting localStorage flags
+    // that will be detected by the PuzzleController component
+    try {
+      localStorage.setItem('dharma_active_puzzle', activePuzzleId);
+      
+      // Reset activePuzzleId since it's been processed
+      setActivePuzzleId(null);
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }, [activePuzzleId]);
 
   if (isLoading) {
     return <Loading onLoadComplete={handleLoadComplete} />;
@@ -254,6 +312,13 @@ const Home: React.FC = () => {
         onRevealStation={handleRevealStation}
         onUnlockReport={unlockReport}
         onUnlockAudioLog={unlockAudioLog}
+      />
+      
+      {/* Puzzle Launcher Menu - For accessing all puzzles */}
+      <PuzzleLauncher
+        isVisible={isPuzzleMenuVisible}
+        onClose={() => setIsPuzzleMenuVisible(false)}
+        onLaunchPuzzle={handleLaunchPuzzle}
       />
       
       {/* Failsafe Key Result Content - Only shown after triggering failsafe */}
