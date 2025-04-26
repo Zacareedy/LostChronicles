@@ -6,6 +6,7 @@ type StationType = string;
 type AudioLogType = string;
 type IncidentReportType = number;
 type LocationType = string;
+type PuzzleType = string;
 
 // Define progression levels for different narrative paths
 export enum ProgressionPath {
@@ -22,6 +23,7 @@ interface LoreContextType {
   unlockedAudioLogs: AudioLogType[];
   unlockedReports: IncidentReportType[];
   visitedLocations: LocationType[];
+  completedPuzzles: PuzzleType[];
   
   // Progress tracking
   progressionLevel: Record<ProgressionPath, number>;
@@ -36,6 +38,7 @@ interface LoreContextType {
   revealStation: (stationName: StationType) => void;
   unlockAudioLog: (logId: AudioLogType) => void;
   unlockReport: (reportId: IncidentReportType) => void;
+  completePuzzle: (puzzleId: PuzzleType) => void;
   recordTerminalCommand: (command: string) => void;
   triggerSystemStatus: (status: string, duration?: number) => void;
 }
@@ -46,6 +49,7 @@ const LoreContext = createContext<LoreContextType>({
   unlockedAudioLogs: ['orientationVideo'],
   unlockedReports: [],
   visitedLocations: ['swan'],
+  completedPuzzles: [],
   
   progressionLevel: {
     [ProgressionPath.DHARMA_HISTORY]: 1,
@@ -62,6 +66,7 @@ const LoreContext = createContext<LoreContextType>({
   revealStation: () => {},
   unlockAudioLog: () => {},
   unlockReport: () => {},
+  completePuzzle: () => {},
   recordTerminalCommand: () => {},
   triggerSystemStatus: () => {}
 });
@@ -78,6 +83,7 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
   const [unlockedAudioLogs, setUnlockedAudioLogs] = useState<AudioLogType[]>(['orientationVideo']);
   const [unlockedReports, setUnlockedReports] = useState<IncidentReportType[]>([]);
   const [visitedLocations, setVisitedLocations] = useState<LocationType[]>(['swan']);
+  const [completedPuzzles, setCompletedPuzzles] = useState<PuzzleType[]>([]);
   
   // State for progression tracking
   const [progressionLevel, setProgressionLevel] = useState<Record<ProgressionPath, number>>({
@@ -153,6 +159,7 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
         setUnlockedAudioLogs(prev => [...Array.from(new Set([...prev, ...(parsedState.unlockedAudioLogs || ['orientationVideo'])]))]);
         setUnlockedReports(prev => [...Array.from(new Set([...prev, ...(parsedState.unlockedReports || [])]))]);
         setVisitedLocations(prev => [...Array.from(new Set([...prev, ...(parsedState.visitedLocations || ['swan'])]))]);
+        setCompletedPuzzles(prev => [...Array.from(new Set([...prev, ...(parsedState.completedPuzzles || [])]))]);
         setProgressionLevel(parsedState.progressionLevel || {
           [ProgressionPath.DHARMA_HISTORY]: 1,
           [ProgressionPath.INCIDENT_INVESTIGATION]: 0,
@@ -175,6 +182,7 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
         unlockedAudioLogs,
         unlockedReports,
         visitedLocations,
+        completedPuzzles,
         progressionLevel,
         storylineFlags
       };
@@ -185,7 +193,7 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
       console.error("Error saving lore state:", e);
     }
   }, [discoveredStations, unlockedAudioLogs, unlockedReports, 
-      visitedLocations, progressionLevel, storylineFlags]);
+      visitedLocations, completedPuzzles, progressionLevel, storylineFlags]);
   
   // Track progression level changes
   useEffect(() => {
@@ -292,6 +300,43 @@ export const LoreProvider: React.FC<LoreProviderProps> = ({ children }) => {
       
       // Advance INCIDENT_INVESTIGATION when any report is unlocked
       advanceProgression(ProgressionPath.INCIDENT_INVESTIGATION);
+    }
+  };
+  
+  // Function to mark a puzzle as completed
+  const completePuzzle = (puzzleId: PuzzleType) => {
+    if (!completedPuzzles.includes(puzzleId)) {
+      setCompletedPuzzles(prev => [...prev, puzzleId]);
+      playSound('success');
+      
+      // Advance progression based on puzzle type
+      switch (puzzleId) {
+        case 'hieroglyph':
+          advanceProgression(ProgressionPath.DHARMA_HISTORY);
+          advanceProgression(ProgressionPath.INCIDENT_INVESTIGATION);
+          break;
+          
+        case 'radio':
+          advanceProgression(ProgressionPath.ISLAND_SECRETS);
+          advanceProgression(ProgressionPath.CHARACTER_STORIES);
+          break;
+          
+        case 'cipher':
+          advanceProgression(ProgressionPath.DHARMA_HISTORY, 2);
+          triggerSystemStatus('CIPHER DECRYPTED SUCCESSFULLY', 3000);
+          break;
+          
+        case 'orientation_film':
+          advanceProgression(ProgressionPath.DHARMA_HISTORY);
+          advanceProgression(ProgressionPath.INCIDENT_INVESTIGATION);
+          triggerSystemStatus('ORIENTATION FILM RESTORED', 3000);
+          break;
+          
+        case 'coordinates':
+          advanceProgression(ProgressionPath.ISLAND_SECRETS, 2);
+          triggerSystemStatus('NEW LOCATION COORDINATES VERIFIED', 3000);
+          break;
+      }
     }
   };
   
