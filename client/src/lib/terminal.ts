@@ -196,18 +196,37 @@ const commands: Record<string, Function> = {
     }
   },
   
-  exec: () => {
+  exec: (args: string) => {
     if (accessLevel < 2) {
       return ['> ACCESS DENIED: Security level 2 required'];
     }
     
-    isExecutingProtocol = true;
-    pendingAction = 'protocol';
+    // Check if trying to execute subnet daemon
+    if (args === 'subnet.daemon') {
+      return [
+        '> ATTEMPTING TO EXECUTE SUBNET.DAEMON',
+        '> ERROR: DAEMON INITIALIZATION FAILED',
+        '> Path /lib/subnet.daemon not found',
+        '> Try checking /mnt/ directory for network configuration files'
+      ];
+    }
+    
+    // Default behavior for exec with no args - protocol execution
+    if (!args) {
+      isExecutingProtocol = true;
+      pendingAction = 'protocol';
+      
+      return [
+        '> MANUAL OVERRIDE PROTOCOL INITIATED',
+        '> VALENZETTI EQUATION PARAMETERS REQUIRED',
+        '> Enter the numbers: _ _ _ _ _ _'
+      ];
+    }
     
     return [
-      '> MANUAL OVERRIDE PROTOCOL INITIATED',
-      '> VALENZETTI EQUATION PARAMETERS REQUIRED',
-      '> Enter the numbers: _ _ _ _ _ _'
+      `> ATTEMPTING TO EXECUTE: ${args}`,
+      '> ERROR: Command not found or insufficient permissions',
+      '> Please check command syntax and try again'
     ];
   },
   
@@ -422,10 +441,27 @@ const commands: Record<string, Function> = {
           '> Launching diagnostic module...'
         ];
       }
+    } else if (args === '/net') {
+      // The corrupted file table showing subnet.daemon as requested
+      return [
+        '> DHARMA INITIATIVE NETWORK DIAGNOSTIC',
+        '> Scanning network components...',
+        '> WARNING: Corrupted file table detected',
+        '> ----------------------------------------',
+        '> FILE INDEX                 TYPE     STATUS',
+        '> ----------------------------------------',
+        '> /mnt/net_link.sys         SYS      ERR-404',
+        '> /lib/subnet.daemon        DAEMON   INACTIVE',
+        '> /var/log/subnet_access.db DB       CORRUPT',
+        '> /etc/hosts.dharma         CONFIG   OK',
+        '> ----------------------------------------',
+        '> ERROR: Network diagnostics could not complete',
+        '> Try: exec subnet.daemon to initialize network services'
+      ];
     } else {
       return [
         '> ERROR: Invalid diagnostic target',
-        '> Usage: diagnose /sys',
+        '> Usage: diagnose /sys, diagnose /net',
         '> Other diagnostic targets unavailable in this terminal'
       ];
     }
@@ -455,6 +491,160 @@ const commands: Record<string, Function> = {
       '> WARNING: DIRECT INPUT NOT AUTHORIZED',
       '> Please use appropriate command protocols'
     ];
+  },
+  
+  ls: (args: string) => {
+    // Basic file listing functionality
+    const showHidden = args === '-a' || args === '-la' || args === '-al';
+    
+    // Different directories have different contents
+    if (args === '/mnt' || args === '/mnt/') {
+      if (showHidden) {
+        return [
+          '> DIRECTORY LISTING: /mnt',
+          '> .',
+          '> ..',
+          '> .readme',
+          '> .dharmanet',
+          '> net_link.sys.bak',
+          '> dharma_config.dat'
+        ];
+      } else {
+        return [
+          '> DIRECTORY LISTING: /mnt',
+          '> net_link.sys.bak',
+          '> dharma_config.dat'
+        ];
+      }
+    } else if (args === '/mnt/.dharmanet' || args === '/mnt/.dharmanet/') {
+      return [
+        '> DIRECTORY LISTING: /mnt/.dharmanet',
+        '> .',
+        '> ..',
+        '> init_socket.sh',
+        '> subnet_log.db',
+        '> protocol_candle.ref'
+      ];
+    } else if (!args || args === '.' || args === './') {
+      // Root directory listing
+      const files = [
+        '> DIRECTORY LISTING: /',
+        '> bin/',
+        '> etc/',
+        '> lib/',
+        '> mnt/',
+        '> usr/',
+        '> var/'
+      ];
+      
+      if (showHidden) {
+        files.splice(1, 0, '> .', '> ..');
+      }
+      
+      return files;
+    } else {
+      return [
+        `> DIRECTORY LISTING: ${args}`,
+        '> ERROR: Directory not found or permission denied'
+      ];
+    }
+  },
+  
+  cat: (args: string) => {
+    // View file contents
+    if (args === '/mnt/.readme') {
+      return [
+        '> FILE: /mnt/.readme',
+        '> ----------------------------------------',
+        '> DHARMA INITIATIVE NETWORK CONFIGURATION',
+        '> Last updated: 1987-06-12',
+        '> ',
+        '> Network administration is handled through the',
+        '> hidden .dharmanet directory. Access to subnet',
+        '> protocol is restricted to authorized personnel.',
+        '> ',
+        '> Contact Stuart Radzinsky for authorization.',
+        '> ----------------------------------------'
+      ];
+    } else if (args === '/mnt/net_link.sys.bak') {
+      return [
+        '> FILE: /mnt/net_link.sys.bak',
+        '> ----------------------------------------',
+        '> ERROR: File corrupted',
+        '> [DATA UNREADABLE]',
+        '> ----------------------------------------'
+      ];
+    } else if (args === '/mnt/.dharmanet/init_socket.sh') {
+      // Store in localStorage that the subnet puzzle should be launched
+      try {
+        localStorage.setItem('dharma_launch_puzzle', 'subnet');
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      return [
+        '> EXECUTING: /mnt/.dharmanet/init_socket.sh',
+        '> ----------------------------------------',
+        '> Initializing network connection...',
+        '> Connecting to subnet protocol...',
+        '> Opening communication channels...',
+        '> Launching interface module...',
+        '> ----------------------------------------'
+      ];
+    } else if (args === '/mnt/.dharmanet/subnet_log.db') {
+      return [
+        '> FILE: /mnt/.dharmanet/subnet_log.db',
+        '> ----------------------------------------',
+        '> Database format: DHARMA-DB v2.3',
+        '> Status: PARTIALLY CORRUPTED',
+        '> Contents: Communication logs from subnet protocol',
+        '> Last accessed: 12-Jul-1988',
+        '> Notes: Contains multiple references to "protocol candle"',
+        '> and communications with user "Alvar.H"',
+        '> ',
+        '> WARNING: Some logs contradict official records.',
+        '> Use init_socket.sh to view database content',
+        '> ----------------------------------------'
+      ];
+    } else if (args === '/mnt/.dharmanet/protocol_candle.ref') {
+      return [
+        '> FILE: /mnt/.dharmanet/protocol_candle.ref',
+        '> ----------------------------------------',
+        '> PROJECT CANDLE: CLASSIFICATION LEVEL 4',
+        '> ',
+        '> Station designations:',
+        '> SWAN (3) - Electromagnetic Research',
+        '> FLAME (4) - Communications',
+        '> PEARL (5) - Surveillance',
+        '> ARROW (1) - Defense',
+        '> STAFF (6) - Medical Research',
+        '> ORCHID (6) - Time/Space Research',
+        '> ',
+        '> All stations maintain subnet connectivity',
+        '> through FLAME central communications hub.',
+        '> ----------------------------------------'
+      ];
+    } else {
+      return [
+        `> FILE: ${args}`,
+        '> ERROR: File not found or permission denied'
+      ];
+    }
+  },
+  
+  cd: (args: string) => {
+    // Fake directory navigation (just for simulation)
+    if (args === '/mnt' || args === '/mnt/' || args === '../mnt') {
+      return ['> CHANGED DIRECTORY TO: /mnt'];
+    } else if (args === '/mnt/.dharmanet' || args === '.dharmanet') {
+      return ['> CHANGED DIRECTORY TO: /mnt/.dharmanet'];
+    } else if (args === '/' || args === '/..') {
+      return ['> CHANGED DIRECTORY TO: /'];
+    } else if (args === '.' || args === '') {
+      return ['> CURRENT DIRECTORY UNCHANGED'];
+    } else {
+      return [`> ERROR: Cannot change directory to ${args}`, '> No such directory or permission denied'];
+    }
   },
   
   clear: () => []
