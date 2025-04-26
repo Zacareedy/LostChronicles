@@ -398,34 +398,17 @@ const commands: Record<string, Function> = {
             '> NOTICE: Full access to all diagnostic modules enabled'
           ];
         } else {
-          // For regular users, launch a specific puzzle based on progression
-          // Use localStorage to check what the user has already unlocked
-          const discoveredStations = localStorage.getItem('dharma_discovered_stations');
-          let puzzleToLaunch = 'hieroglyph'; // Default to hieroglyph puzzle
-          
-          if (discoveredStations) {
-            try {
-              const stations = JSON.parse(discoveredStations);
-              
-              // Launch a puzzle based on progression
-              if (stations.includes('pearl') && stations.includes('flame')) {
-                puzzleToLaunch = 'coordinates';
-              } else if (stations.includes('flame')) {
-                puzzleToLaunch = 'radio';
-              }
-            } catch (e) {
-              // If parsing fails, use default
-            }
-          }
+          // For regular users, always launch the subnet protocol from diagnose /sys
+          // as per specification
           
           // Launch the specific puzzle
-          localStorage.setItem('dharma_launch_puzzle', puzzleToLaunch);
+          localStorage.setItem('dharma_launch_puzzle', 'subnet');
           
           return [
             '> SYSTEM DIAGNOSTIC INITIALIZED',
             '> Scanning for available modules...',
             '> Protocol match found',
-            `> Launching ${puzzleToLaunch.toUpperCase()} diagnostic module...`
+            '> Launching SUBNET PROTOCOL diagnostic module...'
           ];
         }
       } catch (e) {
