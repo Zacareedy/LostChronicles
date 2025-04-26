@@ -72,12 +72,27 @@ const Home: React.FC = () => {
       if (puzzleToLaunch) {
         // Clear the flag
         localStorage.removeItem('dharma_launch_puzzle');
-        // Activate the puzzle
+        
+        console.log(`Launching puzzle: ${puzzleToLaunch}`);
+        
+        // Make sure the puzzle is activated in localStorage directly
+        localStorage.setItem('dharma_active_puzzle', puzzleToLaunch);
+        
+        // Also activate the puzzle through state for redundancy
         setActivePuzzleId(puzzleToLaunch);
+        
+        // Call the launchPuzzle method directly if it exists
+        if (puzzleControllerRef.current && typeof puzzleControllerRef.current.launchPuzzle === 'function') {
+          setTimeout(() => {
+            puzzleControllerRef.current.launchPuzzle(puzzleToLaunch);
+          }, 100);
+        }
+        
         triggerSystemStatus(`LAUNCHING ${puzzleToLaunch.toUpperCase()} INTERFACE`, 3000);
       }
     } catch (e) {
-      // Ignore localStorage errors
+      console.error('Error launching puzzle:', e);
+      // Ignore localStorage errors but log them in dev
     }
   }, [isLoading, triggerSystemStatus]);
 
@@ -309,6 +324,7 @@ const Home: React.FC = () => {
       
       {/* Puzzle Controller for ARG elements */}
       <PuzzleController
+        ref={puzzleControllerRef}
         onRevealStation={handleRevealStation}
         onUnlockReport={unlockReport}
         onUnlockAudioLog={unlockAudioLog}
