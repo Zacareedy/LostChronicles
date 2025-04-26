@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LOADING_MESSAGES } from '@/lib/constants';
 import { playSound } from '@/lib/audio';
 import dharmaLogoSvg from '@/assets/dharma-logo-fixed.svg';
 
@@ -10,7 +9,6 @@ interface LoadingProps {
 
 const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
   const [progress, setProgress] = useState(0);
-  const [messageIndex, setMessageIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
@@ -21,17 +19,6 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
       setProgress(prev => {
         const increment = Math.random() * 15;
         const newProgress = prev + increment;
-        
-        // Update message based on progress
-        const newMessageIndex = Math.min(
-          Math.floor((newProgress / 100) * LOADING_MESSAGES.length),
-          LOADING_MESSAGES.length - 1
-        );
-        
-        if (newMessageIndex !== messageIndex) {
-          setMessageIndex(newMessageIndex);
-          playSound('beep');
-        }
         
         // Loading complete
         if (newProgress >= 100) {
@@ -53,7 +40,7 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
     return () => {
       clearInterval(interval);
     };
-  }, [messageIndex, onLoadComplete]);
+  }, [onLoadComplete]);
 
   return (
     <AnimatePresence>
@@ -65,7 +52,7 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
           transition={{ duration: 1 }}
         >
           {/* DHARMA Logo SVG */}
-          <div className="mb-8 relative w-64 h-64">
+          <div className="mb-12 relative w-64 h-64">
             <img 
               src={dharmaLogoSvg} 
               alt="DHARMA Initiative Logo" 
@@ -83,63 +70,22 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
             </div>
           </div>
           
-          {/* Authentic 70s/80s era terminal style loading indicators */}
-          <div className="w-full max-w-3xl px-4">
-            <div className="text-left font-mono text-[hsl(var(--dharma-green))] text-sm mb-2 flex">
-              <div className="w-20">INIT:</div>
-              <div className="flex-1 overflow-hidden">
-                <div className="w-full h-4 relative overflow-hidden font-mono flex items-center">
-                  <div className="relative flex">
-                    {Array.from({ length: 50 }).map((_, i) => (
-                      <span key={i} className={`text-sm ${i < Math.round(progress / 2) ? 'text-[hsl(var(--dharma-green))]' : 'text-[rgba(0,0,0,0)]'}`}>█</span>
-                    ))}
-                  </div>
-                  <div className="absolute right-0 text-[hsl(var(--dharma-amber))]">
-                    {Math.round(progress)}%
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="text-left font-mono text-[hsl(var(--dharma-green))] text-sm mb-2 flex">
-              <div className="w-20">STATUS:</div>
-              <div className="flex-1 uppercase">
-                {progress >= 100 ? 'SYSTEM READY' : 'LOADING DHARMA OS v2.3.03'}
-              </div>
-            </div>
-            
-            {/* Terminal-style log output - authentic 80-column display */}
-            <div className="relative font-mono text-sm text-[hsl(var(--dharma-gray))] bg-black p-2 border border-[hsl(var(--dharma-green))] h-48 overflow-y-auto text-left whitespace-pre">
-              {/* Column guide (common in old terminals) */}
-              <div className="absolute top-0 w-full opacity-10 pointer-events-none text-[hsl(var(--dharma-green))] text-[8px] select-none">
-                {Array.from({ length: 8 }).map((_, i) => (
-                  <span key={i} className="inline-block w-[10ch] text-center">{(i+1)*10}</span>
-                ))}
-              </div>
-              
-              {/* Vertical line separator (common in old mainframes) */}
-              <div className="absolute left-[5ch] top-0 bottom-0 w-px bg-[hsl(var(--dharma-green))] opacity-10"></div>
-              
-              {LOADING_MESSAGES.slice(0, messageIndex + 1).map((message, i) => (
-                <div key={i} className="mb-1 flex">
-                  <span className="text-[hsl(var(--dharma-amber))] w-[5ch] text-right pr-2">{(i+1).toString().padStart(2, '0')}:</span>
-                  <span>{message}</span>
-                </div>
+          {/* Simplified progress dots */}
+          <div className="w-full max-w-md px-4 mt-8">
+            <div className="flex justify-center space-x-2">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-3 h-3 rounded-full ${
+                    i < Math.floor(progress / 12.5) 
+                      ? 'bg-[hsl(var(--dharma-green))]' 
+                      : 'bg-[hsla(var(--dharma-gray),0.3)]'
+                  } transition-colors duration-300`}
+                />
               ))}
-              {progress < 100 && (
-                <div className="flex">
-                  <span className="text-[hsl(var(--dharma-amber))] w-[5ch] text-right pr-2">{(messageIndex+2).toString().padStart(2, '0')}:</span>
-                  <span className="animate-blink">_</span>
-                </div>
-              )}
             </div>
-            
-            <div className="flex justify-between mt-2 font-mono text-[hsl(var(--dharma-green))] text-xs border-t border-b border-[hsla(var(--dharma-green),0.3)] py-1">
-              <div>DHARMA INITIATIVE © 1977-1984</div>
-              <div>SYSTEM LOAD: {(Math.min(progress/100, 0.95) + Math.random() * 0.05).toFixed(2)}</div>
-              <div className="text-[hsl(var(--dharma-amber))]">
-                {progress >= 100 ? '*** PRESS ANY KEY TO CONTINUE ***' : 'DO NOT POWER OFF SYSTEM'}
-              </div>
+            <div className="text-center font-terminal text-[hsl(var(--dharma-amber))] mt-4">
+              {progress >= 100 ? 'SYSTEM READY' : 'LOADING...'}
             </div>
           </div>
         </motion.div>
