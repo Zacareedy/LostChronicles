@@ -7,6 +7,8 @@ import { useLocation } from 'wouter';
 interface TerminalOutput {
   text: string;
   type: 'input' | 'output' | 'cursor';
+  isTyping?: boolean; // Flag for text that should be typed out character by character
+  fullText?: string;  // The complete text that will be typed out
 }
 
 interface TerminalProps {
@@ -21,7 +23,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
   const [terminalOutput, setTerminalOutput] = useState<TerminalOutput[]>([
     { text: '>DHARMA INITIATIVE - SWAN STATION TERMINAL', type: 'output' },
     { text: '>AWAITING INPUT...', type: 'output' },
-    { text: '▋', type: 'cursor' }
+    { text: '>:█', type: 'cursor' }
   ]);
   const [input, setInput] = useState('');
   const [terminalStatus, setTerminalStatus] = useState('CONNECTED');
@@ -53,8 +55,44 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
     }
   }, []);
 
+  // Add typewriter effect
   useEffect(() => {
-    // Scroll to bottom of terminal output when new content is added
+    // Find any terminal output items that need typing animation
+    const typingItem = terminalOutput.find(item => item.isTyping && item.fullText && item.text.length < item.fullText.length);
+    
+    if (typingItem && typingItem.fullText) {
+      // Set a timeout to add the next character
+      const typingSpeed = Math.random() * 30 + 10; // 10-40ms per character, variable like old terminals
+      const timeoutId = setTimeout(() => {
+        setTerminalOutput(prev => 
+          prev.map(item => {
+            if (item === typingItem && item.fullText) {
+              // Add one more character to the displayed text
+              const nextCharIndex = item.text.length;
+              if (nextCharIndex < item.fullText.length) {
+                return {
+                  ...item,
+                  text: item.fullText.substring(0, nextCharIndex + 1),
+                  isTyping: nextCharIndex + 1 < item.fullText.length
+                };
+              }
+            }
+            return item;
+          })
+        );
+        
+        // Play the typing sound occasionally (not for every character to avoid sound overlap)
+        if (Math.random() < 0.3) {
+          playSound('beep', 'short');
+        }
+      }, typingSpeed);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [terminalOutput]);
+
+  // Scroll to bottom of terminal output when new content is added
+  useEffect(() => {
     if (terminalOutputRef.current) {
       terminalOutputRef.current.scrollTop = terminalOutputRef.current.scrollHeight;
     }
@@ -179,12 +217,15 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
     if (userInput.toLowerCase() === 'clear') {
       setTerminalOutput([]);
     } else {
-      // Add response to terminal
-      response.forEach(line => {
-        setTerminalOutput(prev => [
-          ...prev,
-          { text: line, type: 'output' }
-        ]);
+      // Add response to terminal with typewriter effect
+      response.forEach((line, index) => {
+        setTimeout(() => {
+          setTerminalOutput(prev => [
+            ...prev,
+            // Initialize with empty string, but set fullText for typing effect
+            { text: "", type: 'output', isTyping: true, fullText: line }
+          ]);
+        }, index * 50); // Stagger each line's appearance
       });
     }
     
@@ -197,7 +238,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
     setTimeout(() => {
       setTerminalOutput(prev => [
         ...prev,
-        { text: '_', type: 'cursor' }
+        { text: '>:█', type: 'cursor' }
       ]);
     }, 100);
     
@@ -284,7 +325,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
               placeholder=""
               autoComplete="off"
             />
-            {!input && <span className="absolute left-0 animate-terminal-blink">▋</span>}
+            {!input && <span className="absolute left-0 animate-terminal-blink">:█</span>}
           </form>
         </div>
       </div>
