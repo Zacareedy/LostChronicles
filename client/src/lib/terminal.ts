@@ -17,7 +17,7 @@ const commands: Record<string, Function> = {
       '> scan - Scan for signals on the island',
       '> login <id> - Access restricted areas',
       '> locate <station> - Find station location',
-      '> puzzle <type> - Access puzzle interfaces',
+      '> puzzle - Investigate system anomalies',
       '> clear - Clear terminal'
     ];
     
@@ -49,13 +49,9 @@ const commands: Record<string, Function> = {
         basicCommands.push('> resetall - Reset all app data and return to initial state');
         basicCommands.push('');
         basicCommands.push('> PUZZLE COMMANDS:');
-        basicCommands.push('> puzzle hieroglyph - Start Hieroglyph puzzle');
-        basicCommands.push('> puzzle radio - Start Radio Numbers puzzle');
-        basicCommands.push('> puzzle coordinates - Start Coordinates puzzle');
-        basicCommands.push('> puzzle subnet - Start Subnet Protocol puzzle');
-        basicCommands.push('> puzzle blackbox - Start Black Box Archive puzzle');
-        basicCommands.push('> puzzle candle - Start Project Candle puzzle');
-        basicCommands.push('> puzzle void - Start Void Directory puzzle');
+        basicCommands.push('> puzzle - Launch random puzzle');
+        basicCommands.push('> puzzle <type> - Launch specific puzzle');
+        basicCommands.push('> Available types: hieroglyph, radio, coordinates, subnet, blackbox, candle, void');
       }
     } catch (e) {
       // Ignore localStorage errors
@@ -315,11 +311,17 @@ const commands: Record<string, Function> = {
   },
 
   puzzle: (args: string, onRevealPuzzle?: () => void) => {
-    // Check if puzzle type is valid
+    // Check if in developer mode
+    const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+    
+    // Valid puzzles for dev mode and normal mode
     const validPuzzles = [
       'hieroglyph', 'radio', 'coordinates', 'subnet', 
       'blackbox', 'candle', 'void'
     ];
+    
+    // Only show basic puzzles in normal mode
+    const basicPuzzles = ['hieroglyph', 'radio', 'coordinates', 'subnet'];
     
     // Store puzzle type in local storage for app to pick up
     const launchPuzzle = (puzzleType: string) => {
@@ -336,33 +338,64 @@ const commands: Record<string, Function> = {
       }
     };
     
-    if (!args) {
+    // In normal mode (not dev mode), make puzzle discovery more mysterious
+    if (!devModeActive && !args) {
+      // Launch a random puzzle to create mystery
+      const randomPuzzleIndex = Math.floor(Math.random() * basicPuzzles.length);
+      const randomPuzzle = basicPuzzles[randomPuzzleIndex];
+      launchPuzzle(randomPuzzle);
+      
+      return [
+        '> SYSTEM ANOMALY DETECTED',
+        '> Investigative protocol initiated',
+        '> Connecting to mystery interface...'
+      ];
+    }
+    
+    // Dev mode provides more structured puzzle access
+    if (devModeActive && !args) {
       return [
         '> PUZZLE TYPE REQUIRED',
         '> Usage: puzzle <type>',
-        '> Available puzzles: hieroglyph, radio, coordinates, subnet',
-        '> Additional puzzles require elevated security clearance'
+        '> Available puzzles: hieroglyph, radio, coordinates, subnet, blackbox, candle, void'
       ];
     }
     
     const puzzleType = args.toLowerCase();
     
-    if (!validPuzzles.includes(puzzleType)) {
+    // In dev mode, show all puzzles
+    if (devModeActive && !validPuzzles.includes(puzzleType)) {
       return [
         `> ERROR: Unknown puzzle type "${puzzleType}"`,
-        '> Available puzzles: hieroglyph, radio, coordinates, subnet'
+        '> Available puzzles: hieroglyph, radio, coordinates, subnet, blackbox, candle, void'
       ];
+    }
+    
+    // In normal mode, only show basic puzzles
+    if (!devModeActive && !basicPuzzles.includes(puzzleType)) {
+      // If it's an advanced puzzle, be cryptic
+      if (validPuzzles.includes(puzzleType)) {
+        return [
+          '> ACCESS DENIED: Security clearance insufficient',
+          '> This protocol requires special authorization',
+          '> Unauthorized access attempts will be logged'
+        ];
+      } else {
+        // If it's an invalid puzzle, be more helpful but still limited
+        return [
+          `> ERROR: Unknown protocol "${puzzleType}"`,
+          '> Try investigating other approaches to your query'
+        ];
+      }
     }
     
     // Check security level for advanced puzzles
     if (['blackbox', 'candle', 'void'].includes(puzzleType)) {
       // These puzzles require access level 3 or dev mode
-      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
-      
       if (accessLevel < 3 && !devModeActive) {
         return [
-          '> ACCESS DENIED: Advanced puzzles require security level 3',
-          '> Use login command with proper credentials or enable developer mode'
+          '> ACCESS DENIED: Advanced protocols require security level 3',
+          '> Use login command with proper credentials'
         ];
       }
     }
@@ -370,10 +403,20 @@ const commands: Record<string, Function> = {
     // Launch the puzzle
     launchPuzzle(puzzleType);
     
-    return [
-      `> LAUNCHING ${puzzleType.toUpperCase()} PUZZLE INTERFACE...`,
-      '> Please wait while the system initializes the module'
-    ];
+    // In dev mode, be explicit about what's launching
+    if (devModeActive) {
+      return [
+        `> LAUNCHING ${puzzleType.toUpperCase()} PUZZLE INTERFACE...`,
+        '> Please wait while the system initializes the module'
+      ];
+    } else {
+      // In normal mode, be more mysterious
+      return [
+        '> ACCESSING REQUESTED PROTOCOL...',
+        '> Initializing interface...',
+        '> Please wait while the system processes your request'
+      ];
+    }
   },
 
   diagnose: (args: string) => {
@@ -382,18 +425,26 @@ const commands: Record<string, Function> = {
     }
     
     if (args === '/sys') {
-      // Launch the puzzle menu
+      // Instead of launching the puzzle menu, directly start a random puzzle
+      // This maintains the mystery and unexpectedness
+      const availablePuzzles = ['hieroglyph', 'radio', 'coordinates', 'subnet'];
+      
+      // Select a random puzzle (but make it seem like it's a system diagnostic)
+      const puzzleIndex = Math.floor(Math.random() * availablePuzzles.length);
+      const selectedPuzzle = availablePuzzles[puzzleIndex];
+      
       try {
-        localStorage.setItem('dharma_launch_puzzle_menu', 'true');
+        // Launch the puzzle directly instead of showing a menu
+        localStorage.setItem('dharma_launch_puzzle', selectedPuzzle);
       } catch (e) {
         // Ignore localStorage errors
       }
       
       return [
         '> SYSTEM DIAGNOSTIC INITIALIZED',
-        '> Scanning for available modules...',
-        '> Multiple test protocols detected',
-        '> Launching diagnostic interface...'
+        '> Scanning for anomalies...',
+        '> Unknown protocol detected',
+        '> Launching diagnostic sequence...'
       ];
     } else {
       return [
