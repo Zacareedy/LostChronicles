@@ -497,9 +497,9 @@ const commands: Record<string, Function> = {
         '> DIRECTORY LISTING: /mnt/.dharmanet',
         '> .',
         '> ..',
-        '> init_socket.sh',
-        '> subnet_log.db',
-        '> protocol_candle.ref'
+        '> init_socket.sh           (executable script - use "cat" to run)',
+        '> subnet_log.db            (database file)',
+        '> protocol_candle.ref      (reference document)'
       ];
     } else if (!dirPath || dirPath === '.' || dirPath === './') {
       // Root directory listing
@@ -538,6 +538,9 @@ const commands: Record<string, Function> = {
         '> Network administration is handled through the',
         '> hidden .dharmanet directory. Access to subnet',
         '> protocol is restricted to authorized personnel.',
+        '> ',
+        '> To initialize subnet connection, use the shell script',
+        '> located at /mnt/.dharmanet/init_socket.sh',
         '> ',
         '> Contact Stuart Radzinsky for authorization.',
         '> ----------------------------------------'
@@ -579,7 +582,8 @@ const commands: Record<string, Function> = {
         '> and communications with user "Alvar.H"',
         '> ',
         '> WARNING: Some logs contradict official records.',
-        '> Use init_socket.sh to view database content',
+        '> To view database content, execute the command:',
+        '> cat /mnt/.dharmanet/init_socket.sh',
         '> ----------------------------------------'
       ];
     } else if (args === '/mnt/.dharmanet/protocol_candle.ref') {
