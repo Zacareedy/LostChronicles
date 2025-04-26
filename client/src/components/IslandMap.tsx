@@ -99,7 +99,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   const [hoveredStation, setHoveredStation] = useState<string | null>(null);
   const [coordinates, setCoordinates] = useState('--° --′ --″ N, --° --′ --″ W');
   const [mapStatus, setMapStatus] = useState('SCANNING FOR SIGNALS...');
-  
+
   // New state for enhanced map features
   const [hiddenLocations, setHiddenLocations] = useState(HIDDEN_LOCATIONS);
   const [currentWeather, setCurrentWeather] = useState<WeatherState>('clear');
@@ -108,21 +108,36 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   const [timePhase, setTimePhase] = useState(0); // 0-107 minutes
   const [mapEntities, setMapEntities] = useState<{id: string, position: {top: string, left: string}, isTracked: boolean}[]>([]);
   const [targetCoordinates, setTargetCoordinates] = useState<{lat: string, long: string} | null>(null);
-  
+
   // Check for newly unlocked locations based on puzzle completions
   useEffect(() => {
     try {
       // Check if radio puzzle was completed
       const radioPuzzleCompleted = localStorage.getItem('dharma_radio_puzzle_completed') === 'true';
-      
+
       if (radioPuzzleCompleted) {
         // Update crash site and radio tower locations
         setHiddenLocations(prev => 
-          prev.map(loc => 
-            (loc.id === 'crash-site' || loc.id === 'radio-tower') && loc.discoveryMethod === 'puzzle' && loc.discoveryRequirement === 'radio'
-              ? { ...loc, isDiscovered: true }
-              : loc
-          )
+          prev.map(loc => {
+            if ((loc.id === 'crash-site' || loc.id === 'radio-tower') && 
+                loc.discoveryMethod === 'puzzle' && 
+                loc.discoveryRequirement === 'radio') {
+
+              // Play discovery sound for newly discovered locations
+              if (!loc.isDiscovered) {
+                playSound('success');
+
+                // Special handling for crash site
+                if (loc.id === 'crash-site') {
+                  setMapStatus('ALERT: Aircraft wreckage detected');
+                  setTimeout(() => setMapStatus('SCANNING FOR SIGNALS...'), 5000);
+                }
+              }
+
+              return { ...loc, isDiscovered: true };
+            }
+            return loc;
+          })
         );
       }
     } catch (e) {
@@ -236,10 +251,10 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         'hydra': 'dharma', // Use default for hydra
         'lookingGlass': 'dharma', // Use default for looking glass
       };
-      
+
       // Get the logo variant for this station
       const logoVariant = stationToLogo[stationKey] || 'dharma';
-      
+
       return (
         <div className="w-full h-full flex items-center justify-center dharma-station-marker 
                         bg-black bg-opacity-60 rounded-full border-2 border-[hsl(var(--dharma-amber))]">
@@ -304,7 +319,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     if (mapZoom < MAX_ZOOM) {
       setMapZoom(prev => Math.min(MAX_ZOOM, prev + 0.1));
       playSound('beep', 'short');
-      
+
       // Show coordinate grid when zoomed in past a certain threshold
       if (mapZoom >= 1.5 && !showCoordinateGrid) {
         setShowCoordinateGrid(true);
@@ -316,7 +331,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     if (mapZoom > MIN_ZOOM) {
       setMapZoom(prev => Math.max(MIN_ZOOM, prev - 0.1));
       playSound('beep', 'short');
-      
+
       // Hide coordinate grid when zoomed out
       if (mapZoom < 1.5 && showCoordinateGrid) {
         setShowCoordinateGrid(false);
@@ -330,13 +345,13 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     const weatherInterval = setInterval(() => {
       const weatherOptions: WeatherState[] = ['clear', 'fog', 'rain', 'storm'];
       const randomWeather = weatherOptions[Math.floor(Math.random() * weatherOptions.length)];
-      
+
       // More likely to be clear weather
       if (Math.random() < 0.7 && randomWeather !== 'clear') {
         setCurrentWeather('clear');
       } else {
         setCurrentWeather(randomWeather);
-        
+
         // Show notification about weather change
         setMapStatus(`WEATHER UPDATE: ${randomWeather.toUpperCase()}`);
         setTimeout(() => {
@@ -344,7 +359,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         }, 3000);
       }
     }, 120000); // Every 2 minutes
-    
+
     return () => clearInterval(weatherInterval);
   }, []);
 
@@ -352,7 +367,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   useEffect(() => {
     const timeInterval = setInterval(() => {
       setTimePhase(prev => (prev + 1) % 108);
-      
+
       // Special events at certain time intervals
       if (timePhase === 107) {
         // End of cycle
@@ -364,7 +379,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         setTimeout(() => setMapStatus('SCANNING FOR SIGNALS...'), 5000);
       }
     }, 60000); // Update every minute, simulating the countdown
-    
+
     return () => clearInterval(timeInterval);
   }, [timePhase]);
 
@@ -383,17 +398,17 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         isTracked: false
       }
     ]);
-    
+
     // Move entities randomly
     const entityInterval = setInterval(() => {
       setMapEntities(prev => prev.map(entity => {
         // Don't move tracked entities - they follow a predetermined path
         if (entity.isTracked) return entity;
-        
+
         // Random movement
         const currentTop = parseInt(entity.position.top);
         const currentLeft = parseInt(entity.position.left);
-        
+
         return {
           ...entity,
           position: {
@@ -403,44 +418,44 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         };
       }));
     }, 30000);
-    
+
     return () => clearInterval(entityInterval);
   }, []);
-  
+
   // Method to navigate to specific coordinates
   const navigateToCoordinates = (lat: string, long: string) => {
     setTargetCoordinates({ lat, long });
-    
+
     // Convert coordinates to approximate position
     // This would need a more sophisticated algorithm in a real app
     // For demo purposes, we'll just show a marker
-    
+
     // Check if these coordinates match any hidden locations
     const matchedLocation = hiddenLocations.find(loc => 
       loc.discoveryMethod === 'coordinates' && 
       loc.discoveryRequirement.includes(lat) && 
       loc.discoveryRequirement.includes(long)
     );
-    
+
     if (matchedLocation) {
       // Mark as discovered
       setHiddenLocations(prev => prev.map(loc => 
         loc.id === matchedLocation.id ? { ...loc, isDiscovered: true } : loc
       ));
-      
+
       // Notify parent component
       if (onSecretDiscovery) {
         onSecretDiscovery(matchedLocation.id);
       }
-      
+
       // Set map status to show discovery
       setMapStatus(`LOCATION DISCOVERED: ${matchedLocation.name.toUpperCase()}`);
       playSound('success');
-      
+
       // Reset map offset to focus on the discovered location
       const top = parseInt(matchedLocation.position.top);
       const left = parseInt(matchedLocation.position.left);
-      
+
       setMapOffset({
         x: -(left - 50) * 5, // Approximate centering
         y: -(top - 50) * 5
@@ -448,15 +463,15 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       setMapZoom(2.0); // Zoom in on discovery
     }
   };
-  
+
   // Method to handle entity tracking
   const trackEntity = (entityId: string) => {
     setMapEntities(prev => prev.map(entity => 
       entity.id === entityId ? { ...entity, isTracked: true } : entity
     ));
-    
+
     setMapStatus(`TRACKING ENTITY: ${entityId}`);
-    
+
     // For demo purposes, if entity-004 is tracked, it leads to a special discovery
     if (entityId === 'entity-004') {
       // This would trigger the Radinsky discovery event
@@ -464,7 +479,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         // Reveal swan station blueprints
         setMapStatus('ENTITY TRACKING COMPLETE: SWAN STATION BLUEPRINTS UNLOCKED');
         playSound('success');
-        
+
         // In a real app, we would unlock a document or blueprint here
       }, 10000);
     }
@@ -528,7 +543,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     filter: 'contrast(1.1) brightness(0.9)'
                   }}
                 />
-                
+
                 {/* Add map-specific scanline effect */}
                 <div className="map-scanline absolute inset-0 z-10 pointer-events-none"></div>
 
@@ -586,7 +601,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                           )}
                         </div>
                       )}
-                      
+
                       {/* Show time-phase specific alternate names */}
                       {isDiscovered && key === 'swan' && timePhase === 54 && (
                         <div className="absolute whitespace-nowrap top-0 left-1/2 transform -translate-x-1/2 -mt-5 px-2 py-1 bg-black bg-opacity-80 text-[9px] rounded text-[hsl(var(--dharma-amber))] animate-pulse z-50">
@@ -596,7 +611,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     </motion.div>
                   );
                 })}
-                
+
                 {/* Hidden locations */}
                 {hiddenLocations.map((location) => (
                   <motion.div
@@ -629,12 +644,12 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                           // Show a recover modal
                           if (confirm("Wreckage discovered. Recover black box?")) {
                             playSound('success');
-                            
+
                             // Add the recovered file to the virtual filesystem
                             try {
                               // Set a flag to indicate the black box was recovered
                               localStorage.setItem('dharma_blackbox_recovered', 'true');
-                              
+
                               // Add message to terminal logs
                               const terminalLogs = JSON.parse(localStorage.getItem('dharma_terminal_logs') || '[]');
                               terminalLogs.push({
@@ -642,10 +657,10 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                                 timestamp: Date.now()
                               });
                               localStorage.setItem('dharma_terminal_logs', JSON.stringify(terminalLogs));
-                              
+
                               // Launch the black box puzzle
                               localStorage.setItem('dharma_launch_puzzle', 'blackbox');
-                              
+
                               // Notify puzzle controller
                               onSecretDiscovery('blackbox');
                             } catch (e) {
@@ -662,7 +677,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     <div className="w-full h-full rounded-full bg-[hsla(var(--dharma-amber),0.6)] border border-white flex items-center justify-center">
                       <span className="text-white text-[10px]">?</span>
                     </div>
-                    
+
                     {location.isDiscovered && (
                       <div className="absolute whitespace-nowrap top-full left-1/2 transform -translate-x-1/2 mt-1 px-2 py-0.5 bg-black bg-opacity-80 text-[9px] rounded text-white z-50">
                         {location.name}
@@ -670,7 +685,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     )}
                   </motion.div>
                 ))}
-                
+
                 {/* Moving entities */}
                 {mapEntities.map((entity) => (
                   <motion.div
@@ -694,7 +709,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                     }}
                   />
                 ))}
-                
+
                 {/* Target coordinates marker */}
                 {targetCoordinates && (
                   <motion.div
@@ -745,7 +760,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent opacity-10"></div>
                 </div>
               )}
-              
+
               {currentWeather === 'rain' && (
                 <div 
                   className="absolute inset-0 pointer-events-none overflow-hidden"
@@ -768,7 +783,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   ))}
                 </div>
               )}
-              
+
               {currentWeather === 'storm' && (
                 <div 
                   className="absolute inset-0 pointer-events-none"
@@ -790,7 +805,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       }}
                     ></div>
                   ))}
-                  
+
                   {/* Lightning flashes that reveal hidden locations */}
                   <div 
                     className="absolute inset-0 bg-white animate-lightning opacity-0"
@@ -809,7 +824,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   </div>
                 </div>
               )}
-              
+
               {/* Station connections when multiple stations are discovered */}
               {discoveredStations.length >= 2 && (
                 <svg 
@@ -829,7 +844,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       className="station-connection"
                     />
                   )}
-                  
+
                   {/* Connection between Pearl and Flame */}
                   {discoveredStations.includes('pearl') && discoveredStations.includes('flame') && (
                     <line 
@@ -842,7 +857,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       strokeDasharray="5,5"
                     />
                   )}
-                  
+
                   {/* Connection between Flame and Swan - forms a triangle */}
                   {discoveredStations.includes('flame') && discoveredStations.includes('swan') && (
                     <line 
@@ -855,7 +870,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       strokeDasharray="5,5"
                     />
                   )}
-                  
+
                   {/* If all three stations are connected, show a hint at the center */}
                   {discoveredStations.includes('swan') && 
                    discoveredStations.includes('pearl') && 
@@ -875,7 +890,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                         strokeWidth="1"
                         className="animate-pulse"
                       />
-                      
+
                       {/* Add a ? marker to hint at a hidden location */}
                       <text
                         x={(parseFloat(STATIONS.swan.position.left) + 
@@ -895,7 +910,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   )}
                 </svg>
               )}
-              
+
               {/* Coordinate grid that appears on zoom */}
               {showCoordinateGrid && (
                 <div 
@@ -917,7 +932,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                       </span>
                     </div>
                   ))}
-                  
+
                   {/* Vertical grid lines */}
                   {[...Array(10)].map((_, i) => (
                     <div 
@@ -932,7 +947,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   ))}
                 </div>
               )}
-              
+
               {/* Mysterious fog overlay that partially clears based on discovered stations */}
               <div 
                 className="absolute inset-0 bg-gradient-to-br from-[rgba(0,0,0,0.7)] to-[rgba(0,0,0,0.4)]"

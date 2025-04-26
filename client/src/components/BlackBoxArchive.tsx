@@ -39,14 +39,14 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
   const [duration, setDuration] = useState(60); // 60 seconds video
   const [volume, setVolume] = useState(70);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
+
   // Puzzle state
   const [timelineMarkers, setTimelineMarkers] = useState<TimelineMarker[]>([
-    { id: '1', time: 8, label: 'Frame Error', discovered: false, content: 'emergency' },
-    { id: '2', time: 15, label: 'Audio Spike', discovered: false, content: 'protocol' },
-    { id: '3', time: 16, label: 'Signal Loss', discovered: false, content: 'candle' },
-    { id: '4', time: 23, label: 'Transmission', discovered: false, content: 'must' },
-    { id: '5', time: 42, label: 'Final Entry', discovered: false, content: 'activate' }
+    { id: '1', time: 8, label: 'Frame Error', discovered: false, content: 'Project' },
+    { id: '2', time: 15, label: 'Audio Spike', discovered: false, content: 'Candle' },
+    { id: '3', time: 16, label: 'Signal Loss', discovered: false, content: 'must' },
+    { id: '4', time: 23, label: 'Transmission', discovered: false, content: 'be' },
+    { id: '5', time: 42, label: 'Final Entry', discovered: false, content: 'initiated' }
   ]);
   const [discoveredMessage, setDiscoveredMessage] = useState<string>('');
   const [isCompleted, setIsCompleted] = useState(false);
@@ -54,14 +54,14 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
   const [isCorrupt, setIsCorrupt] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [isRecovering, setIsRecovering] = useState(false);
-  
+
   const videoRef = useRef<HTMLVideoElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
-  
+
   // Simulate video loading
   useEffect(() => {
     if (!isVisible) return;
-    
+
     setLoadingProgress(0);
     const interval = setInterval(() => {
       setLoadingProgress(prev => {
@@ -73,41 +73,41 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
         return nextValue;
       });
     }, 200);
-    
+
     return () => clearInterval(interval);
   }, [isVisible]);
-  
+
   // Check if all markers have been discovered
   useEffect(() => {
     const allDiscovered = timelineMarkers.every(marker => marker.discovered);
-    
+
     if (allDiscovered && !isCompleted) {
       // Combine all marker content to form the complete message
       const fullMessage = timelineMarkers
         .sort((a, b) => a.time - b.time)
         .map(marker => marker.content)
         .join(' ');
-        
+
       setDiscoveredMessage(fullMessage);
       setIsCompleted(true);
       playSound('success');
-      
+
       // Notify completion after a delay
       setTimeout(() => {
         onComplete();
       }, 3000);
     }
   }, [timelineMarkers, isCompleted, onComplete]);
-  
+
   // Update time display when playing
   useEffect(() => {
     if (!isPlaying || !videoRef.current) return;
-    
+
     const interval = setInterval(() => {
       if (videoRef.current) {
         const newTime = videoRef.current.currentTime;
         setCurrentTime(newTime);
-        
+
         // Auto-pause at the end
         if (newTime >= duration) {
           setIsPlaying(false);
@@ -117,29 +117,29 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
         }
       }
     }, 100);
-    
+
     return () => clearInterval(interval);
   }, [isPlaying, duration]);
-  
+
   // Handle timeline click/scrub
   const handleTimelineClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!timelineRef.current || isRecovering) return;
-    
+
     const rect = timelineRef.current.getBoundingClientRect();
     const clickPosition = e.clientX - rect.left;
     const percentageClicked = clickPosition / rect.width;
     const newTime = percentageClicked * duration;
-    
+
     setCurrentTime(newTime);
     if (videoRef.current) {
       videoRef.current.currentTime = newTime;
     }
-    
+
     // Check if we clicked near a marker
     const nearbyMarker = timelineMarkers.find(
       marker => Math.abs(marker.time - newTime) < 0.5
     );
-    
+
     if (nearbyMarker && !nearbyMarker.discovered) {
       playSound('beep', 'success');
       handleMarkerDiscovery(nearbyMarker.id);
@@ -151,12 +151,12 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
       playSound('click', 'short');
     }
   };
-  
+
   // Handle marker discovery
   const handleMarkerDiscovery = (markerId: string) => {
     setIsRecovering(true);
     setActiveMarker(markerId);
-    
+
     // Add visual effects for the recovery process
     setTimeout(() => {
       setTimelineMarkers(prev => 
@@ -166,11 +166,11 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
             : marker
         )
       );
-      
+
       setIsRecovering(false);
     }, 1500);
   };
-  
+
   // Toggle play/pause
   const togglePlayback = () => {
     if (isPlaying) {
@@ -181,47 +181,47 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
     setIsPlaying(!isPlaying);
     playSound('click');
   };
-  
+
   // Skip backward/forward
   const skipTime = (seconds: number) => {
     if (!videoRef.current) return;
-    
+
     const newTime = Math.max(0, Math.min(duration, currentTime + seconds));
     videoRef.current.currentTime = newTime;
     setCurrentTime(newTime);
     playSound('beep', 'short');
   };
-  
+
   // Adjust volume
   const adjustVolume = (newVolume: number) => {
     if (!videoRef.current) return;
-    
+
     const volumeValue = Math.max(0, Math.min(100, newVolume));
     setVolume(volumeValue);
     videoRef.current.volume = volumeValue / 100;
   };
-  
+
   // Toggle fullscreen mode
   const toggleFullscreen = () => {
     setIsFullscreen(prev => !prev);
     playSound('click');
   };
-  
+
   // Function to format time as MM:SS
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-  
+
   // Get discovered markers count
   const getDiscoveredCount = (): string => {
     const count = timelineMarkers.filter(marker => marker.discovered).length;
     return `${count}/${timelineMarkers.length}`;
   };
-  
+
   if (!isVisible) return null;
-  
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -234,18 +234,18 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
           // Loading screen
           <div className="p-5 flex flex-col items-center justify-center h-full min-h-[400px]">
             <FileVideo className="h-16 w-16 text-[hsl(var(--dharma-amber))] mb-4 animate-pulse" />
-            
+
             <h2 className="text-[hsl(var(--dharma-amber))] font-terminal text-xl mb-6">
               RECOVERING BLACK BOX DATA
             </h2>
-            
+
             <div className="w-64 h-2 bg-[hsla(var(--dharma-gray),0.2)] rounded-full mb-3">
               <div 
                 className="h-full bg-[hsl(var(--dharma-amber))]" 
                 style={{ width: `${loadingProgress}%` }}
               ></div>
             </div>
-            
+
             <p className="text-[hsl(var(--dharma-gray))] text-sm">
               {loadingProgress < 100 ? 'Recovering flight data...' : 'Recovery complete'}
             </p>
@@ -258,13 +258,13 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                 <Package className="h-5 w-5" />
                 DHARMA FLIGHT 815 BLACK BOX
               </h2>
-              
+
               <div className="flex items-center gap-3">
                 <div className={`flex items-center gap-1 text-xs ${isCorrupt ? 'text-[hsl(var(--dharma-amber))]' : 'text-[hsl(var(--dharma-green))]'}`}>
                   <AlertCircle className="h-4 w-4" />
                   {isCorrupt ? 'CORRUPTED DATA' : 'DATA RECOVERED'}
                 </div>
-                
+
                 <button 
                   onClick={onClose}
                   className="text-[hsl(var(--dharma-gray))] hover:text-[hsl(var(--dharma-red))]"
@@ -273,7 +273,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                 </button>
               </div>
             </div>
-            
+
             {/* Video player area */}
             <div className={`bg-black ${isFullscreen ? 'h-[calc(100vh-180px)]' : 'h-[300px]'} relative flex items-center justify-center`}>
               {isRecovering ? (
@@ -284,7 +284,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                   </div>
                 </div>
               ) : null}
-              
+
               {/* Video element - in real implementation would have actual video */}
               <video
                 ref={videoRef}
@@ -293,7 +293,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                 onTimeUpdate={() => videoRef.current && setCurrentTime(videoRef.current.currentTime)}
                 onLoadedMetadata={() => videoRef.current && setDuration(videoRef.current.duration)}
               />
-              
+
               {/* Placeholder for the video since we don't have actual video */}
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-90">
                 <div className="text-center">
@@ -305,7 +305,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                   </p>
                 </div>
               </div>
-              
+
               {/* Timeline markers overlay - only visible in fullscreen mode */}
               {isFullscreen && (
                 <div className="absolute inset-0 pointer-events-none">
@@ -327,7 +327,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                   ))}
                 </div>
               )}
-              
+
               {/* Active marker info overlay */}
               {activeMarker && (
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-[hsla(var(--dharma-black),0.8)] p-3 border border-[hsl(var(--dharma-amber))] rounded text-center">
@@ -342,7 +342,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                 </div>
               )}
             </div>
-            
+
             {/* Video controls */}
             <div className="p-4 bg-[hsla(var(--dharma-gray),0.05)] border-t border-[hsl(var(--dharma-gray))]">
               {/* Timeline/progress bar */}
@@ -352,17 +352,17 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                 onClick={handleTimelineClick}
                 onMouseMove={(e) => {
                   if (!timelineRef.current) return;
-                  
+
                   // Calculate mouse position over timeline
                   const rect = timelineRef.current.getBoundingClientRect();
                   const position = e.clientX - rect.left;
                   const timePosition = (position / rect.width) * duration;
-                  
+
                   // Check if mouse is near any marker
                   const nearbyMarker = timelineMarkers.find(
                     marker => Math.abs(marker.time - timePosition) < 0.5
                   );
-                  
+
                   if (nearbyMarker && activeMarker !== nearbyMarker.id) {
                     setActiveMarker(nearbyMarker.id);
                     playSound('beep', 'short');
@@ -381,7 +381,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                   className="absolute top-0 left-0 h-full bg-[hsl(var(--dharma-green))]" 
                   style={{ width: `${(currentTime / duration) * 100}%` }}
                 ></div>
-                
+
                 {/* Timeline markers */}
                 {timelineMarkers.map(marker => (
                   <div 
@@ -394,20 +394,20 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                     style={{ left: `${(marker.time / duration) * 100}%` }}
                   ></div>
                 ))}
-                
+
                 {/* Current time indicator */}
                 <div 
                   className="absolute top-0 w-1 h-full bg-white" 
                   style={{ left: `${(currentTime / duration) * 100}%` }}
                 ></div>
               </div>
-              
+
               {/* Time display */}
               <div className="flex justify-between items-center text-xs text-[hsl(var(--dharma-gray))] mb-3">
                 <span>{formatTime(currentTime)}</span>
                 <span>{formatTime(duration)}</span>
               </div>
-              
+
               {/* Playback controls */}
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -417,21 +417,21 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                   >
                     <SkipBack className="h-4 w-4" />
                   </button>
-                  
+
                   <button 
                     onClick={togglePlayback}
                     className="p-2 bg-[hsla(var(--dharma-green),0.1)] text-[hsl(var(--dharma-green))] border border-[hsl(var(--dharma-green))] rounded-full"
                   >
                     {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                   </button>
-                  
+
                   <button 
                     onClick={() => skipTime(5)}
                     className="p-1 text-[hsl(var(--dharma-white))]"
                   >
                     <SkipForward className="h-4 w-4" />
                   </button>
-                  
+
                   <div className="flex items-center gap-1 ml-3">
                     <Volume2 className="h-4 w-4 text-[hsl(var(--dharma-white))]" />
                     <input
@@ -444,7 +444,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                     />
                   </div>
                 </div>
-                
+
                 <div>
                   <button
                     onClick={toggleFullscreen}
@@ -455,7 +455,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                 </div>
               </div>
             </div>
-            
+
             {/* Instructions and message display */}
             <div className="p-4">
               {isCompleted ? (
@@ -485,7 +485,7 @@ const BlackBoxArchive: React.FC<BlackBoxArchiveProps> = ({ isVisible, onClose, o
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="text-[hsl(var(--dharma-white))] text-xs">
                     <p className="mb-2">
                       <span className="text-[hsl(var(--dharma-green))]">▶ INSTRUCTIONS:</span> Use fullscreen mode and mouse over the timeline to locate hidden data fragments.

@@ -398,6 +398,14 @@ const commands: Record<string, Function> = {
   },
 
   puzzle: (args: string, onRevealPuzzle?: () => void) => {
+    // Check for blackbox recovery
+    if (args === 'blackbox' && localStorage.getItem('dharma_blackbox_recovered') === 'true') {
+      return [
+        '> RECOVERED FILE DETECTED: /recovered/flightpath.mp4',
+        '> Use "play flightpath.mp4" to analyze black box data'
+      ];
+    }
+    
     // Check if puzzle type is valid
     const validPuzzles = [
       'hieroglyph', 'radio', 'coordinates', 'subnet', 
