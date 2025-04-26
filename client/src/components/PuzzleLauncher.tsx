@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Puzzle, 
@@ -17,15 +17,33 @@ interface PuzzleLauncherProps {
   onLaunchPuzzle: (puzzleId: string) => void;
   isVisible: boolean;
   onClose: () => void;
+  // Pass in the discovered/unlocked puzzles for regular users
+  unlockedPuzzles?: string[];
+  // Flag to indicate if this is dev mode
+  isDevMode?: boolean;
 }
 
 const PuzzleLauncher: React.FC<PuzzleLauncherProps> = ({ 
   onLaunchPuzzle, 
   isVisible, 
-  onClose 
+  onClose,
+  unlockedPuzzles = [],
+  isDevMode = false
 }) => {
-  const [devMode, setDevMode] = useState(false);
+  const [devMode, setDevMode] = useState(isDevMode);
   const [passwordInput, setPasswordInput] = useState('');
+  
+  // Upon mounting, check if dev mode is active from localStorage
+  useEffect(() => {
+    try {
+      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+      if (devModeActive) {
+        setDevMode(true);
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }, []);
   
   // Password for dev mode is "dharma"
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -151,76 +169,54 @@ const PuzzleLauncher: React.FC<PuzzleLauncherProps> = ({
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {puzzles.map((puzzle) => (
-            <div 
-              key={puzzle.id}
-              className={`border p-4 rounded ${
-                (!puzzle.requiresDevMode || devMode)
-                  ? 'border-[hsl(var(--dharma-gray))] hover:border-[hsl(var(--dharma-amber))] cursor-pointer'
-                  : 'border-[hsla(var(--dharma-gray),0.3)] opacity-50 cursor-not-allowed'
-              }`}
-              onClick={() => {
-                if (!puzzle.requiresDevMode || devMode) {
+          {/* Filter puzzles based on dev mode or unlocked status */}
+          {puzzles
+            // Only show puzzles that are either:
+            // 1. In dev mode (all puzzles)
+            // 2. Specifically unlocked by the user
+            // 3. No requiresDevMode flag 
+            .filter(puzzle => devMode || unlockedPuzzles.includes(puzzle.id) || (!puzzle.requiresDevMode && unlockedPuzzles.length === 0))
+            .map((puzzle) => (
+              <div 
+                key={puzzle.id}
+                className="border p-4 rounded border-[hsl(var(--dharma-gray))] hover:border-[hsl(var(--dharma-amber))] cursor-pointer"
+                onClick={() => {
                   onLaunchPuzzle(puzzle.id);
                   playSound('click');
                   onClose();
-                } else {
-                  playSound('error');
-                }
-              }}
-            >
-              <div className="flex items-start gap-3">
-                <div className={`mt-1 ${
-                  (!puzzle.requiresDevMode || devMode)
-                    ? 'text-[hsl(var(--dharma-amber))]'
-                    : 'text-[hsl(var(--dharma-gray))]'
-                }`}>
-                  {puzzle.icon}
-                </div>
-                
-                <div>
-                  <h3 className={`${
-                    (!puzzle.requiresDevMode || devMode)
-                      ? 'text-[hsl(var(--dharma-white))]'
-                      : 'text-[hsl(var(--dharma-gray))]'
-                  } font-terminal text-sm mb-1`}>
-                    {puzzle.name}
-                    {puzzle.requiresDevMode && !devMode && (
-                      <span className="ml-2 text-[hsl(var(--dharma-gray))] text-xs">[LOCKED]</span>
-                    )}
-                  </h3>
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="mt-1 text-[hsl(var(--dharma-amber))]">
+                    {puzzle.icon}
+                  </div>
                   
-                  <p className={`${
-                    (!puzzle.requiresDevMode || devMode)
-                      ? 'text-[hsl(var(--dharma-gray))]'
-                      : 'text-[hsla(var(--dharma-gray),0.5)]'
-                  } text-xs mb-2`}>
-                    {puzzle.description}
-                  </p>
-                  
-                  <div className="flex items-center justify-between">
-                    <span className={`text-xs ${
-                      puzzle.difficulty === 'Easy' 
-                        ? 'text-[hsl(var(--dharma-green))]' 
-                        : puzzle.difficulty === 'Medium'
-                          ? 'text-[hsl(var(--dharma-amber))]'
-                          : puzzle.difficulty === 'Hard'
-                            ? 'text-[hsl(var(--dharma-yellow))]'
-                            : 'text-[hsl(var(--dharma-red))]'
-                    }`}>
-                      Difficulty: {puzzle.difficulty}
-                    </span>
+                  <div>
+                    <h3 className="text-[hsl(var(--dharma-white))] font-terminal text-sm mb-1">
+                      {puzzle.name}
+                    </h3>
                     
-                    {puzzle.requiresDevMode && (
-                      <span className="text-xs text-[hsl(var(--dharma-gray))]">
-                        Developer access required
+                    <p className="text-[hsl(var(--dharma-gray))] text-xs mb-2">
+                      {puzzle.description}
+                    </p>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs ${
+                        puzzle.difficulty === 'Easy' 
+                          ? 'text-[hsl(var(--dharma-green))]' 
+                          : puzzle.difficulty === 'Medium'
+                            ? 'text-[hsl(var(--dharma-amber))]'
+                            : puzzle.difficulty === 'Hard'
+                              ? 'text-[hsl(var(--dharma-yellow))]'
+                              : 'text-[hsl(var(--dharma-red))]'
+                      }`}>
+                        Difficulty: {puzzle.difficulty}
                       </span>
-                    )}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
         </div>
         
         <div className="mt-6 text-center text-[hsl(var(--dharma-gray))] text-xs">

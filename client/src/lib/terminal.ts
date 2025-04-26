@@ -382,19 +382,63 @@ const commands: Record<string, Function> = {
     }
     
     if (args === '/sys') {
-      // Launch the puzzle menu
       try {
-        localStorage.setItem('dharma_launch_puzzle_menu', 'true');
+        // Check if this is dev mode
+        const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+        
+        if (devModeActive) {
+          // In dev mode, show the full puzzle menu
+          localStorage.setItem('dharma_launch_puzzle_menu', 'true');
+          
+          return [
+            '> SYSTEM DIAGNOSTIC INITIALIZED (DEVELOPER MODE)',
+            '> Scanning for available modules...',
+            '> Multiple test protocols detected',
+            '> Launching diagnostic interface...',
+            '> NOTICE: Full access to all diagnostic modules enabled'
+          ];
+        } else {
+          // For regular users, launch a specific puzzle based on progression
+          // Use localStorage to check what the user has already unlocked
+          const discoveredStations = localStorage.getItem('dharma_discovered_stations');
+          let puzzleToLaunch = 'hieroglyph'; // Default to hieroglyph puzzle
+          
+          if (discoveredStations) {
+            try {
+              const stations = JSON.parse(discoveredStations);
+              
+              // Launch a puzzle based on progression
+              if (stations.includes('pearl') && stations.includes('flame')) {
+                puzzleToLaunch = 'coordinates';
+              } else if (stations.includes('flame')) {
+                puzzleToLaunch = 'radio';
+              }
+            } catch (e) {
+              // If parsing fails, use default
+            }
+          }
+          
+          // Launch the specific puzzle
+          localStorage.setItem('dharma_launch_puzzle', puzzleToLaunch);
+          
+          return [
+            '> SYSTEM DIAGNOSTIC INITIALIZED',
+            '> Scanning for available modules...',
+            '> Protocol match found',
+            `> Launching ${puzzleToLaunch.toUpperCase()} diagnostic module...`
+          ];
+        }
       } catch (e) {
-        // Ignore localStorage errors
+        // If localStorage access fails, use default behavior
+        localStorage.setItem('dharma_launch_puzzle', 'hieroglyph');
+        
+        return [
+          '> SYSTEM DIAGNOSTIC INITIALIZED',
+          '> Scanning for available modules...',
+          '> Single protocol match found',
+          '> Launching diagnostic module...'
+        ];
       }
-      
-      return [
-        '> SYSTEM DIAGNOSTIC INITIALIZED',
-        '> Scanning for available modules...',
-        '> Multiple test protocols detected',
-        '> Launching diagnostic interface...'
-      ];
     } else {
       return [
         '> ERROR: Invalid diagnostic target',
