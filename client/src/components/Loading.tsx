@@ -70,22 +70,23 @@ const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
             </div>
           </div>
           
-          {/* Simplified progress dots */}
+          {/* Loading indicator with periods */}
           <div className="w-full max-w-md px-4 mt-8">
-            <div className="flex justify-center space-x-2">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`w-3 h-3 rounded-full ${
-                    i < Math.floor(progress / 12.5) 
-                      ? 'bg-[hsl(var(--dharma-green))]' 
-                      : 'bg-[hsla(var(--dharma-gray),0.3)]'
-                  } transition-colors duration-300`}
-                />
-              ))}
+            <div className="text-center font-terminal text-[hsl(var(--dharma-green))] text-lg">
+              <span>LOADING</span>
+              <span className="inline-block w-24 text-left">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <span 
+                    key={i}
+                    className={i < Math.floor(progress / 10) ? 'opacity-100' : 'opacity-0'}
+                  >
+                    .
+                  </span>
+                ))}
+              </span>
             </div>
             <div className="text-center font-terminal text-[hsl(var(--dharma-amber))] mt-4">
-              {progress >= 100 ? 'SYSTEM READY' : 'LOADING...'}
+              {progress >= 100 ? 'SYSTEM READY' : ''}
             </div>
           </div>
         </motion.div>
