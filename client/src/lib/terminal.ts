@@ -738,21 +738,35 @@ const commands: Record<string, Function> = {
 const hiddenCommands: Record<string, Function> = {
   'radio.listen': (args: string, onRevealPuzzle?: () => void) => {
     // Parse the frequency from the args
-    // Format: radio.listen(frequency)
-    const frequencyMatch = args.match(/\(([\d.]+)\)/);
-    if (!frequencyMatch) {
+    // Format: radio.listen(frequency) or radio.listen frequency
+    if (!args) {
       return [
-        '> ERROR: Invalid syntax',
-        '> Usage: radio.listen(frequency)',
-        '> Example: radio.listen(4.8)'
+        '> ERROR: Frequency required',
+        '> Usage: radio.listen(frequency) or radio.listen frequency',
+        '> Example: radio.listen(4.8) or radio.listen 4.8'
       ];
     }
     
-    const frequency = parseFloat(frequencyMatch[1]);
-    if (isNaN(frequency)) {
+    let userFrequency: number | null = null;
+    
+    // Try parenthesis format: radio.listen(4.8)
+    const parenMatch = args.match(/\(([\d.]+)\)/);
+    if (parenMatch) {
+      userFrequency = parseFloat(parenMatch[1]);
+    } else {
+      // Try space format: radio.listen 4.8
+      const spaceMatch = args.trim().match(/^([\d.]+)$/);
+      if (spaceMatch) {
+        userFrequency = parseFloat(spaceMatch[1]);
+      }
+    }
+    
+    // If no valid frequency was found
+    if (userFrequency === null || isNaN(userFrequency)) {
       return [
-        '> ERROR: Invalid frequency',
-        '> Frequency must be a number'
+        '> ERROR: Invalid frequency format',
+        '> Usage: radio.listen(frequency) or radio.listen frequency',
+        '> Example: radio.listen(4.8) or radio.listen 4.8'
       ];
     }
     
@@ -767,11 +781,11 @@ const hiddenCommands: Record<string, Function> = {
     
     // Check if it's one of the special frequencies
     const specialFrequencies = [4.8, 15.16, 23.42];
-    if (specialFrequencies.includes(frequency)) {
+    if (specialFrequencies.includes(userFrequency)) {
       // Launch the radio puzzle with this frequency pre-set
       try {
         localStorage.setItem('dharma_launch_puzzle', 'radio');
-        localStorage.setItem('dharma_radio_frequency', frequency.toString());
+        localStorage.setItem('dharma_radio_frequency', userFrequency.toString());
         
         // Trigger the puzzle launch
         if (onRevealPuzzle) {
@@ -784,7 +798,7 @@ const hiddenCommands: Record<string, Function> = {
       }
       
       return [
-        `> TUNING RADIO TO: ${frequency} MHz`,
+        `> TUNING RADIO TO: ${userFrequency} MHz`,
         '> Signal detected...',
         '> Connecting to radio interface...',
         '> Analyzing transmission patterns...'
@@ -793,7 +807,7 @@ const hiddenCommands: Record<string, Function> = {
     
     // Regular frequencies just return text
     return [
-      `> TUNING RADIO TO: ${frequency} MHz`,
+      `> TUNING RADIO TO: ${userFrequency} MHz`,
       '> ...',
       '> No significant signal detected',
       '> Try another frequency'
@@ -1216,16 +1230,28 @@ const processCommand = (
     return commands[cmd](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
   } else if (hiddenCommands[cmd]) {
     playSound('beep');
-    return hiddenCommands[cmd]();
+    return hiddenCommands[cmd](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
   } else {
     // Handle multi-word hidden commands
     const fullInput = input.trim().toLowerCase();
-    const multiWordCommands = ['what is your name'];
+    const multiWordCommands = ['what is your name', 'radio.listen'];
+    
+    // Special case for radio.listen if it doesn't contain parentheses but has a frequency
+    if (fullInput.startsWith('radio.listen') && !fullInput.includes('(')) {
+      const parts = fullInput.split(' ');
+      if (parts.length > 1) {
+        // This is in the format "radio.listen 4.8"
+        const freq = parseFloat(parts[1]);
+        if (!isNaN(freq)) {
+          return hiddenCommands['radio.listen'](freq.toString(), onRevealPuzzle, onRevealStation, onCorrectSequence);
+        }
+      }
+    }
     
     for (const command of multiWordCommands) {
       if (fullInput === command && hiddenCommands[command]) {
         playSound('beep');
-        return hiddenCommands[command]();
+        return hiddenCommands[command](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
       }
     }
     
