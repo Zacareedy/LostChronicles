@@ -84,7 +84,9 @@ const Home: React.FC = () => {
         // Call the launchPuzzle method directly if it exists
         if (puzzleControllerRef.current && typeof puzzleControllerRef.current.launchPuzzle === 'function') {
           setTimeout(() => {
-            puzzleControllerRef.current.launchPuzzle(puzzleToLaunch);
+            if (puzzleControllerRef.current) {
+              puzzleControllerRef.current.launchPuzzle(puzzleToLaunch);
+            }
           }, 100);
         }
         

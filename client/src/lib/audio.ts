@@ -19,6 +19,7 @@ const sounds = {
     success: '/sounds/beep-success.mp3',
     warning: '/sounds/beep-warning.mp3',
     short: '/sounds/beep-short.mp3',
+    alarm: '/sounds/alarm.mp3', // Added here to fix type errors
   },
   click: '/sounds/click.mp3',
   error: '/sounds/error.mp3',

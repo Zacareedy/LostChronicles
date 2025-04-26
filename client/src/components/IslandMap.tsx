@@ -142,7 +142,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   };
 
   const handleStationClick = (stationName: string) => {
-    playSound('button');
+    playSound('click');
     onStationClick(stationName);
   };
 

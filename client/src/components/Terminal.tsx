@@ -130,7 +130,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           ]);
           
           // Play alarm sound with each message
-          playSound('beep', 'alarm');
+          playSound('alarm');
         }, 1200 * index); // Spaced out messages
       });
       
@@ -146,7 +146,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           { text: '>:█', type: 'cursor' }
         ]);
         
-        playSound('beep', 'alarm');
+        playSound('alarm');
       }, 8000); // Repeat every 8 seconds
       
       return () => {
