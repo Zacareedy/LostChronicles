@@ -263,25 +263,10 @@ const Home: React.FC = () => {
         
         {/* Individual Panels (for desktop) */}
         <div className="hidden md:block">
-          {/* Locations Panel */}
+          {/* Tabbed Lore Panel with all sections, but with default section preselected */}
           <LorePanel 
             className="lg:col-span-3 mt-4" 
             defaultSection="stations" 
-            showOnly="stations"
-          />
-
-          {/* Databank Panel */}
-          <LorePanel 
-            className="lg:col-span-3 mt-4" 
-            defaultSection="files" 
-            showOnly="files" 
-          />
-
-          {/* Comms Panel */}
-          <LorePanel 
-            className="lg:col-span-3 mt-4" 
-            defaultSection="signals" 
-            showOnly="signals"
           />
         </div>
       </main>

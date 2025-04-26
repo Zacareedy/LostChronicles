@@ -126,7 +126,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           setTerminalOutput(prev => [
             ...prev,
             { text: message, type: 'output' },
-            { text: '_', type: 'cursor' }
+            { text: '>:█', type: 'cursor' }
           ]);
           
           // Play alarm sound with each message
@@ -143,7 +143,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
         setTerminalOutput(prev => [
           ...prev,
           { text: '> [SYSTEM FAILURE] ELECTROMAGNETIC DISCHARGE IMMINENT', type: 'output' },
-          { text: '_', type: 'cursor' }
+          { text: '>:█', type: 'cursor' }
         ]);
         
         playSound('beep', 'alarm');
@@ -181,7 +181,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           setTerminalOutput(prev => [
             ...prev,
             { text: message, type: 'output' },
-            { text: '_', type: 'cursor' }
+            { text: '>:█', type: 'cursor' }
           ]);
           
           // Play subtle beep
@@ -310,7 +310,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
             </p>
           ))}
           <form onSubmit={handleSubmit} className="flex relative">
-            <span className="mr-2">{'>'}</span>
+            <span className="mr-2">{'>:'}</span>
             <input 
               ref={terminalInputRef}
               type="text" 
@@ -318,14 +318,14 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
               onChange={(e) => {
                 setInput(e.target.value);
                 if (e.target.value.length > 0) {
-                  playSound('typing', 'short');
+                  playSound('beep', 'short');
                 }
               }}
               className="bg-transparent flex-1 focus:outline-none" 
               placeholder=""
               autoComplete="off"
             />
-            {!input && <span className="absolute left-0 animate-terminal-blink">:█</span>}
+            {!input && <span className="absolute left-0 animate-terminal-blink">█</span>}
           </form>
         </div>
       </div>
