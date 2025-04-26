@@ -311,21 +311,23 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           ))}
           <form onSubmit={handleSubmit} className="flex relative">
             <span className="mr-2">{'>:'}</span>
-            <input 
-              ref={terminalInputRef}
-              type="text" 
-              value={input}
-              onChange={(e) => {
-                setInput(e.target.value);
-                if (e.target.value.length > 0) {
-                  playSound('beep', 'short');
-                }
-              }}
-              className="bg-transparent flex-1 focus:outline-none" 
-              placeholder=""
-              autoComplete="off"
-            />
-            {!input && <span className="absolute left-0 animate-terminal-blink">█</span>}
+            <div className="relative flex-1">
+              <input 
+                ref={terminalInputRef}
+                type="text" 
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if (e.target.value.length > 0) {
+                    playSound('beep', 'short');
+                  }
+                }}
+                className="bg-transparent w-full focus:outline-none" 
+                placeholder=""
+                autoComplete="off"
+              />
+              {!input && <span className="absolute left-0 top-0 animate-terminal-blink">█</span>}
+            </div>
           </form>
         </div>
       </div>
