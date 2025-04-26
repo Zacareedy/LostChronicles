@@ -18,6 +18,7 @@ const commands: Record<string, Function> = {
       '> login <id> - Access restricted areas',
       '> locate <station> - Find station location',
       '> puzzle <type> - Access puzzle interfaces',
+      '> upload_log <station> - Upload station log to system',
       '> clear - Clear terminal'
     ];
     
@@ -333,6 +334,68 @@ const commands: Record<string, Function> = {
       ];
     }
   },
+  
+  upload_log: (args: string) => {
+    const validStations = ['swan', 'pearl', 'flame', 'arrow', 'staff', 'orchid'];
+    const stationName = args.toLowerCase();
+    
+    if (!stationName) {
+      return [
+        '> ERROR: Station name required',
+        '> Usage: upload_log <station>',
+        '> Example: upload_log swan'
+      ];
+    }
+    
+    if (!validStations.includes(stationName)) {
+      return [
+        `> ERROR: Unknown station "${stationName}"`,
+        '> Valid stations: swan, pearl, flame, arrow, staff, orchid'
+      ];
+    }
+    
+    // Track uploaded stations
+    try {
+      const uploadedStationsStr = localStorage.getItem('dharma_uploaded_logs') || '[]';
+      const uploadedStations = JSON.parse(uploadedStationsStr);
+      
+      if (uploadedStations.includes(stationName)) {
+        return [
+          `> Station log for ${stationName.toUpperCase()} already uploaded.`,
+          '> No new data to process.'
+        ];
+      }
+      
+      // Add this station to the uploaded logs
+      uploadedStations.push(stationName);
+      localStorage.setItem('dharma_uploaded_logs', JSON.stringify(uploadedStations));
+      
+      // Check if we've reached 3+ stations - reveal the transmission log
+      if (uploadedStations.length >= 3) {
+        localStorage.setItem('dharma_transmission_log_available', 'true');
+        
+        return [
+          `> ${stationName.toUpperCase()} station log uploaded successfully.`,
+          '> Processing data...',
+          '> NEW FILE AVAILABLE: /archive/swan/transmission.log',
+          '> Type "cat /archive/swan/transmission.log" to view file contents.'
+        ];
+      }
+      
+      return [
+        `> ${stationName.toUpperCase()} station log uploaded successfully.`,
+        '> Processing data...',
+        `> ${3 - uploadedStations.length} more station logs required for complete analysis.`
+      ];
+      
+    } catch (e) {
+      // Handle localStorage errors
+      return [
+        `> ${stationName.toUpperCase()} station log uploaded.`,
+        '> Warning: Error storing upload history.'
+      ];
+    }
+  },
 
   puzzle: (args: string, onRevealPuzzle?: () => void) => {
     // Check if puzzle type is valid
@@ -528,6 +591,47 @@ const commands: Record<string, Function> = {
   
   cat: (args: string) => {
     // View file contents
+    if (args === '/archive/swan/transmission.log') {
+      // Check if user has unlocked this file
+      const transmissionLogAvailable = localStorage.getItem('dharma_transmission_log_available') === 'true';
+      
+      if (!transmissionLogAvailable) {
+        return [
+          '> ERROR: File not found.',
+          '> /archive/swan/transmission.log does not exist.',
+          '> Try uploading station logs first with upload_log command.'
+        ];
+      }
+      
+      // Mark transmission log as found
+      localStorage.setItem('dharma_transmission_found', 'true');
+      
+      return [
+        '> FILE: /archive/swan/transmission.log',
+        '> ----------------------------------------',
+        '> DHARMA INITIATIVE TRANSMISSION LOG',
+        '> SWAN STATION - MONITORING REPORT',
+        '> ----------------------------------------',
+        '> Date: 1985-07-04',
+        '> Operator: S. Goodspeed',
+        '> ',
+        '> 04:08 - Regular system check completed. All normal.',
+        '> ',
+        '> 15:16 - Alternate frequency detected — unknown origin.',
+        '> Signal appears to be broadcasting from coordinates',
+        '> approximately 3km off northwest shore.',
+        '> ',
+        '> 23:42 - Second sweep confirms signal presence.',
+        '> Multiple frequencies detected: 4.8, 15.16, 23.42 MHz',
+        '> Recommendation: Monitor these frequencies for patterns.',
+        '> ',
+        '> NOTE: Radio receiver can be activated with command:',
+        '> radio.listen(frequency)',
+        '> Example: radio.listen(4.8)',
+        '> ----------------------------------------'
+      ];
+    }
+    
     if (args === '/mnt/.readme') {
       return [
         '> FILE: /mnt/.readme',
@@ -632,6 +736,70 @@ const commands: Record<string, Function> = {
 
 // Easter eggs and hidden commands
 const hiddenCommands: Record<string, Function> = {
+  'radio.listen': (args: string, onRevealPuzzle?: () => void) => {
+    // Parse the frequency from the args
+    // Format: radio.listen(frequency)
+    const frequencyMatch = args.match(/\(([\d.]+)\)/);
+    if (!frequencyMatch) {
+      return [
+        '> ERROR: Invalid syntax',
+        '> Usage: radio.listen(frequency)',
+        '> Example: radio.listen(4.8)'
+      ];
+    }
+    
+    const frequency = parseFloat(frequencyMatch[1]);
+    if (isNaN(frequency)) {
+      return [
+        '> ERROR: Invalid frequency',
+        '> Frequency must be a number'
+      ];
+    }
+    
+    // Check if transmission log was found first
+    const transmissionFound = localStorage.getItem('dharma_transmission_found') === 'true';
+    if (!transmissionFound) {
+      return [
+        '> ERROR: Radio receiver not calibrated',
+        '> Check transmission logs for instructions'
+      ];
+    }
+    
+    // Check if it's one of the special frequencies
+    const specialFrequencies = [4.8, 15.16, 23.42];
+    if (specialFrequencies.includes(frequency)) {
+      // Launch the radio puzzle with this frequency pre-set
+      try {
+        localStorage.setItem('dharma_launch_puzzle', 'radio');
+        localStorage.setItem('dharma_radio_frequency', frequency.toString());
+        
+        // Trigger the puzzle launch
+        if (onRevealPuzzle) {
+          setTimeout(() => {
+            onRevealPuzzle();
+          }, 500);
+        }
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      return [
+        `> TUNING RADIO TO: ${frequency} MHz`,
+        '> Signal detected...',
+        '> Connecting to radio interface...',
+        '> Analyzing transmission patterns...'
+      ];
+    }
+    
+    // Regular frequencies just return text
+    return [
+      `> TUNING RADIO TO: ${frequency} MHz`,
+      '> ...',
+      '> No significant signal detected',
+      '> Try another frequency'
+    ];
+  },
+  
   'dharma': () => [
     '> DHARMA INITIATIVE PERSONNEL DATABASE',
     '> ACCESS RESTRICTED',

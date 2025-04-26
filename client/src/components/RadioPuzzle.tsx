@@ -38,9 +38,27 @@ interface AudioSample {
 }
 
 const RadioPuzzle: React.FC<RadioPuzzleProps> = ({ isVisible, onClose, onComplete }) => {
+  // Try to get the initial frequency from localStorage if it was set by radio.listen command
+  const getInitialFrequency = (): number => {
+    try {
+      const savedFrequency = localStorage.getItem('dharma_radio_frequency');
+      if (savedFrequency) {
+        const freq = parseFloat(savedFrequency);
+        // Clear the saved frequency from localStorage to avoid persisting between puzzle sessions
+        localStorage.removeItem('dharma_radio_frequency');
+        if (!isNaN(freq)) {
+          return freq;
+        }
+      }
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+    return 108.0; // Default frequency
+  };
+  
   // Basic state
-  const [frequency, setFrequency] = useState<number>(108.0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [frequency, setFrequency] = useState<number>(getInitialFrequency());
+  const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [volume, setVolume] = useState<number>(70);
   const [bookmarkedFrequencies, setBookmarkedFrequencies] = useState<number[]>([]);
   const [signalStrength, setSignalStrength] = useState<number>(0);
@@ -145,10 +163,33 @@ const RadioPuzzle: React.FC<RadioPuzzleProps> = ({ isVisible, onClose, onComplet
     }
   };
   
-  // Simulate decoding the message
+  // Simulate decoding the message based on current frequency
   const revealDecodedMessage = () => {
-    const message = 
-      "4 8 15 16 23 42...SYSTEM FAILURE...4 8 15 16 23 42...";
+    // Different messages for different frequencies
+    let message = "";
+    
+    // Determine which frequency we're tuned to
+    const nearestFrequency = getNearestSpecialFrequency();
+    
+    switch (nearestFrequency) {
+      case FREQUENCIES.NUMBERS:
+        message = "4 8 15 16 23 42...SYSTEM FAILURE...4 8 15 16 23 42...";
+        break;
+      case FREQUENCIES.MORSE:
+        message = "...-.-...SOS BLACK BOX COORDINATES...-..-...4.2N 8.15W...";
+        break;
+      case FREQUENCIES.VOICE:
+        message = "DHARMA STATION 7 LOCKDOWN...REPEAT...ORCHID BREACH...EVACUATE...";
+        break;
+      default:
+        message = "SIGNAL UNKNOWN...ATTEMPTING TO DECODE...";
+        break;
+    }
+    
+    // Add this frequency to bookmarks automatically
+    if (!bookmarkedFrequencies.includes(nearestFrequency)) {
+      setBookmarkedFrequencies(prev => [...prev, nearestFrequency]);
+    }
     
     // Show the message character by character
     let currentMessage = '';
@@ -162,16 +203,50 @@ const RadioPuzzle: React.FC<RadioPuzzleProps> = ({ isVisible, onClose, onComplet
       if (charIndex >= message.length) {
         clearInterval(interval);
         
-        // Mark as completed after the message is fully shown
-        setTimeout(() => {
-          setIsCompleted(true);
-          playSound('success');
-          setTimeout(() => {
-            onComplete();
-          }, 2000);
-        }, 1000);
+        // Store that we found this frequency
+        try {
+          const foundFrequencies = JSON.parse(localStorage.getItem('dharma_found_frequencies') || '[]');
+          if (!foundFrequencies.includes(nearestFrequency)) {
+            foundFrequencies.push(nearestFrequency);
+            localStorage.setItem('dharma_found_frequencies', JSON.stringify(foundFrequencies));
+          }
+          
+          // If all 3 key frequencies found, mark as completed
+          if (
+            foundFrequencies.includes(FREQUENCIES.NUMBERS) && 
+            foundFrequencies.includes(FREQUENCIES.MORSE) && 
+            foundFrequencies.includes(FREQUENCIES.VOICE)
+          ) {
+            // Mark as completed after the message is fully shown
+            setTimeout(() => {
+              setIsCompleted(true);
+              playSound('success');
+              setTimeout(() => {
+                onComplete();
+              }, 2000);
+            }, 1000);
+          }
+        } catch (e) {
+          // Ignore localStorage errors
+        }
       }
     }, 100);
+  };
+  
+  // Get the nearest special frequency to the current tuning
+  const getNearestSpecialFrequency = (): number => {
+    let nearestFrequency = FREQUENCIES.NUMBERS;
+    let minDistance = Math.abs(frequency - FREQUENCIES.NUMBERS);
+    
+    for (const [_, value] of Object.entries(FREQUENCIES)) {
+      const distance = Math.abs(frequency - value);
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestFrequency = value;
+      }
+    }
+    
+    return nearestFrequency;
   };
   
   const changeFrequency = (amount: number) => {
