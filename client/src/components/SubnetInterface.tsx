@@ -454,153 +454,156 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-85 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
     >
-      <div className="bg-[hsl(var(--dharma-black))] border-2 border-[hsl(var(--dharma-gray))] p-5 rounded max-w-4xl w-full h-[80vh] flex flex-col">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-[hsl(var(--dharma-amber))] font-terminal text-lg flex items-center gap-2">
-            <Terminal className="h-5 w-5" />
-            DHARMA SUBNET PROTOCOL v2.3.4
+      <div className="bg-[hsl(var(--dharma-black))] border border-[hsl(var(--dharma-amber))] p-3 max-w-4xl w-full h-[85vh] flex flex-col font-mono">
+        {/* Terminal header - simple phosphor style green text on black with scanlines */}
+        <div className="flex justify-between items-center mb-2 border-b border-[hsl(var(--dharma-amber))] pb-2">
+          <h2 className="text-[hsl(var(--dharma-bright-green))] font-terminal text-base uppercase">
+            {">"} DHARMA SUBNET PROTOCOL v2.3.4
           </h2>
           
           <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-1 text-xs ${isConnected ? 'text-[hsl(var(--dharma-green))]' : 'text-[hsl(var(--dharma-red))]'}`}>
-              <Wifi className="h-4 w-4" />
-              {isConnected ? 'CONNECTED' : 'CONNECTING...'}
+            <div className={`flex items-center gap-1 text-xs font-terminal uppercase ${isConnected ? 'text-[hsl(var(--dharma-bright-green))]' : 'text-[hsl(var(--dharma-red))]'}`}>
+              {isConnected ? '[LINK ESTABLISHED]' : '[INITIALIZING LINK]'}
             </div>
             
             <button 
               onClick={onClose}
-              className="text-[hsl(var(--dharma-gray))] hover:text-[hsl(var(--dharma-red))]"
+              className="text-[hsl(var(--dharma-amber))] hover:text-[hsl(var(--dharma-red))]"
             >
-              <X className="h-5 w-5" />
+              [X]
             </button>
           </div>
         </div>
         
         {isLoading ? (
-          <div className="flex-1 flex flex-col items-center justify-center">
-            <div className="text-[hsl(var(--dharma-amber))] text-sm mb-4">
-              <Clock className="h-8 w-8 mb-3 mx-auto animate-pulse" />
-              <div>Establishing connection to DHARMA subnet...</div>
-              <div className="mt-2">Attempt {connectionAttempts}/3</div>
+          <div className="flex-1 flex flex-col items-center justify-center font-mono">
+            <div className="text-[hsl(var(--dharma-bright-green))] text-sm mb-4 font-terminal w-full max-w-lg">
+              <div className="mb-3 text-center font-mono text-xs">
+                DHARMA INITIATIVE SUBNET PROTOCOL v2.3.4
+              </div>
+              <div className="uppercase tracking-wider font-mono">{">"} Initializing SUBNET PROTOCOL</div>
+              <div className="mt-1 uppercase tracking-wider font-mono">{">"} Connecting to DHARMA INITIATIVE mainframe</div>
+              <div className="mt-1 uppercase tracking-wider text-yellow-500 animate-pulse font-mono">{">"} Connection attempt {connectionAttempts}/3</div>
             </div>
-            <div className="w-64 h-1 bg-[hsla(var(--dharma-gray),0.2)]">
+            <div className="w-64 h-6 border border-[hsl(var(--dharma-bright-green))] overflow-hidden bg-black">
               <div 
-                className="h-full bg-[hsl(var(--dharma-amber))]"
+                className="h-full bg-[hsl(var(--dharma-bright-green))] transition-all duration-300"
                 style={{ width: `${connectionAttempts * 33}%` }}
               ></div>
             </div>
           </div>
         ) : (
           <div className="flex flex-1 overflow-hidden">
-            {/* Channel sidebar */}
-            <div className="w-48 border-r border-[hsl(var(--dharma-gray))] pr-3 flex flex-col">
-              <div className="text-xs text-[hsl(var(--dharma-gray))] mb-2 font-terminal">CHANNELS</div>
+            {/* Retro terminal-style channel sidebar */}
+            <div className="w-48 border-r border-[hsl(var(--dharma-bright-green))] pr-3 flex flex-col text-[hsl(var(--dharma-bright-green))]">
+              <div className="text-xs mb-2 font-terminal border-b border-[hsl(var(--dharma-bright-green))] pb-1 uppercase">[ACCESSIBLE CHANNELS]</div>
               
-              <div className="space-y-1 mb-4">
+              <div className="space-y-1 mb-4 font-mono text-xs">
                 {channels.filter(c => !c.direct).map(channel => (
                   <button
                     key={channel.id}
                     onClick={() => handleChannelChange(channel.id)}
-                    className={`w-full text-left px-2 py-1 text-xs flex items-center justify-between rounded ${
+                    className={`w-full text-left py-1 text-xs flex items-center justify-between font-mono ${
                       activeChannel === channel.id
-                        ? 'bg-[hsla(var(--dharma-amber),0.2)] text-[hsl(var(--dharma-amber))]'
-                        : 'text-[hsl(var(--dharma-white))] hover:bg-[hsla(var(--dharma-gray),0.1)]'
+                        ? 'text-black bg-[hsl(var(--dharma-bright-green))]'
+                        : 'text-[hsl(var(--dharma-bright-green))] hover:bg-[hsla(var(--dharma-bright-green),0.2)]'
                     }`}
                   >
-                    <span className="flex items-center gap-1">
-                      {channel.locked && <Shield className="h-3 w-3 text-[hsl(var(--dharma-red))]" />}
-                      #{channel.name}
+                    <span className="flex items-center">
+                      {channel.locked 
+                        ? `[LOCKED] ${channel.name.toUpperCase()}`
+                        : `> ${channel.name.toUpperCase()}`
+                      }
                     </span>
                     {channel.unread && (
-                      <span className="w-2 h-2 rounded-full bg-[hsl(var(--dharma-green))]"></span>
+                      <span className="ml-1">*</span>
                     )}
                   </button>
                 ))}
               </div>
               
-              <div className="text-xs text-[hsl(var(--dharma-gray))] mb-2 font-terminal">DIRECT MESSAGES</div>
+              <div className="text-xs mb-2 font-terminal border-b border-[hsl(var(--dharma-bright-green))] pb-1 uppercase">[TERMINAL LINKS]</div>
               
-              <div className="space-y-1">
+              <div className="space-y-1 font-mono text-xs">
                 {channels.filter(c => c.direct).map(channel => (
                   <button
                     key={channel.id}
                     onClick={() => handleChannelChange(channel.id)}
-                    className={`w-full text-left px-2 py-1 text-xs flex items-center justify-between rounded ${
+                    className={`w-full text-left py-1 text-xs flex items-center justify-between font-mono ${
                       activeChannel === channel.id
-                        ? 'bg-[hsla(var(--dharma-amber),0.2)] text-[hsl(var(--dharma-amber))]'
-                        : 'text-[hsl(var(--dharma-white))] hover:bg-[hsla(var(--dharma-gray),0.1)]'
+                        ? 'text-black bg-[hsl(var(--dharma-bright-green))]'
+                        : 'text-[hsl(var(--dharma-bright-green))] hover:bg-[hsla(var(--dharma-bright-green),0.2)]'
                     }`}
                   >
-                    <span className="flex items-center gap-1">
-                      <UserPlus className="h-3 w-3" />
-                      {channel.name}
+                    <span className="flex items-center">
+                      {`> ${channel.name.toUpperCase()}`}
                     </span>
                     {channel.unread && (
-                      <span className="w-2 h-2 rounded-full bg-[hsl(var(--dharma-bright-green))]"></span>
+                      <span className="ml-1">*</span>
                     )}
                   </button>
                 ))}
               </div>
               
-              <div className="mt-auto">
+              <div className="mt-auto pt-4">
                 <button
                   onClick={() => handleCommand('/download')}
-                  className={`w-full px-2 py-1 text-xs flex items-center justify-center gap-1 rounded ${
+                  className={`w-full py-2 text-xs flex items-center justify-center font-mono uppercase border ${
                     hasDownloadedLogs
-                      ? 'bg-[hsla(var(--dharma-green),0.1)] text-[hsl(var(--dharma-green))] border border-[hsl(var(--dharma-green))]'
-                      : 'bg-[hsla(var(--dharma-amber),0.1)] text-[hsl(var(--dharma-amber))] border border-[hsl(var(--dharma-amber))]'
+                      ? 'bg-[hsl(var(--dharma-bright-green))] text-black border-[hsl(var(--dharma-bright-green))]'
+                      : 'bg-black text-[hsl(var(--dharma-bright-green))] border-[hsl(var(--dharma-bright-green))]'
                   }`}
                 >
-                  <Download className="h-3 w-3" />
-                  <span>{hasDownloadedLogs ? 'LOGS SAVED' : 'DOWNLOAD LOGS'}</span>
+                  {hasDownloadedLogs ? '[LOGS ARCHIVED]' : '[BACKUP SUBNET DATA]'}
                 </button>
               </div>
             </div>
             
-            {/* Chat main area */}
+            {/* Chat main area - styled like a 1970s terminal */}
             <div className="flex-1 flex flex-col overflow-hidden pl-3">
-              <div className="flex items-center justify-between border-b border-[hsl(var(--dharma-gray))] pb-2 mb-3">
-                <div className="text-[hsl(var(--dharma-amber))] font-terminal">
-                  {activeChannel === 'general' ? '#general' : 
-                   activeChannel === 'engineering' ? '#engineering' : 
-                   activeChannel === 'security' ? '#security' : 
-                   activeChannel === 'medical' ? '#medical' : 
-                   `@${activeChannel}`}
+              <div className="flex items-center justify-between border-b border-[hsl(var(--dharma-bright-green))] pb-2 mb-3">
+                <div className="text-[hsl(var(--dharma-bright-green))] font-terminal text-xs uppercase">
+                  {"["}{activeChannel === 'general' ? 'CHANNEL:GENERAL' : 
+                   activeChannel === 'engineering' ? 'CHANNEL:ENGINEERING' : 
+                   activeChannel === 'security' ? 'CHANNEL:SECURITY' : 
+                   activeChannel === 'medical' ? 'CHANNEL:MEDICAL' : 
+                   `USER:${activeChannel.toUpperCase()}`}{"]"}
                 </div>
                 
-                <div className="text-xs text-[hsl(var(--dharma-gray))]">
-                  Connected as: <span className="text-[hsl(var(--dharma-green))]">{userHandle}</span>
+                <div className="text-xs font-terminal text-[hsl(var(--dharma-bright-green))]">
+                  OPERATOR: <span className="text-[hsl(var(--dharma-bright-green))] font-bold">{userHandle}</span>
                 </div>
               </div>
               
-              {/* Messages */}
-              <div className="flex-1 overflow-y-auto mb-3 font-mono text-xs">
+              {/* Messages styled like old terminal text */}
+              <div className="flex-1 overflow-y-auto mb-3 font-mono text-xs leading-5 p-2 bg-black border border-[hsl(var(--dharma-bright-green))]">
                 {messages.map(message => (
-                  <div key={message.id} className={`mb-3 ${message.isSystem ? 'pl-2 border-l-2 border-[hsl(var(--dharma-amber))]' : ''}`}>
-                    <div className="flex items-center gap-1 mb-1">
-                      <span className="font-bold" style={{ color: message.senderColor }}>{message.sender}</span>
-                      <span className="text-[hsl(var(--dharma-gray))]">•</span>
+                  <div key={message.id} className={`mb-2 ${message.isSystem ? 'border-l-2 border-[hsl(var(--dharma-bright-green))] pl-2' : ''}`}>
+                    <div className="flex flex-wrap items-center gap-1 mb-1 font-terminal uppercase">
+                      <span className="font-bold" style={{ color: message.isSystem ? '#00ff00' : message.senderColor }}>
+                        {message.isSystem ? '[SYSTEM]' : `[${message.sender}]`}
+                      </span>
+                      <span className="text-[hsl(var(--dharma-gray))]">:</span>
                       <span className="text-[hsl(var(--dharma-gray))]">{message.timestamp}</span>
                       
                       {message.isCorrupted && (
-                        <span className="ml-2 text-[hsl(var(--dharma-red))] flex items-center gap-1">
-                          <AlertCircle className="h-3 w-3" />
-                          CORRUPTED
+                        <span className="ml-1 text-[hsl(var(--dharma-red))] uppercase">
+                          [DATA CORRUPTED]
                         </span>
                       )}
                     </div>
                     
-                    <div className={`${
+                    <div className={`font-mono ${
                       message.isSystem 
-                        ? 'text-[hsl(var(--dharma-amber))]' 
+                        ? 'text-[hsl(var(--dharma-bright-green))]' 
                         : message.isCorrupted 
                           ? 'text-[hsl(var(--dharma-gray))] italic' 
-                          : 'text-[hsl(var(--dharma-white))]'
+                          : 'text-[hsl(var(--dharma-bright-green))]'
                     }`}>
                       {message.isCorrupted 
-                        ? `${message.content}... <DATA CORRUPTED>`
+                        ? `${message.content}... <ERROR: DATA UNRECOVERABLE>`
                         : message.content}
                     </div>
                   </div>
@@ -608,22 +611,24 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
                 <div ref={chatEndRef} />
               </div>
               
-              {/* Input form */}
+              {/* Terminal-style input prompt */}
               <form onSubmit={handleSendMessage} className="mt-auto">
-                <div className="flex gap-2">
+                <div className="flex items-center">
+                  <span className="text-[hsl(var(--dharma-bright-green))] font-mono mr-2 font-bold">{">"}</span>
                   <input
                     type="text"
                     value={inputValue}
                     onChange={handleMessageInput}
-                    placeholder="Type a message or command (try /help)..."
-                    className="flex-1 bg-[hsla(var(--dharma-black),0.8)] border border-[hsl(var(--dharma-gray))] p-2 text-sm text-[hsl(var(--dharma-green))]"
+                    placeholder="Enter command or message (type /help for commands)..."
+                    className="flex-1 bg-black border-b border-[hsl(var(--dharma-bright-green))] p-2 text-xs text-[hsl(var(--dharma-bright-green))] font-mono caret-[hsl(var(--dharma-bright-green))] focus:outline-none focus:ring-0"
+                    autoFocus
                   />
                   
                   <button
                     type="submit"
-                    className="px-3 bg-[hsla(var(--dharma-amber),0.1)] text-[hsl(var(--dharma-amber))] border border-[hsl(var(--dharma-amber))] hover:bg-[hsla(var(--dharma-amber),0.2)]"
+                    className="ml-2 px-3 py-1 bg-black text-[hsl(var(--dharma-bright-green))] border border-[hsl(var(--dharma-bright-green))] hover:bg-[hsl(var(--dharma-bright-green))] hover:text-black font-mono uppercase text-xs"
                   >
-                    <Send className="h-4 w-4" />
+                    SEND
                   </button>
                 </div>
               </form>
