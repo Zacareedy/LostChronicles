@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import HieroglyphPuzzle from './HieroglyphPuzzle';
 import RadioPuzzle from './RadioPuzzle';
 import CoordinatesPuzzle from './CoordinatesPuzzle';
