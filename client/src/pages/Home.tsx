@@ -9,7 +9,7 @@ import Countdown from '@/components/Countdown';
 import HiddenPuzzle from '@/components/HiddenPuzzle';
 import SystemFailure from '@/components/SystemFailure';
 import PearlStationLog from '@/components/PearlStationLog';
-import PuzzleController from '@/components/PuzzleController';
+import PuzzleController, { PuzzleControllerRef } from '@/components/PuzzleController';
 import PuzzleLauncher from '@/components/PuzzleLauncher';
 import { STATIONS } from '@/lib/constants';
 import { playSound, stopSound } from '@/lib/audio';
@@ -23,7 +23,7 @@ const Home: React.FC = () => {
   // Puzzle launcher state
   const [isPuzzleMenuVisible, setIsPuzzleMenuVisible] = useState(false);
   const [activePuzzleId, setActivePuzzleId] = useState<string | null>(null);
-  const puzzleControllerRef = useRef<any>(null);
+  const puzzleControllerRef = useRef<PuzzleControllerRef>(null);
   
   // System failure states
   const [isSystemFailure, setIsSystemFailure] = useState(false);

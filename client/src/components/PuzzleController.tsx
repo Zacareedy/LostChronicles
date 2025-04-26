@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import HieroglyphPuzzle from './HieroglyphPuzzle';
 import RadioPuzzle from './RadioPuzzle';
 import CoordinatesPuzzle from './CoordinatesPuzzle';
 import SubnetInterface from './SubnetInterface';
 import BlackBoxArchive from './BlackBoxArchive';
 import ProjectCandle from './ProjectCandle';
-import VoidDirectory from './VoidDirectory';
 import { playSound } from '@/lib/audio';
 
+// Define puzzle types
 enum PuzzleType {
   NONE = '',
   HIEROGLYPH = 'hieroglyph',
@@ -15,25 +15,51 @@ enum PuzzleType {
   COORDINATES = 'coordinates',
   SUBNET = 'subnet',
   BLACKBOX = 'blackbox',
-  CANDLE = 'candle',
-  VOID = 'void'
+  CANDLE = 'candle'
 }
 
+// Props for PuzzleController
 interface PuzzleControllerProps {
   onRevealStation: (stationName: string) => void;
   onUnlockReport: (reportId: number) => void;
   onUnlockAudioLog: (logId: string) => void;
 }
 
-const PuzzleController: React.FC<PuzzleControllerProps> = ({
-  onRevealStation,
-  onUnlockReport,
-  onUnlockAudioLog,
-}) => {
+// Ref type for external access to controller methods
+export interface PuzzleControllerRef {
+  launchPuzzle: (puzzleId: string) => void;
+}
+
+// Main component using forwardRef
+const PuzzleController = forwardRef<PuzzleControllerRef, PuzzleControllerProps>(function PuzzleController(props, ref) {
+  const { onRevealStation, onUnlockReport, onUnlockAudioLog } = props;
   const [activePuzzle, setActivePuzzle] = useState<PuzzleType>(PuzzleType.NONE);
-  const [loopCount, setLoopCount] = useState<number>(0);
   
-  // Check if a puzzle should be opened from localStorage flags
+  // Helper function to map puzzle ID to PuzzleType
+  const mapPuzzleIdToPuzzleType = (puzzleId: string): PuzzleType => {
+    switch (puzzleId) {
+      case 'hieroglyph': return PuzzleType.HIEROGLYPH;
+      case 'radio': return PuzzleType.RADIO;
+      case 'coordinates': return PuzzleType.COORDINATES;
+      case 'subnet': return PuzzleType.SUBNET;
+      case 'blackbox': return PuzzleType.BLACKBOX;
+      case 'candle': return PuzzleType.CANDLE;
+      default: return PuzzleType.NONE;
+    }
+  };
+  
+  // Expose methods through ref
+  useImperativeHandle(ref, () => ({
+    launchPuzzle: (puzzleId: string) => {
+      console.log(`PuzzleController: directly launching puzzle ${puzzleId}`);
+      const puzzleType = mapPuzzleIdToPuzzleType(puzzleId);
+      if (puzzleType !== PuzzleType.NONE) {
+        openPuzzle(puzzleType);
+      }
+    }
+  }));
+
+  // Check for active puzzles in localStorage
   useEffect(() => {
     try {
       const puzzleToActivate = localStorage.getItem('dharma_active_puzzle');
@@ -42,31 +68,7 @@ const PuzzleController: React.FC<PuzzleControllerProps> = ({
         localStorage.removeItem('dharma_active_puzzle');
         
         // Map the puzzle ID to a PuzzleType
-        let puzzleType: PuzzleType = PuzzleType.NONE;
-        
-        switch (puzzleToActivate) {
-          case 'hieroglyph':
-            puzzleType = PuzzleType.HIEROGLYPH;
-            break;
-          case 'radio':
-            puzzleType = PuzzleType.RADIO;
-            break;
-          case 'coordinates':
-            puzzleType = PuzzleType.COORDINATES;
-            break;
-          case 'subnet':
-            puzzleType = PuzzleType.SUBNET;
-            break;
-          case 'blackbox':
-            puzzleType = PuzzleType.BLACKBOX;
-            break;
-          case 'candle':
-            puzzleType = PuzzleType.CANDLE;
-            break;
-          case 'void':
-            puzzleType = PuzzleType.VOID;
-            break;
-        }
+        const puzzleType = mapPuzzleIdToPuzzleType(puzzleToActivate);
         
         if (puzzleType !== PuzzleType.NONE) {
           // Open the puzzle
@@ -74,20 +76,24 @@ const PuzzleController: React.FC<PuzzleControllerProps> = ({
         }
       }
     } catch (e) {
-      // Ignore localStorage errors
+      // Ignore localStorage errors but log them in dev
+      console.error('Error checking for active puzzle:', e);
     }
   }, []);
   
+  // Open a puzzle
   const openPuzzle = (puzzleType: PuzzleType) => {
     setActivePuzzle(puzzleType);
     playSound('beep');
   };
   
+  // Close current puzzle
   const closePuzzle = () => {
     setActivePuzzle(PuzzleType.NONE);
     playSound('click');
   };
   
+  // Handle puzzle completion
   const handleCompletePuzzle = (puzzleType: PuzzleType) => {
     // Process rewards based on completed puzzle
     switch (puzzleType) {
@@ -127,13 +133,6 @@ const PuzzleController: React.FC<PuzzleControllerProps> = ({
         onRevealStation('Orchid');
         onUnlockReport(4);
         onUnlockAudioLog('valenzetti');
-        break;
-        
-      case PuzzleType.VOID:
-        // Void directory rewards - increments loop count
-        setLoopCount(prev => prev + 1);
-        onUnlockReport(5);
-        onUnlockAudioLog('whisper');
         break;
     }
     
@@ -189,16 +188,8 @@ const PuzzleController: React.FC<PuzzleControllerProps> = ({
         onClose={closePuzzle}
         onComplete={() => handleCompletePuzzle(PuzzleType.CANDLE)}
       />
-      
-      {/* Void Directory */}
-      <VoidDirectory
-        isVisible={isPuzzleActive(PuzzleType.VOID)}
-        onClose={closePuzzle}
-        onComplete={() => handleCompletePuzzle(PuzzleType.VOID)}
-        loopCount={loopCount}
-      />
     </>
   );
-};
+});
 
 export default PuzzleController;
