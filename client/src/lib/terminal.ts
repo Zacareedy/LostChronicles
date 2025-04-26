@@ -17,6 +17,7 @@ const commands: Record<string, Function> = {
       '> scan - Scan for signals on the island',
       '> login <id> - Access restricted areas',
       '> locate <station> - Find station location',
+      '> puzzle <type> - Access puzzle interfaces',
       '> clear - Clear terminal'
     ];
     
@@ -28,6 +29,7 @@ const commands: Record<string, Function> = {
     if (accessLevel >= 3) {
       basicCommands.push('> decrypt <file> - Decrypt classified files');
       basicCommands.push('> override <code> - Override system protocols');
+      basicCommands.push('> diagnose /sys - Run system diagnostics');
     }
     
     if (accessLevel >= 4) {
@@ -45,6 +47,15 @@ const commands: Record<string, Function> = {
         basicCommands.push('> setcountdown <minutes> <seconds> - Set countdown timer');
         basicCommands.push('> setcountdown <seconds> - Set countdown timer in seconds');
         basicCommands.push('> resetall - Reset all app data and return to initial state');
+        basicCommands.push('');
+        basicCommands.push('> PUZZLE COMMANDS:');
+        basicCommands.push('> puzzle hieroglyph - Start Hieroglyph puzzle');
+        basicCommands.push('> puzzle radio - Start Radio Numbers puzzle');
+        basicCommands.push('> puzzle coordinates - Start Coordinates puzzle');
+        basicCommands.push('> puzzle subnet - Start Subnet Protocol puzzle');
+        basicCommands.push('> puzzle blackbox - Start Black Box Archive puzzle');
+        basicCommands.push('> puzzle candle - Start Project Candle puzzle');
+        basicCommands.push('> puzzle void - Start Void Directory puzzle');
       }
     } catch (e) {
       // Ignore localStorage errors
@@ -299,6 +310,96 @@ const commands: Record<string, Function> = {
       return [
         '> ERROR: Protocol not recognized',
         '> Available protocols: pearl-surveillance'
+      ];
+    }
+  },
+
+  puzzle: (args: string, onRevealPuzzle?: () => void) => {
+    // Check if puzzle type is valid
+    const validPuzzles = [
+      'hieroglyph', 'radio', 'coordinates', 'subnet', 
+      'blackbox', 'candle', 'void'
+    ];
+    
+    // Store puzzle type in local storage for app to pick up
+    const launchPuzzle = (puzzleType: string) => {
+      try {
+        localStorage.setItem('dharma_launch_puzzle', puzzleType);
+        // Trigger callback to parent component
+        if (onRevealPuzzle) {
+          setTimeout(() => {
+            onRevealPuzzle();
+          }, 500);
+        }
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+    };
+    
+    if (!args) {
+      return [
+        '> PUZZLE TYPE REQUIRED',
+        '> Usage: puzzle <type>',
+        '> Available puzzles: hieroglyph, radio, coordinates, subnet',
+        '> Additional puzzles require elevated security clearance'
+      ];
+    }
+    
+    const puzzleType = args.toLowerCase();
+    
+    if (!validPuzzles.includes(puzzleType)) {
+      return [
+        `> ERROR: Unknown puzzle type "${puzzleType}"`,
+        '> Available puzzles: hieroglyph, radio, coordinates, subnet'
+      ];
+    }
+    
+    // Check security level for advanced puzzles
+    if (['blackbox', 'candle', 'void'].includes(puzzleType)) {
+      // These puzzles require access level 3 or dev mode
+      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
+      
+      if (accessLevel < 3 && !devModeActive) {
+        return [
+          '> ACCESS DENIED: Advanced puzzles require security level 3',
+          '> Use login command with proper credentials or enable developer mode'
+        ];
+      }
+    }
+    
+    // Launch the puzzle
+    launchPuzzle(puzzleType);
+    
+    return [
+      `> LAUNCHING ${puzzleType.toUpperCase()} PUZZLE INTERFACE...`,
+      '> Please wait while the system initializes the module'
+    ];
+  },
+
+  diagnose: (args: string) => {
+    if (accessLevel < 3) {
+      return ['> ACCESS DENIED: Security level 3 required for system diagnostics'];
+    }
+    
+    if (args === '/sys') {
+      // Launch the puzzle menu
+      try {
+        localStorage.setItem('dharma_launch_puzzle_menu', 'true');
+      } catch (e) {
+        // Ignore localStorage errors
+      }
+      
+      return [
+        '> SYSTEM DIAGNOSTIC INITIALIZED',
+        '> Scanning for available modules...',
+        '> Multiple test protocols detected',
+        '> Launching diagnostic interface...'
+      ];
+    } else {
+      return [
+        '> ERROR: Invalid diagnostic target',
+        '> Usage: diagnose /sys',
+        '> Other diagnostic targets unavailable in this terminal'
       ];
     }
   },
@@ -700,7 +801,8 @@ const processCommand = (
   const [cmd, ...args] = input.trim().toLowerCase().split(' ');
   const argsStr = args.join(' ');
   
-  playSound('typing', 'short');
+  // Play a sound when entering command
+  playSound('beep');
   
   // Check for resetall developer command to reset all app data
   if (input.trim().toLowerCase() === 'resetall') {

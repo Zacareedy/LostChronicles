@@ -10,7 +10,7 @@ import {
   Bookmark, 
   BookmarkCheck, 
   Info, 
-  WaveSine,
+  Activity,
   FileAudio, 
   Download,
   Database,

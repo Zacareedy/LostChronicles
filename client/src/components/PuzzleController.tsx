@@ -1,15 +1,22 @@
 import React, { useState } from 'react';
-import { useLore } from '@/contexts/LoreContext';
 import HieroglyphPuzzle from './HieroglyphPuzzle';
 import RadioPuzzle from './RadioPuzzle';
 import CoordinatesPuzzle from './CoordinatesPuzzle';
+import SubnetInterface from './SubnetInterface';
+import BlackBoxArchive from './BlackBoxArchive';
+import ProjectCandle from './ProjectCandle';
+import VoidDirectory from './VoidDirectory';
 import { playSound } from '@/lib/audio';
 
 enum PuzzleType {
   NONE = '',
   HIEROGLYPH = 'hieroglyph',
   RADIO = 'radio',
-  COORDINATES = 'coordinates'
+  COORDINATES = 'coordinates',
+  SUBNET = 'subnet',
+  BLACKBOX = 'blackbox',
+  CANDLE = 'candle',
+  VOID = 'void'
 }
 
 interface PuzzleControllerProps {
@@ -21,107 +28,130 @@ interface PuzzleControllerProps {
 const PuzzleController: React.FC<PuzzleControllerProps> = ({
   onRevealStation,
   onUnlockReport,
-  onUnlockAudioLog
+  onUnlockAudioLog,
 }) => {
-  const { completePuzzle } = useLore();
   const [activePuzzle, setActivePuzzle] = useState<PuzzleType>(PuzzleType.NONE);
+  const [loopCount, setLoopCount] = useState<number>(0);
   
-  // Called to open a puzzle interface
   const openPuzzle = (puzzleType: PuzzleType) => {
     setActivePuzzle(puzzleType);
-    playSound('select');
+    playSound('beep');
   };
   
-  // Called when the user closes a puzzle interface
   const closePuzzle = () => {
     setActivePuzzle(PuzzleType.NONE);
     playSound('click');
   };
   
-  // Called when a puzzle is completed successfully
   const handleCompletePuzzle = (puzzleType: PuzzleType) => {
-    playSound('success');
-    
-    // Mark the puzzle as completed in the LoreContext
-    completePuzzle(puzzleType);
-    
-    // Process rewards based on which puzzle was completed
+    // Process rewards based on completed puzzle
     switch (puzzleType) {
       case PuzzleType.HIEROGLYPH:
-        // Reveal the Swan station
-        onRevealStation('swan');
-        // Unlock an incident report
+        // Hieroglyph puzzle rewards
+        onRevealStation('Swan');
         onUnlockReport(1);
         break;
         
       case PuzzleType.RADIO:
-        // Reveal the Flame station
-        onRevealStation('flame');
-        // Unlock an audio log
-        onUnlockAudioLog('orientation_recording');
+        // Radio puzzle rewards
+        onRevealStation('Flame');
+        onUnlockAudioLog('orientation');
         break;
         
       case PuzzleType.COORDINATES:
-        // Reveal the Looking Glass station
-        onRevealStation('looking_glass');
-        // Unlock a related report
+        // Coordinates puzzle rewards
+        onRevealStation('Pearl');
+        onUnlockReport(2);
+        break;
+        
+      case PuzzleType.SUBNET:
+        // Subnet interface rewards
+        onRevealStation('Arrow');
+        onUnlockAudioLog('dharma_log_1');
+        break;
+        
+      case PuzzleType.BLACKBOX:
+        // Black box archive rewards
+        onRevealStation('Staff');
         onUnlockReport(3);
+        onUnlockAudioLog('system_failure');
+        break;
+        
+      case PuzzleType.CANDLE:
+        // Project Candle rewards
+        onRevealStation('Orchid');
+        onUnlockReport(4);
+        onUnlockAudioLog('valenzetti');
+        break;
+        
+      case PuzzleType.VOID:
+        // Void directory rewards - increments loop count
+        setLoopCount(prev => prev + 1);
+        onUnlockReport(5);
+        onUnlockAudioLog('whisper');
         break;
     }
     
-    // Close the puzzle interface
+    // Close the puzzle
     closePuzzle();
+  };
+  
+  // Helper to determine if a puzzle should be active
+  const isPuzzleActive = (puzzleType: PuzzleType) => {
+    return activePuzzle === puzzleType;
   };
   
   return (
     <>
       {/* Hieroglyph Puzzle */}
       <HieroglyphPuzzle
-        isVisible={activePuzzle === PuzzleType.HIEROGLYPH}
+        isVisible={isPuzzleActive(PuzzleType.HIEROGLYPH)}
         onClose={closePuzzle}
         onComplete={() => handleCompletePuzzle(PuzzleType.HIEROGLYPH)}
       />
       
-      {/* Radio Signal Puzzle */}
+      {/* Radio Puzzle */}
       <RadioPuzzle
-        isVisible={activePuzzle === PuzzleType.RADIO}
+        isVisible={isPuzzleActive(PuzzleType.RADIO)}
         onClose={closePuzzle}
         onComplete={() => handleCompletePuzzle(PuzzleType.RADIO)}
       />
       
       {/* Coordinates Puzzle */}
       <CoordinatesPuzzle
-        isVisible={activePuzzle === PuzzleType.COORDINATES}
+        isVisible={isPuzzleActive(PuzzleType.COORDINATES)}
         onClose={closePuzzle}
         onComplete={() => handleCompletePuzzle(PuzzleType.COORDINATES)}
       />
       
-      {/* This would normally be rendered elsewhere in the application as buttons or triggers */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 right-4 p-2 bg-black bg-opacity-70 rounded z-40">
-          <div className="text-white text-xs mb-2">Developer Controls</div>
-          <div className="flex flex-col gap-1">
-            <button
-              onClick={() => openPuzzle(PuzzleType.HIEROGLYPH)}
-              className="px-2 py-1 bg-blue-800 text-white text-xs rounded"
-            >
-              Open Hieroglyph Puzzle
-            </button>
-            <button
-              onClick={() => openPuzzle(PuzzleType.RADIO)}
-              className="px-2 py-1 bg-blue-800 text-white text-xs rounded"
-            >
-              Open Radio Puzzle
-            </button>
-            <button
-              onClick={() => openPuzzle(PuzzleType.COORDINATES)}
-              className="px-2 py-1 bg-blue-800 text-white text-xs rounded"
-            >
-              Open Coordinates Puzzle
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Subnet Interface */}
+      <SubnetInterface
+        isVisible={isPuzzleActive(PuzzleType.SUBNET)}
+        onClose={closePuzzle}
+        onComplete={() => handleCompletePuzzle(PuzzleType.SUBNET)}
+      />
+      
+      {/* Black Box Archive */}
+      <BlackBoxArchive
+        isVisible={isPuzzleActive(PuzzleType.BLACKBOX)}
+        onClose={closePuzzle}
+        onComplete={() => handleCompletePuzzle(PuzzleType.BLACKBOX)}
+      />
+      
+      {/* Project Candle */}
+      <ProjectCandle
+        isVisible={isPuzzleActive(PuzzleType.CANDLE)}
+        onClose={closePuzzle}
+        onComplete={() => handleCompletePuzzle(PuzzleType.CANDLE)}
+      />
+      
+      {/* Void Directory */}
+      <VoidDirectory
+        isVisible={isPuzzleActive(PuzzleType.VOID)}
+        onClose={closePuzzle}
+        onComplete={() => handleCompletePuzzle(PuzzleType.VOID)}
+        loopCount={loopCount}
+      />
     </>
   );
 };
