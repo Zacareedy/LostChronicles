@@ -211,7 +211,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
     ]);
 
     // Process command and get response
-    const response = processCommand(userInput, onRevealPuzzle, onRevealStation, onCorrectSequence);
+    const response = processCommand(userInput, onRevealPuzzle, onRevealStation, onCorrectSequence, isSystemFailure);
     
     // If clear command, clear terminal
     if (userInput.toLowerCase() === 'clear') {

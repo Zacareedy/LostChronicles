@@ -1151,7 +1151,8 @@ const processCommand = (
   input: string, 
   onRevealPuzzle?: () => void, 
   onRevealStation?: (stationName: string) => void,
-  onCorrectSequence?: () => void
+  onCorrectSequence?: () => void,
+  isSystemFailure?: boolean
 ): string[] => {
   // Add to command history
   commandHistory.push(input.trim().toLowerCase());
@@ -1161,8 +1162,8 @@ const processCommand = (
     commandHistory = commandHistory.slice(-10);
   }
   
-  // Handle special case for entering the numbers
-  if (pendingAction === 'protocol') {
+  // Handle special case for entering the numbers during system failure or protocol mode
+  if (pendingAction === 'protocol' || isSystemFailure) {
     // Check if input matches the numbers pattern
     const numbersPattern = /^\s*4\s*8\s*15\s*16\s*23\s*42\s*$/;
     if (numbersPattern.test(input)) {
