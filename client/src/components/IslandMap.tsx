@@ -103,7 +103,6 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
   // New state for enhanced map features
   const [hiddenLocations, setHiddenLocations] = useState(HIDDEN_LOCATIONS);
   const [currentWeather, setCurrentWeather] = useState<WeatherState>('clear');
-  const [showCoordinateGrid, setShowCoordinateGrid] = useState(false);
   const [flashingSignals, setFlashingSignals] = useState<string[]>([]);
   const [timePhase, setTimePhase] = useState(0); // 0-107 minutes
   const [mapEntities, setMapEntities] = useState<{id: string, position: {top: string, left: string}, isTracked: boolean}[]>([]);
@@ -335,16 +334,11 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     }
   };
 
-  // Handle map zoom with grid coordinates visibility
+  // Handle map zoom
   const handleMapZoomIn = () => {
     if (mapZoom < MAX_ZOOM) {
       setMapZoom(prev => Math.min(MAX_ZOOM, prev + 0.1));
       playSound('beep', 'short');
-
-      // Show coordinate grid when zoomed in past a certain threshold
-      if (mapZoom >= 1.5 && !showCoordinateGrid) {
-        setShowCoordinateGrid(true);
-      }
     }
   };
 
@@ -356,11 +350,6 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
 
       // Clamp offset to new zoom bounds
       setMapOffset(prev => clampOffset(prev, newZoom));
-
-      // Hide coordinate grid when zoomed out
-      if (mapZoom < 1.5 && showCoordinateGrid) {
-        setShowCoordinateGrid(false);
-      }
     }
   };
 
@@ -515,7 +504,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.3 }}
-      className="dharma-panel shadow-[0_0_15px_rgba(0,255,0,0.15)] relative before:content-[''] before:absolute before:inset-0 before:pointer-events-none before:z-50 before:bg-[var(--crt-overlay)]"
+      className="dharma-panel shadow-[0_0_15px_rgba(0,255,0,0.15)] relative"
     >
       <div className="dharma-panel-header border-b-2 border-[hsla(var(--dharma-green),0.3)] bg-[hsla(var(--dharma-green),0.1)]">
         <h2 className="dharma-panel-title text-[hsl(var(--dharma-green))]">ISLAND MAP</h2>
@@ -543,34 +532,26 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         >
           {/* Map container with panning/zooming */}
           <div className="relative w-full h-full overflow-hidden">
-            <div 
-              className="relative w-full h-full bg-black"
-              style={{ 
-                transform: `scale(${mapZoom})`,
-                transformOrigin: 'center',
-                transition: 'transform 0.3s ease'
-              }}
-            >
               {/* Island map image */}
               <div 
                 className="relative w-full h-full bg-black"
                 style={{ 
-                  transform: `scale(${mapZoom}) translate(${mapOffset.x / mapZoom}px, ${mapOffset.y / mapZoom}px)`,
+                  transform: `translate(${mapOffset.x}px, ${mapOffset.y}px) scale(${mapZoom})`,
                   willChange: 'transform',
                   transformOrigin: 'center',
+                  transition: 'transform 0.1s ease-out'
                 }}
               >
                 <img 
                   src={plainIslandMap} 
                   alt="LOST Island Map" 
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-cover"
                   style={{
-                    filter: 'contrast(1.1) brightness(0.9)'
+                    filter: 'contrast(1.1) brightness(0.9)',
+                    minWidth: '100%',
+                    minHeight: '100%'
                   }}
                 />
-
-                {/* Add map-specific scanline effect */}
-                <div className="map-scanline absolute inset-0 z-10 pointer-events-none"></div>
 
                 {/* Station markers */}
                 {Object.entries(STATIONS).map(([key, station]) => {
@@ -763,92 +744,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 )}
               </div>
 
-              {/* Scan line effect */}
-              <div 
-                className="absolute inset-0 z-10 animate-terminal-scan" 
-                style={{ 
-                  boxShadow: 'inset 0 0 10px rgba(227, 188, 77, 0.3)',
-                }}
-              ></div>
 
-              {/* Weather Effects */}
-              {currentWeather === 'fog' && (
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ 
-                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                    zIndex: 40,
-                    mixBlendMode: 'overlay'
-                  }}
-                >
-                  <div className="absolute inset-0 bg-white opacity-20 animate-fog"></div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent opacity-10"></div>
-                </div>
-              )}
-
-              {currentWeather === 'rain' && (
-                <div 
-                  className="absolute inset-0 pointer-events-none overflow-hidden"
-                  style={{ 
-                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                    zIndex: 40
-                  }}
-                >
-                  {[...Array(100)].map((_, i) => (
-                    <div 
-                      key={`rain-${i}`}
-                      className="absolute w-px h-8 bg-cyan-400 opacity-20 animate-rain"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 2}s`,
-                        animationDuration: `${0.5 + Math.random() * 0.5}s`
-                      }}
-                    ></div>
-                  ))}
-                </div>
-              )}
-
-              {currentWeather === 'storm' && (
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ 
-                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                    zIndex: 40
-                  }}
-                >
-                  {/* Rain */}
-                  {[...Array(150)].map((_, i) => (
-                    <div 
-                      key={`storm-rain-${i}`}
-                      className="absolute w-px h-10 bg-cyan-400 opacity-30 animate-rain"
-                      style={{
-                        left: `${Math.random() * 100}%`,
-                        top: `${Math.random() * 100}%`,
-                        animationDelay: `${Math.random() * 2}s`,
-                        animationDuration: `${0.3 + Math.random() * 0.3}s`
-                      }}
-                    ></div>
-                  ))}
-
-                  {/* Lightning flashes that reveal hidden locations */}
-                  <div 
-                    className="absolute inset-0 bg-white animate-lightning opacity-0"
-                    style={{ mixBlendMode: 'overlay' }}
-                  >
-                    {/* During lightning, show the lighthouse location */}
-                    {hiddenLocations.find(loc => loc.id === 'lighthouse' && !loc.isDiscovered) && (
-                      <div 
-                        className="absolute w-6 h-6 border-2 border-white rounded-full animate-pulse"
-                        style={{ 
-                          top: hiddenLocations.find(loc => loc.id === 'lighthouse')?.position.top || '22%', 
-                          left: hiddenLocations.find(loc => loc.id === 'lighthouse')?.position.left || '85%' 
-                        }}
-                      ></div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Station connections when multiple stations are discovered */}
               {discoveredStations.length >= 2 && (
@@ -936,61 +832,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                 </svg>
               )}
 
-              {/* Coordinate grid that appears on zoom */}
-              {showCoordinateGrid && (
-                <div 
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ 
-                    transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                    zIndex: 30 
-                  }}
-                >
-                  {/* Horizontal grid lines */}
-                  {[...Array(10)].map((_, i) => (
-                    <div 
-                      key={`h-grid-${i}`}
-                      className="absolute left-0 right-0 h-px bg-[hsla(var(--dharma-green),0.2)]"
-                      style={{ top: `${i * 10 + 5}%` }}
-                    >
-                      <span className="absolute left-1 top-1 text-[8px] text-[hsla(var(--dharma-green),0.7)]">
-                        {`${45 - i * 5}°N`}
-                      </span>
-                    </div>
-                  ))}
 
-                  {/* Vertical grid lines */}
-                  {[...Array(10)].map((_, i) => (
-                    <div 
-                      key={`v-grid-${i}`}
-                      className="absolute top-0 bottom-0 w-px bg-[hsla(var(--dharma-green),0.2)]"
-                      style={{ left: `${i * 10 + 5}%` }}
-                    >
-                      <span className="absolute top-1 left-1 text-[8px] text-[hsla(var(--dharma-green),0.7)]">
-                        {`${170 - i * 15}°W`}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Mysterious fog overlay that partially clears based on discovered stations */}
-              <div 
-                className="absolute inset-0 bg-gradient-to-br from-[rgba(0,0,0,0.7)] to-[rgba(0,0,0,0.4)]"
-                style={{ 
-                  opacity: Math.max(0.9 - (discoveredStations.length * 0.15), 0.1),
-                  transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                  zIndex: currentWeather === 'fog' ? 25 : 35
-                }}
-              />
-
-              {/* Grid patterns suggesting more locations */}
-              <div 
-                className="absolute inset-0 grid-pattern opacity-30"
-                style={{ 
-                  transform: `translate(${mapOffset.x}px, ${mapOffset.y}px)`,
-                  zIndex: 20
-                }}
-              ></div>
 
 
               {/* Mysterious signal indicators for undiscovered stations */}
@@ -1027,7 +869,6 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
             </div>
           </div>
         </div>
-      </div>
 
       <div className="bg-[hsla(var(--dharma-green),0.1)] p-2 text-xs font-mono border-t-2 border-[hsla(var(--dharma-green),0.3)]">
         <div className="text-[hsl(var(--dharma-green))] tracking-wide">
