@@ -223,13 +223,34 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     setStartDragPos({ x: e.clientX - mapOffset.x, y: e.clientY - mapOffset.y });
   };
 
+  // Clamp offset to prevent map edges from showing
+  const clampOffset = (offset: { x: number; y: number }, zoom: number) => {
+    if (!mapContainerRef.current) return offset;
+    
+    const container = mapContainerRef.current;
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    // Calculate maximum allowed offset based on zoom level
+    // When zoom = 1, no offset allowed (map fits exactly)
+    // When zoom > 1, allow offset up to (containerSize * (zoom - 1)) / 2
+    const maxOffsetX = (containerWidth * (zoom - 1)) / 2;
+    const maxOffsetY = (containerHeight * (zoom - 1)) / 2;
+    
+    return {
+      x: Math.max(-maxOffsetX, Math.min(maxOffsetX, offset.x)),
+      y: Math.max(-maxOffsetY, Math.min(maxOffsetY, offset.y))
+    };
+  };
+
   const handleMapMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     const newOffset = {
       x: e.clientX - startDragPos.x,
       y: e.clientY - startDragPos.y
     };
-    setMapOffset(newOffset);
+    // Clamp the offset to keep map within bounds
+    setMapOffset(clampOffset(newOffset, mapZoom));
   };
 
   const handleMapMouseUp = () => {
@@ -329,8 +350,12 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
 
   const handleMapZoomOut = () => {
     if (mapZoom > MIN_ZOOM) {
-      setMapZoom(prev => Math.max(MIN_ZOOM, prev - 0.1));
+      const newZoom = Math.max(MIN_ZOOM, mapZoom - 0.1);
+      setMapZoom(newZoom);
       playSound('beep', 'short');
+
+      // Clamp offset to new zoom bounds
+      setMapOffset(prev => clampOffset(prev, newZoom));
 
       // Hide coordinate grid when zoomed out
       if (mapZoom < 1.5 && showCoordinateGrid) {
