@@ -63,21 +63,8 @@ const PuzzleLauncher: React.FC<PuzzleLauncherProps> = ({
       name: 'Hieroglyph Decoder', 
       description: 'Decode the mysterious hieroglyphs from the Swan Station countdown.', 
       icon: <Puzzle className="h-5 w-5" />,
-      difficulty: 'Easy'
-    },
-    { 
-      id: 'radio', 
-      name: 'Numbers Transmission', 
-      description: 'Tune into the special frequencies to hear the Numbers broadcast.', 
-      icon: <Radio className="h-5 w-5" />,
-      difficulty: 'Medium'
-    },
-    { 
-      id: 'coordinates', 
-      name: 'Station Coordinates', 
-      description: 'Plot coordinates to discover hidden DHARMA stations.', 
-      icon: <MapPin className="h-5 w-5" />,
-      difficulty: 'Medium'
+      difficulty: 'Easy',
+      requiresDevMode: true
     },
     { 
       id: 'subnet', 

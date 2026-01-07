@@ -327,18 +327,7 @@ const Home: React.FC = () => {
           // Map discovered stations to unlocked puzzles
           const puzzles: string[] = [];
           
-          // Basic puzzles are always available
-          puzzles.push('hieroglyph');
-          
-          // Radio puzzle unlocked when Flame station is discovered
-          if (discoveredStations.includes('flame')) {
-            puzzles.push('radio');
-          }
-          
-          // Coordinates puzzle unlocked when Pearl station is discovered
-          if (discoveredStations.includes('pearl')) {
-            puzzles.push('coordinates');
-          }
+          // Hieroglyph puzzle hidden for now (requires dev mode)
           
           // Subnet puzzle unlocked when Arrow station is discovered
           if (discoveredStations.includes('arrow')) {

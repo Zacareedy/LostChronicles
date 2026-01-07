@@ -51,9 +51,7 @@ const commands: Record<string, Function> = {
         basicCommands.push('> resetall - Reset all app data and return to initial state');
         basicCommands.push('');
         basicCommands.push('> PUZZLE COMMANDS:');
-        basicCommands.push('> puzzle hieroglyph - Start Hieroglyph puzzle');
-        basicCommands.push('> puzzle radio - Start Radio Numbers puzzle');
-        basicCommands.push('> puzzle coordinates - Start Coordinates puzzle');
+        basicCommands.push('> puzzle hieroglyph - Start Hieroglyph puzzle (RESTRICTED)');
         basicCommands.push('> puzzle subnet - Start Subnet Protocol puzzle');
         basicCommands.push('> puzzle blackbox - Start Black Box Archive puzzle');
         basicCommands.push('> puzzle candle - Start Project Candle puzzle');
@@ -408,7 +406,7 @@ const commands: Record<string, Function> = {
     
     // Check if puzzle type is valid
     const validPuzzles = [
-      'hieroglyph', 'radio', 'coordinates', 'subnet', 
+      'hieroglyph', 'subnet', 
       'blackbox', 'candle', 'void'
     ];
     
@@ -431,7 +429,7 @@ const commands: Record<string, Function> = {
       return [
         '> PUZZLE TYPE REQUIRED',
         '> Usage: puzzle <type>',
-        '> Available puzzles: hieroglyph, radio, coordinates, subnet',
+        '> Available puzzles: subnet',
         '> Additional puzzles require elevated security clearance'
       ];
     }
@@ -441,19 +439,19 @@ const commands: Record<string, Function> = {
     if (!validPuzzles.includes(puzzleType)) {
       return [
         `> ERROR: Unknown puzzle type "${puzzleType}"`,
-        '> Available puzzles: hieroglyph, radio, coordinates, subnet'
+        '> Available puzzles: subnet'
       ];
     }
     
-    // Check security level for advanced puzzles
-    if (['blackbox', 'candle', 'void'].includes(puzzleType)) {
+    // Check security level for advanced or hidden puzzles
+    if (['hieroglyph', 'blackbox', 'candle', 'void'].includes(puzzleType)) {
       // These puzzles require access level 3 or dev mode
       const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
       
       if (accessLevel < 3 && !devModeActive) {
         return [
-          '> ACCESS DENIED: Advanced puzzles require security level 3',
-          '> Use login command with proper credentials or enable developer mode'
+          '> ACCESS DENIED: This module is currently RESTRICTED',
+          '> Security level 3 required or system administrator override'
         ];
       }
     }
