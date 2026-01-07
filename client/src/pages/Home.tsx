@@ -250,10 +250,7 @@ const Home: React.FC = () => {
           isSystemFailure={isSystemFailure}
         />
 
-        <IslandMap 
-          discoveredStations={discoveredStations} 
-          onStationClick={handleRevealStation} 
-        />
+        <IslandMap />
 
         {/* Combined DHARMA Panel (for mobile) */}
         <div className="md:hidden mt-4">
