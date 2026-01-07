@@ -144,7 +144,7 @@ const Home: React.FC = () => {
   const handleCountdownFinish = () => {
     // Trigger system failure state
     playSound('alarm');
-    triggerSystemStatus('SYSTEM FAILURE', 0); // 0 means don't auto-reset
+    triggerSystemStatus('PROTOCOL REQUIRED', 0); // 0 means don't auto-reset
     
     // Generate timestamp for failure
     const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);

@@ -287,14 +287,6 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
           )}
         </div>
         
-        {/* System failure message when active */}
-        {isSystemFailure && (
-          <div className="absolute top-full left-0 right-0 mt-1 p-1 bg-black border border-[hsl(var(--dharma-red))] animate-terminal-blink">
-            <div className="text-[hsl(var(--dharma-red))] text-center font-bold">
-              SYSTEM FAILURE
-            </div>
-          </div>
-        )}
         
         {/* Dev mode indicator and controls - activated with Ctrl+Alt+4+8+1+5+1+6+2+3+4+2 */}
         {isDevMode && (

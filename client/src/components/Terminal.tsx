@@ -359,7 +359,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
             className="bg-transparent p-2 text-center"
           >
             <div className="font-terminal text-[hsl(var(--dharma-red))] text-4xl font-bold">
-              SYSTEM FAILURE
+              
             </div>
           </motion.div>
         </div>
