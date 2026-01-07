@@ -230,9 +230,10 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
     const containerWidth = container.clientWidth;
     const containerHeight = container.clientHeight;
     
-    // Calculate maximum allowed offset based on zoom level
-    // When zoom = 1, no offset allowed (map fits exactly)
-    // When zoom > 1, allow offset up to (containerSize * (zoom - 1)) / 2
+    // The image is always the same size as the container (w-full h-full)
+    // When zoomed, the content area becomes containerSize * zoom
+    // The total overflow is containerSize * (zoom - 1)
+    // Half of that overflow is available on each side from the center
     const maxOffsetX = (containerWidth * (zoom - 1)) / 2;
     const maxOffsetY = (containerHeight * (zoom - 1)) / 2;
     
@@ -520,9 +521,9 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
         </div>
       </div>
 
-      <div className="p-4 relative h-80">
+      <div className="p-4 relative aspect-[4/3] w-full">
         <div 
-          className="absolute inset-0 m-2 rounded overflow-hidden border border-[hsla(var(--dharma-gray),0.3)] bg-black"
+          className="absolute inset-4 rounded overflow-hidden border border-[hsla(var(--dharma-gray),0.3)] bg-black"
           ref={mapContainerRef}
           onMouseDown={handleMapMouseDown}
           onMouseMove={handleMapMouseMove}
@@ -539,17 +540,15 @@ const IslandMap: React.FC<IslandMapProps> = ({ discoveredStations, onStationClic
                   transform: `translate(${mapOffset.x}px, ${mapOffset.y}px) scale(${mapZoom})`,
                   willChange: 'transform',
                   transformOrigin: 'center',
-                  transition: 'transform 0.1s ease-out'
+                  transition: isDragging ? 'none' : 'transform 0.1s ease-out'
                 }}
               >
                 <img 
                   src={plainIslandMap} 
                   alt="LOST Island Map" 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover select-none pointer-events-none"
                   style={{
                     filter: 'contrast(1.1) brightness(0.9)',
-                    minWidth: '100%',
-                    minHeight: '100%'
                   }}
                 />
 
