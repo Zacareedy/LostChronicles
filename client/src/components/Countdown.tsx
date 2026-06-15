@@ -56,7 +56,7 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
   const isCritical = timeRemaining <= 60;
   const isWarning = timeRemaining <= 300 && timeRemaining > 60;
 
-  const digitColor = isCritical ? '#ff1a00' : isWarning ? '#ff8c00' : '#b8ff00';
+  const digitColor = isCritical ? '#ff1a00' : isWarning ? '#25b84a' : '#4dff7c';
 
   const minStr = minutes.toString().padStart(3, '0');
   const secStr = seconds.toString().padStart(2, '0');

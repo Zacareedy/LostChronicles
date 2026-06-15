@@ -44,8 +44,8 @@
   --ph-mid: #25b84a;
   --ph-dim: #0f5a25;
   --ph-faint: #071a0d;
-  --am: #e0a818;
-  --am-dim: #6b4e09;
+  --am: #4dff7c;
+  --am-dim: #25b84a;
   --red: #ff2200;
   --bg: #010a02;
   --panel: #020e04;
@@ -53,8 +53,8 @@
   --bd: #0f2e16;
   --bd2: #1a4a24;
   --dim: #1a4028;
-  --td-green: #b8ff00;
-  --td-warn: #ff8c00;
+  --td-green: #4dff7c;
+  --td-warn: #25b84a;
   --td-crit: #ff1a00;
 
   /* DHARMA terminal colors based on the reference images - unified theme */

@@ -72,77 +72,104 @@ export default function PearlStationLog({ isVisible, timestamp, onClose }: Pearl
     position: 'fixed',
     bottom: 20,
     right: 20,
-    width: 340,
+    width: 360,
     zIndex: 40000,
-    border: '1px solid var(--bd2)',
-    background: 'var(--panel2)',
+    border: '1px solid #bbb',
+    background: '#f7f4ee',
     fontFamily: "'VT323', monospace",
+    boxShadow: '2px 4px 16px rgba(0,0,0,0.45)',
   };
 
   const titleBar: React.CSSProperties = {
-    borderBottom: '1px solid var(--bd)',
-    background: 'var(--ph-faint)',
+    borderBottom: '1px solid #ccc',
+    background: '#ece9e1',
     padding: '4px 10px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     fontSize: 11,
     letterSpacing: 3,
-    color: 'var(--ph-dim)',
+    color: '#444',
+  };
+
+  const lineColor = (line: string): string => {
+    if (line.startsWith('ERROR')) return '#111';
+    if (line.startsWith('WARNING')) return '#333';
+    if (line.startsWith('META')) return '#555';
+    if (line.startsWith('PEARL') || line.startsWith('SYS') || line.startsWith('P_LOG')) return '#000';
+    if (line.startsWith('———')) return '#999';
+    return '#222';
+  };
+
+  const lineFontWeight = (line: string): string => {
+    if (line.startsWith('ERROR') || line.startsWith('PEARL') || line.startsWith('SYS') || line.startsWith('P_LOG')) return 'bold';
+    return 'normal';
   };
 
   return (
     <div style={container}>
       <div style={titleBar}>
-        <span>PEARL STATION · PRINT TERMINAL</span>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ph-dim)', fontFamily: "'VT323', monospace", fontSize: 13 }}>
+        <span>DHARMA INITIATIVE · PEARL · PRINT OUTPUT</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#555', fontFamily: "'VT323', monospace", fontSize: 13 }}>
           [X]
         </button>
       </div>
+
+      {/* Perforation strip top */}
+      <div style={{
+        height: 8,
+        background: 'repeating-linear-gradient(90deg, #e0ddd5 0px, #e0ddd5 6px, #f7f4ee 6px, #f7f4ee 12px)',
+        borderBottom: '1px dashed #ccc',
+      }} />
 
       <div
         ref={scrollRef}
         style={{
           height: 220,
           overflowY: 'auto',
-          padding: '8px 10px',
-          fontSize: 11,
-          lineHeight: 1.7,
-          color: 'var(--ph-dim)',
+          padding: '8px 14px',
+          fontSize: 12,
+          lineHeight: 1.65,
+          background: '#f7f4ee',
         }}
       >
         {visibleLines.map((line, i) => (
           <div key={i} style={{
-            color: line.startsWith('ERROR') ? 'var(--red)'
-              : line.startsWith('WARNING') ? 'var(--am)'
-              : line.startsWith('META') ? 'var(--ph-dim)'
-              : line.startsWith('PEARL') || line.startsWith('SYS') ? 'var(--ph)'
-              : line.startsWith('———') ? 'var(--bd2)'
-              : 'var(--dim)',
+            color: lineColor(line),
+            fontWeight: lineFontWeight(line),
+            letterSpacing: 0.5,
           }}>
             {line}
           </div>
         ))}
         {isPrinting && (
-          <span className="animate-terminal-blink" style={{ color: 'var(--ph-dim)' }}>_</span>
+          <span className="animate-terminal-blink" style={{ color: '#666' }}>_</span>
         )}
       </div>
 
+      {/* Perforation strip bottom */}
       <div style={{
-        borderTop: '1px solid var(--bd)',
+        height: 8,
+        background: 'repeating-linear-gradient(90deg, #e0ddd5 0px, #e0ddd5 6px, #f7f4ee 6px, #f7f4ee 12px)',
+        borderTop: '1px dashed #ccc',
+      }} />
+
+      <div style={{
+        borderTop: '1px solid #ccc',
+        background: '#ece9e1',
         padding: '4px 10px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         fontSize: 10,
         letterSpacing: 2,
-        color: 'var(--dim)',
+        color: '#666',
       }}>
         <span>DHARMA INITIATIVE © 1977</span>
         {isPrinting && (
-          <span className="animate-terminal-blink" style={{ color: 'var(--am)' }}>■ RECORDING</span>
+          <span className="animate-terminal-blink" style={{ color: '#333' }}>■ PRINTING</span>
         )}
-        {!isPrinting && <span style={{ color: 'var(--ph-dim)' }}>■ COMPLETE</span>}
+        {!isPrinting && <span style={{ color: '#888' }}>■ COMPLETE</span>}
       </div>
     </div>
   );
