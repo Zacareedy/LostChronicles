@@ -131,7 +131,7 @@ const Terminal: React.FC<TerminalProps> = ({ isOpen, onClose, onOpenSubnet, onOp
   };
 
   const windowStyle: React.CSSProperties = {
-    width: 760,
+    width: 560,
     maxWidth: '97vw',
     border: '1px solid var(--bd2)',
     background: 'var(--panel)',
@@ -152,7 +152,7 @@ const Terminal: React.FC<TerminalProps> = ({ isOpen, onClose, onOpenSubnet, onOp
   };
 
   const outputStyle: React.CSSProperties = {
-    height: 400,
+    height: 540,
     overflowY: 'auto',
     padding: '12px 14px',
     fontFamily: "'VT323', monospace",
