@@ -20,11 +20,7 @@ interface TerminalProps {
 }
 
 const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, onCorrectSequence, onCommand, isSystemFailure = false }) => {
-  const [terminalOutput, setTerminalOutput] = useState<TerminalOutput[]>([
-    { text: '>DHARMA INITIATIVE - SWAN STATION TERMINAL', type: 'output' },
-    { text: '>AWAITING INPUT...', type: 'output' },
-    { text: '>:█', type: 'cursor' }
-  ]);
+  const [terminalOutput, setTerminalOutput] = useState<TerminalOutput[]>([]);
   const [input, setInput] = useState('');
   const [terminalStatus, setTerminalStatus] = useState('CONNECTED');
   const [accessLevel, setAccessLevel] = useState(1);
@@ -283,8 +279,6 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
     }
   };
 
-  if (!isOpen) return null;
-
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     inset: 0,
@@ -399,7 +393,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       </div>
       
       {/* Terminal footer with status */}
-      <div className="bg-[hsla(var(--dharma-gray),0.1)] p-2 text-xs text-[hsl(var(--dharma-green))] flex justify-between border-t border-[hsla(var(--dharma-gray),0.3)]">
+      <div className="bg-[hsla(var(--dharma-gray),0.1)] p-2 text-xs text-[hsl(var(--dharma-green))] flex justify-between border-t border-[hsla(var(--dharma-gray),0.3)]" style={{opacity: 1, color: '#33ff33'}}>
         <span>Use command 'help' for available options</span>
         <span className={
           terminalStatus === 'ACCESS DENIED' 
