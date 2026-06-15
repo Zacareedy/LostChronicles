@@ -100,8 +100,6 @@ const commands: Record<string, Function> = {
       '>  READ [path]   — read a file',
       '>  PING          — test intranet connectivity',
       '>  INCIDENT      — recent incident log entries',
-      '>  DHARMA        — DHARMA station directory',
-      '>  VALENZETTI    — Valenzetti Equation summary',
       '>  AUTHENTICATE  — advance clearance level',
       '>  CLEAR         — clear terminal output',
       '>  EXIT          — end terminal session',
@@ -116,6 +114,7 @@ const commands: Record<string, Function> = {
     );
     if (cl >= 4) base.push(
       '>  ACCESS [p]    — special access protocols [L4]',
+      '>  VALENZETTI    — Valenzetti Equation summary [L4]',
     );
     if (cl >= 5) base.push(
       '>  OMEGA         — full classified briefing [L5]',
@@ -560,7 +559,7 @@ const commands: Record<string, Function> = {
 
   ping: () => {
     const cl = getClearance();
-    const base = [
+    if (cl >= 5) return [
       '> TESTING INTRANET NODE CONNECTIVITY...',
       '>',
       '>  SWN-7    (self)        OK        [0ms]',
@@ -570,13 +569,21 @@ const commands: Record<string, Function> = {
       '>  STAFF-1  (medical)     NO ROUTE',
       '>  ORCHID   (unknown)     REFUSED',
       '>  WORLD    (external)    BLOCKED   §7-B',
-    ];
-    if (cl >= 3) base.push(
       '>',
-      '> [TECHNICIAN] Pearl-3 timeout is likely intentional.',
+      '> Pearl-3 timeout is likely intentional.',
       '> Pearl station observes. It does not respond.',
-    );
-    return base;
+    ];
+    return [
+      '> TESTING INTRANET NODE CONNECTIVITY...',
+      '>',
+      '>  SWN-7         (self)        OK        [0ms]',
+      '>  SWN-HUB       (backbone)    OK        [9ms]',
+      '>  [REDACTED]-3  [CLASSIFIED]  TIMEOUT',
+      '>  [REDACTED]-4  [CLASSIFIED]  NO ROUTE',
+      '>  [REDACTED]-5  [CLASSIFIED]  NO ROUTE',
+      '>  [REDACTED]-6  [CLASSIFIED]  REFUSED',
+      '>  WORLD         (external)    BLOCKED   §7-B',
+    ];
   },
 
   incident: () => {
@@ -599,20 +606,10 @@ const commands: Record<string, Function> = {
     ];
   },
 
-  dharma: () => [
-    '> DHARMA INITIATIVE — STATION DIRECTORY:',
-    '>',
-    '>  STATION 1 — THE ARROW    Defense / Storage',
-    '>  STATION 2 — THE STAFF    Medical Research',
-    '>  STATION 3 — THE SWAN     EM Containment / Protocol  ← YOU ARE HERE',
-    '>  STATION 4 — THE FLAME    Communications Hub',
-    '>  STATION 5 — THE PEARL    Psychological Observation',
-    '>  STATION 6 — THE ORCHID   [EXISTENCE UNCONFIRMED]',
-  ],
-
   valenzetti: () => {
     const cl = getClearance();
-    const base = [
+    if (cl < 4) return deny(4);
+    return [
       '> VALENZETTI EQUATION — SUMMARY:',
       '>',
       '> Author:    Enzo Valenzetti, 1962.',
@@ -623,19 +620,14 @@ const commands: Record<string, Function> = {
       '> The DHARMA Initiative mission: alter at least one core factor.',
       '> The Swan protocol: prevent a discharge accelerating Factor 4.',
       '>',
-      cl >= 2
-        ? '> The six factor values: 4, 8, 15, 16, 23, 42.'
-        : '> The six factor values: [OPERATOR clearance required]',
+      '> The six factor values: 4, 8, 15, 16, 23, 42.',
       '>',
       '> The 108-minute interval is derived directly from these values.',
       '> Entering the sequence does not change the equation.',
       '> The clock continues.',
-    ];
-    if (cl >= 4) base.push(
       '>',
       '> Full operational context: READ /FILES/VK-108.TXT',
-    );
-    return base;
+    ];
   },
 
   comms: () => {
