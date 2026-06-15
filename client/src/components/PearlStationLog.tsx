@@ -74,22 +74,22 @@ export default function PearlStationLog({ isVisible, timestamp, onClose }: Pearl
     right: 20,
     width: 360,
     zIndex: 40000,
-    border: '1px solid #bbb',
-    background: '#f7f4ee',
-    fontFamily: "'VT323', monospace",
-    boxShadow: '2px 4px 16px rgba(0,0,0,0.45)',
+    border: '1px solid #999',
+    background: '#ffffff',
+    fontFamily: "'Courier New', Courier, monospace",
+    boxShadow: '2px 4px 16px rgba(0,0,0,0.55)',
   };
 
   const titleBar: React.CSSProperties = {
-    borderBottom: '1px solid #ccc',
-    background: '#ece9e1',
+    borderBottom: '2px solid #000',
+    background: '#e8e8e8',
     padding: '4px 10px',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
     fontSize: 11,
     letterSpacing: 3,
-    color: '#444',
+    color: '#000',
   };
 
   const lineColor = (line: string): string => {
@@ -118,8 +118,8 @@ export default function PearlStationLog({ isVisible, timestamp, onClose }: Pearl
       {/* Perforation strip top */}
       <div style={{
         height: 8,
-        background: 'repeating-linear-gradient(90deg, #e0ddd5 0px, #e0ddd5 6px, #f7f4ee 6px, #f7f4ee 12px)',
-        borderBottom: '1px dashed #ccc',
+        background: 'repeating-linear-gradient(90deg, #ccc 0px, #ccc 6px, #fff 6px, #fff 12px)',
+        borderBottom: '1px dashed #999',
       }} />
 
       <div
@@ -130,7 +130,7 @@ export default function PearlStationLog({ isVisible, timestamp, onClose }: Pearl
           padding: '8px 14px',
           fontSize: 12,
           lineHeight: 1.65,
-          background: '#f7f4ee',
+          background: '#ffffff',
         }}
       >
         {visibleLines.map((line, i) => (
@@ -150,26 +150,26 @@ export default function PearlStationLog({ isVisible, timestamp, onClose }: Pearl
       {/* Perforation strip bottom */}
       <div style={{
         height: 8,
-        background: 'repeating-linear-gradient(90deg, #e0ddd5 0px, #e0ddd5 6px, #f7f4ee 6px, #f7f4ee 12px)',
-        borderTop: '1px dashed #ccc',
+        background: 'repeating-linear-gradient(90deg, #ccc 0px, #ccc 6px, #fff 6px, #fff 12px)',
+        borderTop: '1px dashed #999',
       }} />
 
       <div style={{
-        borderTop: '1px solid #ccc',
-        background: '#ece9e1',
+        borderTop: '2px solid #000',
+        background: '#e8e8e8',
         padding: '4px 10px',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
         fontSize: 10,
         letterSpacing: 2,
-        color: '#666',
+        color: '#000',
       }}>
         <span>DHARMA INITIATIVE © 1977</span>
         {isPrinting && (
-          <span className="animate-terminal-blink" style={{ color: '#333' }}>■ PRINTING</span>
+          <span className="animate-terminal-blink" style={{ color: '#000' }}>■ PRINTING</span>
         )}
-        {!isPrinting && <span style={{ color: '#888' }}>■ COMPLETE</span>}
+        {!isPrinting && <span style={{ color: '#555' }}>■ COMPLETE</span>}
       </div>
     </div>
   );
