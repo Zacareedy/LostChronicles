@@ -8,6 +8,7 @@ import HiddenPuzzle from '@/components/HiddenPuzzle';
 import SystemFailure from '@/components/SystemFailure';
 import PearlStationLog from '@/components/PearlStationLog';
 import IncidentReports from '@/components/IncidentReports';
+import SubnetInterface from '@/components/SubnetInterface';
 import PuzzleController, { PuzzleControllerRef } from '@/components/PuzzleController';
 import PuzzleLauncher from '@/components/PuzzleLauncher';
 import { playSound, stopSound } from '@/lib/audio';
@@ -31,6 +32,9 @@ const Home: React.FC = () => {
 
   // Incident archive state
   const [isIncidentOpen, setIsIncidentOpen] = useState(false);
+
+  // Subnet interface state
+  const [isSubnetOpen, setIsSubnetOpen] = useState(false);
 
   // Get all state and actions from the LoreContext
   const {
@@ -83,15 +87,20 @@ const Home: React.FC = () => {
     }
   }, [isLoading, triggerSystemStatus]);
 
-  // Poll for incident archive open flag set by terminal command
+  // Poll for overlay open flags set by terminal commands
   useEffect(() => {
     if (isLoading) return;
     const interval = setInterval(() => {
       try {
-        const flag = localStorage.getItem('dharma_incident_archive');
-        if (flag === 'true') {
+        const incidentFlag = localStorage.getItem('dharma_incident_archive');
+        if (incidentFlag === 'true') {
           localStorage.removeItem('dharma_incident_archive');
           setIsIncidentOpen(true);
+        }
+        const subnetFlag = localStorage.getItem('dharma_subnet_access');
+        if (subnetFlag === 'true') {
+          localStorage.removeItem('dharma_subnet_access');
+          setIsSubnetOpen(true);
         }
       } catch (e) {}
     }, 500);
@@ -187,7 +196,7 @@ const Home: React.FC = () => {
           <img src={dharmaLogoSvg} alt="DHARMA Initiative" className="w-12 h-12 mr-4" />
           <div>
             <h1 className="font-terminal text-[hsl(var(--dharma-green))] text-2xl tracking-wider">THE SWAN</h1>
-            <p className="text-xs text-[hsl(var(--dharma-gray))]">STATION 3 · SECURITY LEVEL: 4</p>
+            <p className="text-xs" style={{ color: 'var(--ph-mid)' }}>STATION 3 · SECURITY LEVEL: 4</p>
           </div>
         </div>
         <Countdown
@@ -207,7 +216,7 @@ const Home: React.FC = () => {
         />
       </main>
 
-      <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-[hsl(var(--dharma-gray))] text-xs">
+      <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-xs" style={{ color: 'var(--ph-mid)' }}>
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center relative">
           <div>DHARMA INITIATIVE · STATION 3: THE SWAN · ESTABLISHED 1977</div>
           <div
@@ -244,6 +253,15 @@ const Home: React.FC = () => {
       <IncidentReports
         isVisible={isIncidentOpen}
         onClose={() => setIsIncidentOpen(false)}
+      />
+
+      {/* Subnet Interface — opened via terminal "SUBNET" command (L3+) */}
+      <SubnetInterface
+        isVisible={isSubnetOpen}
+        onClose={() => setIsSubnetOpen(false)}
+        onComplete={() => {
+          try { localStorage.setItem('dharma_subnet_complete', 'true'); } catch {}
+        }}
       />
 
       <PuzzleController

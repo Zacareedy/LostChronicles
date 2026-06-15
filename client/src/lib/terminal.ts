@@ -111,6 +111,7 @@ const commands: Record<string, Function> = {
     if (cl >= 3) base.push(
       '>  OVERRIDE [p]  — system override protocols [L3]',
       '>  DIAGNOSE [t]  — network diagnostics [L3]',
+      '>  SUBNET        — access DHARMA subnet communications [L3]',
     );
     if (cl >= 4) base.push(
       '>  ACCESS [p]    — special access protocols [L4]',
@@ -135,7 +136,7 @@ const commands: Record<string, Function> = {
         1: 'Review the station orientation materials carefully. All operators are verified through them.',
         2: 'Analyse the intercepted carrier-wave values in COMMS. What is their sum?',
         3: 'The blast door annotations contain a phrase written twice. Consult RADZINSKY.',
-        4: 'The final transmission file contains encoded text. The cipher type is noted inside.',
+        4: 'Two paths converge on the same answer. The subnet archives and the incident reports — or V. Kelvin\'s final log. Both name the same designation.',
         5: 'Maximum clearance achieved.',
       };
       return [
@@ -206,7 +207,7 @@ const commands: Record<string, Function> = {
     );
     if (cl >= 3) base.push(
       '> [TECHNICIAN] Incident file: Full access now available.',
-      '> [TECHNICIAN] Network: Subnet daemon inactive. Run DIAGNOSE /net.',
+      '> [TECHNICIAN] Network: DHARMA subnet online. Type SUBNET to connect.',
     );
     if (cl >= 4) base.push(
       '> [RESEARCHER] Pearl uplink: Sporadic. Feeds available.',
@@ -709,13 +710,28 @@ const commands: Record<string, Function> = {
       '> FILE                        TYPE     STATUS',
       '> ─────────────────────────────────────',
       '> /mnt/net_link.sys           SYS      ERR-404',
-      '> /lib/subnet.daemon          DAEMON   INACTIVE',
-      '> /var/log/subnet_access.db   DB       CORRUPT',
+      '> /lib/subnet.daemon          DAEMON   ACTIVE',
+      '> /var/log/subnet_access.db   DB       OK',
       '> /etc/hosts.dharma           CONFIG   OK',
       '> ─────────────────────────────────────',
-      '> Try: exec subnet.daemon to initialise network services.',
+      '> Subnet services online. Type SUBNET to connect.',
     ];
     return ['> ERROR: Invalid target.', '> Usage: diagnose /net'];
+  },
+
+  subnet: () => {
+    if (getClearance() < 3) return deny(3);
+    try { localStorage.setItem('dharma_subnet_access', 'true'); } catch {}
+    return [
+      '> DHARMA INITIATIVE — SUBNET PROTOCOL v2.3.4',
+      '> Authenticating node SWN-7...',
+      '> ─────────────────────────────────────────',
+      '> Connection established. Launching subnet interface.',
+      '> ─────────────────────────────────────────',
+      '> NOTE: All subnet communications are logged and monitored.',
+      '> The engineering channel may contain data of interest.',
+      '> Use /download in the subnet to extract archived logs.',
+    ];
   },
 
   access: (args: string) => {

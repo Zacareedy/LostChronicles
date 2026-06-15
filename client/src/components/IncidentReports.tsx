@@ -69,9 +69,16 @@ POST-FAILURE PROTOCOL:
 — Subject terminated from DHARMA Initiative
 — Pearl observation duties expanded
 — Fail-safe mechanism installed (AUTHORISED BY: ALVAR HANSO)
+— Fail-safe system designation: CERBERUS (classified — Protocol 7-J)
 — Orientation film revised to emphasise compliance
 
-NOTE: The psychological impact of extended duty at the Swan requires further study. Recommend rotation of personnel every 540 days maximum.`
+NOTE: The psychological impact of extended duty at the Swan requires further study. Recommend rotation of personnel every 540 days maximum.
+
+SECURITY ADDENDUM (1984-11-30):
+Anomalous entity (CERBERUS designation) observed near Swan perimeter
+during failure window. Pearl surveillance footage confirms presence.
+Entity activity ceased upon protocol restoration. File sealed.
+To advance clearance: AUTHENTICATE [entity designation].`
   }
 ];
 
