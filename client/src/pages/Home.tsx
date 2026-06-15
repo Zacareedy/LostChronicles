@@ -3,7 +3,6 @@ import { motion } from 'framer-motion';
 import Logo from '@/components/Logo';
 import Loading from '@/components/Loading';
 import Terminal from '@/components/Terminal';
-import LorePanel from '@/components/LorePanel';
 import Countdown from '@/components/Countdown';
 import HiddenPuzzle from '@/components/HiddenPuzzle';
 import SystemFailure from '@/components/SystemFailure';
@@ -198,8 +197,7 @@ const Home: React.FC = () => {
         />
       </header>
 
-      {/* Main Content — 2 columns: terminal + lore panel (map removed) */}
-      <main className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <main className="container mx-auto p-4">
         <Terminal
           onRevealPuzzle={handleRevealPuzzle}
           onRevealStation={handleRevealStation}
@@ -207,8 +205,6 @@ const Home: React.FC = () => {
           onCommand={handleTerminalCommand}
           isSystemFailure={isSystemFailure}
         />
-
-        <LorePanel defaultSection="stations" />
       </main>
 
       <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-[hsl(var(--dharma-gray))] text-xs">
