@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import Logo from '@/components/Logo';
+import dharmaLogoSvg from '@/assets/dharma-logo-fixed.svg';
 import Loading from '@/components/Loading';
 import Terminal from '@/components/Terminal';
 import Countdown from '@/components/Countdown';
@@ -119,6 +119,8 @@ const Home: React.FC = () => {
 
   const handleCorrectSequence = () => {
     setIsCountdownReset(true);
+    setIsSystemFailure(false);
+    setShowPearlLog(false);
     triggerLoreEvent('correct_sequence_entered');
   };
 
@@ -130,11 +132,9 @@ const Home: React.FC = () => {
     setFailureTimestamp(timestamp);
     setIsSystemFailure(true);
 
-    if (discoveredStations.includes('pearl')) {
-      setTimeout(() => {
-        setShowPearlLog(true);
-      }, 5000);
-    }
+    setTimeout(() => {
+      setShowPearlLog(true);
+    }, 5000);
   };
 
   const handleSystemReset = () => {
@@ -184,7 +184,7 @@ const Home: React.FC = () => {
 
       <header className="pt-6 pb-2 px-6 flex justify-between items-center border-b border-[hsla(var(--dharma-gray),0.3)]">
         <div className="flex items-center">
-          <Logo className="mr-4" />
+          <img src={dharmaLogoSvg} alt="DHARMA Initiative" className="w-12 h-12 mr-4" />
           <div>
             <h1 className="font-terminal text-[hsl(var(--dharma-green))] text-2xl tracking-wider">THE SWAN</h1>
             <p className="text-xs text-[hsl(var(--dharma-gray))]">STATION 3 · SECURITY LEVEL: 4</p>
