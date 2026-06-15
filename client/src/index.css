@@ -39,7 +39,19 @@
   --ring: 46 75% 59%;
   --radius: 0.5rem;
 
-  /* Phosphor green palette */
+  /* DHARMA terminal colors based on the reference images - unified theme */
+  --dharma-black: 120 15% 3%;  /* Almost pure black with slight green tint */
+  --dharma-white: 120 40% 97%;
+  --dharma-gray: 120 15% 15%;  /* Dark green-gray */
+  --dharma-green: 120 100% 60%; /* rgb(51,255,51) */
+  --dharma-bright-green: 120 100% 35%; /* Brighter rgb(51,255,51) */
+  --dharma-dim-green: 120 50% 25%; /* Dimmer  */
+  --dharma-error: 120 70% 30%; /* Green error messages */
+  --dharma-light: 120 70% 50%; /* Light */
+  --dharma-amber: 46 75% 59%;  /* DHARMA amber/yellow color */
+  --dharma-red: 0 62.8% 30.6%; /* Red for warning messages */
+
+  /* Phosphor palette — used by SubnetInterface, IncidentReports, PearlStationLog overlays */
   --ph: #4dff7c;
   --ph-mid: #25b84a;
   --ph-dim: #0f5a25;
@@ -53,21 +65,7 @@
   --bd: #0f2e16;
   --bd2: #1a4a24;
   --dim: #1a4028;
-  --td-green: #4dff7c;
-  --td-warn: #25b84a;
-  --td-crit: #ff1a00;
 
-  /* DHARMA terminal colors based on the reference images - unified theme */
-  --dharma-black: 120 15% 3%;  /* Almost pure black with slight green tint */
-  --dharma-white: 120 40% 97%;
-  --dharma-gray: 120 15% 15%;  /* Dark green-gray */
-  --dharma-green: 120 100% 60%; /* rgb(51,255,51) */
-  --dharma-bright-green: 120 100% 35%; /* Brighter rgb(51,255,51) */
-  --dharma-dim-green: 120 50% 25%; /* Dimmer  */
-  --dharma-error: 120 70% 30%; /* Green error messages */
-  --dharma-light: 120 70% 50%; /* Light */
-  --dharma-amber: 46 75% 59%;  /* DHARMA amber/yellow color */
-  --dharma-red: 0 62.8% 30.6%; /* Red for warning messages */
   --crt-overlay: repeating-linear-gradient(
     0deg,
     rgba(0, 0, 0, 0.15) 0px,
@@ -76,104 +74,6 @@
     transparent 2px
   );
 }
-
-body {
-  background: var(--bg);
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.13) 2px, rgba(0,0,0,0.13) 4px);
-  pointer-events: none;
-  z-index: 9998;
-}
-
-@keyframes glyph-spin-a {
-  0%   { content: '𓆣'; }
-  20%  { content: '𓂀'; }
-  40%  { content: '𓇳'; }
-  60%  { content: '𓅓'; }
-  80%  { content: '𓆙'; }
-  100% { content: '𓆣'; }
-}
-
-@keyframes glyph-spin-b {
-  0%   { content: '𓆙'; }
-  20%  { content: '𓅓'; }
-  40%  { content: '𓇳'; }
-  60%  { content: '𓂀'; }
-  80%  { content: '𓆣'; }
-  100% { content: '𓆙'; }
-}
-
-@keyframes screen-flash {
-  0%, 100% { background: #000; }
-  50%       { background: #0a0000; }
-}
-
-@keyframes digit-flash {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.3; }
-}
-
-.s-panel {
-  border: 1px solid var(--bd);
-  background: var(--panel);
-  padding: 16px 20px;
-}
-
-.s-panel-side {
-  border: 1px solid var(--bd);
-  background: var(--panel2);
-  padding: 13px 15px;
-}
-
-.s-panel-title {
-  font-family: 'VT323', monospace;
-  font-size: 9px;
-  letter-spacing: 5px;
-  text-transform: uppercase;
-  color: var(--ph-dim);
-  margin-bottom: 12px;
-}
-
-/* Terminal color classes */
-.td { color: var(--dim); }
-.tm { color: var(--ph-dim); }
-.tb { color: var(--ph); }
-.ta { color: var(--am); }
-.tr { color: var(--red); }
-.th { color: var(--ph); text-decoration: underline; letter-spacing: 2px; }
-
-/* Number input styles */
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
-input[type=number] { -moz-appearance: textfield; }
-
-.nf {
-  width: 48px;
-  text-align: center;
-  background: var(--panel);
-  border: 1px solid var(--bd);
-  color: var(--ph);
-  font-family: 'VT323', monospace;
-  font-size: 24px;
-  padding: 8px 4px;
-}
-.nf:focus { outline: none; border-color: var(--ph); }
-.nf.flash-ok { border-color: var(--ph); box-shadow: 0 0 8px var(--ph); }
-.nf.flash-err { border-color: var(--red); box-shadow: 0 0 8px var(--red); }
-
-@keyframes shake {
-  0%,100% { transform: translateX(0); }
-  20%      { transform: translateX(-6px); }
-  40%      { transform: translateX(6px); }
-  60%      { transform: translateX(-4px); }
-  80%      { transform: translateX(4px); }
-}
-.num-row-shake { animation: shake 0.4s ease-out; }
 
 @layer base {
   * {
@@ -436,7 +336,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* DHARMA UI Component Styles - Standardized */
 .dharma-panel {
-  @apply bg-[hsl(var(--dharma-black))] border-2 border-[hsla(var(--dharma-gray),0.3)] rounded-lg overflow-hidden shadow-inner;
+  @apply bg-[hsl(var(--dharma-black))] border-2 border-[hsla(var(--dharma-gray),0.3)] overflow-hidden shadow-inner;
 }
 
 .dharma-panel-header {
@@ -444,7 +344,7 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .dharma-panel-title {
-  @apply font-terminal text-[hsl(var(--dharma-amber))] tracking-wider;
+  @apply font-terminal text-[hsl(var(--dharma-green))] tracking-wider;
 }
 
 .dharma-panel-content {
@@ -452,7 +352,7 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .dharma-item {
-  @apply border border-[hsla(var(--dharma-gray),0.3)] rounded p-3 hover:bg-[hsla(var(--dharma-gray),0.1)] transition-colors;
+  @apply border border-[hsla(var(--dharma-gray),0.3)] p-3 hover:bg-[hsla(var(--dharma-gray),0.1)] transition-colors;
 }
 
 .dharma-panel-indicator {

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 interface PearlStationLogProps {
   isVisible: boolean;
   timestamp: string;
-  onClose: () => void;
+  onClose?: () => void;
 }
 
 const LOG_LINES = [
