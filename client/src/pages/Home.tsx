@@ -186,7 +186,7 @@ const Home: React.FC = () => {
         <div className="flex items-center">
           <Logo className="mr-4" />
           <div>
-            <h1 className="font-terminal text-[hsl(var(--dharma-amber))] text-2xl tracking-wider">THE SWAN</h1>
+            <h1 className="font-terminal text-[hsl(var(--dharma-green))] text-2xl tracking-wider">THE SWAN</h1>
             <p className="text-xs text-[hsl(var(--dharma-gray))]">STATION 3 · SECURITY LEVEL: 4</p>
           </div>
         </div>
@@ -211,7 +211,7 @@ const Home: React.FC = () => {
         <div className="container mx-auto flex flex-col md:flex-row justify-between items-center relative">
           <div>DHARMA INITIATIVE · STATION 3: THE SWAN · ESTABLISHED 1977</div>
           <div
-            className={`font-terminal ${systemStatus === 'PROTOCOL EXECUTION REQUIRED' ? 'text-[hsl(var(--dharma-red))] animate-terminal-blink' : 'text-[hsl(var(--dharma-amber))]'}`}
+            className={`font-terminal ${systemStatus === 'PROTOCOL EXECUTION REQUIRED' ? 'text-[hsl(var(--dharma-red))] animate-terminal-blink' : 'text-[hsl(var(--dharma-green))]'}`}
           >
             {systemStatus}
           </div>
@@ -274,12 +274,12 @@ const Home: React.FC = () => {
             transition={{ duration: 1 }}
             className="max-w-2xl p-8 text-center text-white"
           >
-            <h2 className="text-3xl font-terminal text-[hsl(var(--dharma-amber))] mb-6">FAILSAFE PROTOCOL EXECUTED</h2>
+            <h2 className="text-3xl font-terminal text-[hsl(var(--dharma-green))] mb-6">FAILSAFE PROTOCOL EXECUTED</h2>
             <p className="mb-4">The electromagnetic energy has been discharged.</p>
             <p className="mb-8">New information has been unlocked in your databank.</p>
             <button
               onClick={() => setShowFailsafeContent(false)}
-              className="px-6 py-2 bg-[hsla(var(--dharma-amber),0.2)] border border-[hsl(var(--dharma-amber))] text-[hsl(var(--dharma-amber))] rounded"
+              className="px-6 py-2 bg-[hsla(var(--dharma-green),0.2)] border border-[hsl(var(--dharma-green))] text-[hsl(var(--dharma-green))]"
             >
               CONTINUE
             </button>
@@ -324,7 +324,7 @@ const FooterEasterEgg: React.FC<FooterEasterEggProps> = ({ onUnlockLog }) => {
       className="absolute bottom-0 right-0 opacity-10 hover:opacity-30 cursor-pointer transition-opacity"
       onClick={handleClick}
     >
-      <div className="w-10 h-10 flex items-center justify-center text-[hsl(var(--dharma-amber))]">
+      <div className="w-10 h-10 flex items-center justify-center text-[hsl(var(--dharma-green))]">
         ⓘ
       </div>
     </div>

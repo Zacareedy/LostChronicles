@@ -48,7 +48,7 @@
   --dharma-dim-green: 120 50% 25%; /* Dimmer  */
   --dharma-error: 120 70% 30%; /* Green error messages */
   --dharma-light: 120 70% 50%; /* Light */
-  --dharma-amber: 46 75% 59%;  /* DHARMA amber/yellow color */
+  --dharma-amber: 120 100% 60%;  /* remapped to phosphor green — no amber in this terminal */
   --dharma-red: 0 62.8% 30.6%; /* Red for warning messages */
 
   /* Phosphor palette — used by SubnetInterface, IncidentReports, PearlStationLog overlays */
