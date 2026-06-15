@@ -1,7 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import { Terminal, Wifi, Clock, AlertCircle, Send, X, UserPlus, Download, Shield, CheckCircle } from 'lucide-react';
-import { playSound } from '@/lib/audio';
 
 interface SubnetInterfaceProps {
   isVisible: boolean;
@@ -12,7 +9,6 @@ interface SubnetInterfaceProps {
 interface ChatMessage {
   id: string;
   sender: string;
-  senderColor: string;
   timestamp: string;
   content: string;
   isCorrupted?: boolean;
@@ -21,634 +17,414 @@ interface ChatMessage {
 
 const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, onComplete }) => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isConnected, setIsConnected] = useState(false);
   const [connectionAttempts, setConnectionAttempts] = useState(0);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [activeChannel, setActiveChannel] = useState('general');
-  const [userHandle, setUserHandle] = useState('UNKNOWN_USER');
-  const [isCompleted, setIsCompleted] = useState(false);
   const [hasDownloadedLogs, setHasDownloadedLogs] = useState(false);
-  
+  const [isCompleted, setIsCompleted] = useState(false);
+
   const chatEndRef = useRef<HTMLDivElement>(null);
-  
-  // Available channels
+
   const channels = [
-    { id: 'general', name: 'General', unread: false },
-    { id: 'security', name: 'Security', unread: true, locked: true },
-    { id: 'engineering', name: 'Engineering', unread: true },
-    { id: 'medical', name: 'Medical', unread: false, locked: true },
-    { id: 'alvar', name: 'Alvar.H', unread: false, direct: true }
+    { id: 'general', name: 'GENERAL', locked: false, unread: false },
+    { id: 'engineering', name: 'ENGINEERING', locked: false, unread: true },
+    { id: 'security', name: 'SECURITY', locked: true, unread: true },
+    { id: 'medical', name: 'MEDICAL', locked: true, unread: false },
+    { id: 'alvar', name: 'ALVAR.H [DIRECT]', locked: false, unread: false, direct: true },
   ];
-  
-  // Messages for each channel
+
   const channelMessages: Record<string, ChatMessage[]> = {
     general: [
       {
-        id: '1',
-        sender: 'SYSTEM',
-        senderColor: '#00ccff',
-        timestamp: '1980-02-07 08:42:11',
-        content: 'DHARMA Initiative Subnet Protocol Interface v2.3.4',
+        id: '1', sender: 'SYSTEM', timestamp: '1980-02-07 08:42:11',
+        content: 'DHARMA SUBNET PROTOCOL v2.3.4 — NODE AUTHENTICATED',
         isSystem: true
       },
       {
-        id: '2',
-        sender: 'SYSTEM',
-        senderColor: '#00ccff',
-        timestamp: '1980-02-07 08:42:15',
+        id: '2', sender: 'SYSTEM', timestamp: '1980-02-07 08:42:15',
         content: 'WARNING: Communication integrity compromised. Some messages may be corrupted.',
         isSystem: true
       },
       {
-        id: '3',
-        sender: 'Pierre.C',
-        senderColor: '#f0ad4e',
-        timestamp: '1980-02-07 09:15:33',
-        content: 'All stations be advised: we are implementing new security protocols after the recent Incident. Details to follow in the Security channel.'
+        id: '3', sender: 'PIERRE.C', timestamp: '1980-02-07 09:15:33',
+        content: 'All stations advised: new security protocols following the Incident. Details in Security channel.',
       },
       {
-        id: '4',
-        sender: 'Stuart.R',
-        senderColor: '#5bc0de',
-        timestamp: '1980-02-07 09:18:42',
-        content: 'When will Engineering get access to the new subnet protocols? We need to run diagnostics on the remaining equipment.'
+        id: '4', sender: 'STUART.R', timestamp: '1980-02-07 09:18:42',
+        content: 'When does Engineering get subnet access? We need to run diagnostics on the remaining equipment.',
       },
       {
-        id: '5',
-        sender: 'Pierre.C',
-        senderColor: '#f0ad4e',
-        timestamp: '1980-02-07 09:20:15',
-        content: 'Engineering will get access once we verify the network integrity. We cannot risk another breach after what happened.'
+        id: '5', sender: 'PIERRE.C', timestamp: '1980-02-07 09:20:15',
+        content: 'After network integrity is confirmed. We cannot risk another breach.',
       },
       {
-        id: '6',
-        sender: 'Horace.G',
-        senderColor: '#5cb85c',
-        timestamp: '1980-02-07 10:05:22',
-        content: 'All personnel are reminded that discussion of the Incident outside of authorized channels is strictly prohibited.'
+        id: '6', sender: 'HORACE.G', timestamp: '1980-02-07 10:05:22',
+        content: 'Reminder: discussion of the Incident outside authorised channels is prohibited.',
       },
       {
-        id: '7',
-        sender: 'Amy.G',
-        senderColor: '#d9534f',
-        timestamp: '1980-02-07 10:42:53',
-        content: 'Has anyone been able to get in touch with Radzinsky? He was supposed to provide updated schematics for the new barrier.'
+        id: '7', sender: 'AMY.G', timestamp: '1980-02-07 10:42:53',
+        content: 'Has anyone reached Radzinsky? He was supposed to provide updated schematics for the barrier.',
       },
       {
-        id: '8',
-        sender: 'Horace.G',
-        senderColor: '#5cb85c',
-        timestamp: '1980-02-07 10:45:18',
-        content: 'Radzinsky is currently working on a special project. Please direct all engineering concerns to Stuart for now.'
+        id: '8', sender: 'HORACE.G', timestamp: '1980-02-07 10:45:18',
+        content: 'Radzinsky is on a special project. Direct all engineering concerns to Stuart.',
       },
       {
-        id: '9',
-        sender: 'SYSTEM',
-        senderColor: '#00ccff',
-        timestamp: '1980-02-07 11:01:44',
-        content: 'WARNING: Network instability detected. Some messages from the past 24 hours have been corrupted.',
-        isSystem: true
+        id: '9', sender: 'PIERRE.C', timestamp: '1980-02-07 11:30:21',
+        content: 'Has anyone confirmed Protocol Candle is ready for implementation? All stations must receive the signal simultaneously.',
       },
-      {
-        id: '10',
-        sender: 'Pierre.C',
-        senderColor: '#f0ad4e',
-        timestamp: '1980-02-07 11:30:21',
-        content: 'Has anyone confirmed whether "Protocol Candle" is ready for implementation? We need to ensure all stations can receive the signal simultaneously.',
-        isCorrupted: false
-      }
     ],
     engineering: [
       {
-        id: 'e1',
-        sender: 'SYSTEM',
-        senderColor: '#00ccff',
-        timestamp: '1980-02-06 14:22:05',
-        content: 'Engineering subnet channel initialized',
+        id: 'e1', sender: 'SYSTEM', timestamp: '1980-02-06 14:22:05',
+        content: 'ENGINEERING SUBNET — INITIALISED',
         isSystem: true
       },
       {
-        id: 'e2',
-        sender: 'Stuart.R',
-        senderColor: '#5bc0de',
-        timestamp: '1980-02-06 14:30:12',
-        content: 'Can someone explain why the signal amplifiers are showing unusual readings near grid sector 16?'
+        id: 'e2', sender: 'STUART.R', timestamp: '1980-02-06 14:30:12',
+        content: 'Signal amplifiers showing unusual readings near grid sector 16. Anyone else seeing this?',
       },
       {
-        id: 'e3',
-        sender: 'Jin.K',
-        senderColor: '#337ab7',
-        timestamp: '1980-02-06 14:33:45',
-        content: 'I checked the equipment there yesterday. The EM levels are within tolerance, but there\'s an unusual variance every 108 minutes.'
+        id: 'e3', sender: 'JIN.K', timestamp: '1980-02-06 14:33:45',
+        content: 'Checked yesterday. EM levels within tolerance, but there is a variance every 108 minutes.',
       },
       {
-        id: 'e4',
-        sender: 'Stuart.R',
-        senderColor: '#5bc0de',
-        timestamp: '1980-02-06 14:35:22',
-        content: 'That coincides with the button protocol. Are you suggesting there\'s leakage despite the containment?'
+        id: 'e4', sender: 'STUART.R', timestamp: '1980-02-06 14:35:22',
+        content: 'That coincides with the button protocol. Leakage despite containment?',
       },
       {
-        id: 'e5',
-        sender: 'Jin.K',
-        senderColor: '#337ab7',
-        timestamp: '1980-02-06 14:38:17',
-        content: 'Not leakage, but there\'s definitely a pattern. I\'ve logged the data in /systems/em_variance/log4815.dat if you want to review it.'
+        id: 'e5', sender: 'JIN.K', timestamp: '1980-02-06 14:38:17',
+        content: 'Not leakage. Pattern. Logged at /systems/em_variance/log4815.dat if you want to review.',
       },
       {
-        id: 'e6',
-        sender: 'Radzinsky.S',
-        senderColor: '#d9534f',
-        timestamp: '1980-02-06 15:01:33',
-        content: 'Delete that data immediately. Those readings are classified under Protocol Candle.'
+        id: 'e6', sender: 'RADZINSKY.S', timestamp: '1980-02-06 15:01:33',
+        content: 'Delete that data immediately. Those readings are classified under Protocol Candle.',
       },
       {
-        id: 'e7',
-        sender: 'Jin.K',
-        senderColor: '#337ab7',
-        timestamp: '1980-02-06 15:04:11',
-        content: 'I don\'t have clearance for Protocol Candle. What is it?'
+        id: 'e7', sender: 'JIN.K', timestamp: '1980-02-06 15:04:11',
+        content: 'I do not have clearance for Protocol Candle. What is it?',
       },
       {
-        id: 'e8',
-        sender: 'Radzinsky.S',
-        senderColor: '#d9534f',
-        timestamp: '1980-02-06 15:06:45',
-        content: 'You don\'t need to know. Just delete the data and forget you saw anything. Focus on your assigned tasks.'
+        id: 'e8', sender: 'RADZINSKY.S', timestamp: '1980-02-06 15:06:45',
+        content: 'You do not need to know. Delete the data. Focus on assigned tasks.',
       },
       {
-        id: 'e9',
-        sender: 'SYSTEM',
-        senderColor: '#00ccff',
-        timestamp: '1980-02-06 15:10:22',
-        content: 'WARNING: Message integrity compromised. Some content may be corrupted.',
+        id: 'e9', sender: 'SYSTEM', timestamp: '1980-02-06 15:10:22',
+        content: 'WARNING: Message integrity compromised.',
         isSystem: true
       },
       {
-        id: 'e10',
-        sender: 'Stuart.R',
-        senderColor: '#5bc0de',
-        timestamp: '1980-02-06 16:42:15',
-        content: 'Has anyone managed to restore access to the black box recordings from the supply plane? The data might help us understand the...',
+        id: 'e10', sender: 'STUART.R', timestamp: '1980-02-06 16:42:15',
+        content: 'Has anyone recovered the black box recordings from the supply plane? The data might help us understand the...',
         isCorrupted: true
-      }
+      },
+      {
+        id: 'e11', sender: 'SYSTEM', timestamp: '1980-02-06 16:43:02',
+        content: 'NOTE: To access classified archive documents, use access code AH/MDG-932815 on the incident archive terminal.',
+        isSystem: true
+      },
     ],
     alvar: [
       {
-        id: 'a1',
-        sender: 'SYSTEM',
-        senderColor: '#00ccff',
-        timestamp: '1980-02-05 23:59:59',
-        content: 'Direct channel established with ALVAR.H - ENCRYPTED',
+        id: 'a1', sender: 'SYSTEM', timestamp: '1980-02-05 23:59:59',
+        content: 'DIRECT CHANNEL — ALVAR.H — ENCRYPTED',
         isSystem: true
       },
       {
-        id: 'a2',
-        sender: 'Alvar.H',
-        senderColor: '#9932CC',
-        timestamp: '1980-02-06 00:00:01',
-        content: 'I trust this channel is secure. We cannot afford another breach.'
+        id: 'a2', sender: 'ALVAR.H', timestamp: '1980-02-06 00:00:01',
+        content: 'I trust this channel is secure. We cannot afford another breach.',
       },
       {
-        id: 'a3',
-        sender: 'Pierre.C',
-        senderColor: '#f0ad4e',
-        timestamp: '1980-02-06 00:01:15',
-        content: 'Yes, Dr. Hanso. This is a direct link using the new encryption protocols.'
+        id: 'a3', sender: 'PIERRE.C', timestamp: '1980-02-06 00:01:15',
+        content: 'Yes, Dr. Hanso. Direct link using the new encryption protocols.',
       },
       {
-        id: 'a4',
-        sender: 'Alvar.H',
-        senderColor: '#9932CC',
-        timestamp: '1980-02-06 00:03:42',
-        content: 'Good. The Incident has complicated matters significantly. The Valenzetti parameters are shifting.'
+        id: 'a4', sender: 'ALVAR.H', timestamp: '1980-02-06 00:03:42',
+        content: 'The Incident has complicated matters. The Valenzetti parameters are shifting.',
       },
       {
-        id: 'a5',
-        sender: 'Pierre.C',
-        senderColor: '#f0ad4e',
-        timestamp: '1980-02-06 00:05:08',
-        content: 'How bad is it? Do we need to evacuate the remaining personnel?'
+        id: 'a5', sender: 'PIERRE.C', timestamp: '1980-02-06 00:05:08',
+        content: 'How bad? Do we need to evacuate remaining personnel?',
       },
       {
-        id: 'a6',
-        sender: 'Alvar.H',
-        senderColor: '#9932CC',
-        timestamp: '1980-02-06 00:08:23',
-        content: 'No evacuations. We\'ve invested too much to abandon now. The Incident may have actually created an opportunity.'
+        id: 'a6', sender: 'ALVAR.H', timestamp: '1980-02-06 00:08:23',
+        content: 'No evacuations. We have invested too much. The Incident may have created an opportunity.',
       },
       {
-        id: 'a7',
-        sender: 'Pierre.C',
-        senderColor: '#f0ad4e',
-        timestamp: '1980-02-06 00:09:44',
-        content: 'An opportunity? Several of our people died!'
+        id: 'a7', sender: 'PIERRE.C', timestamp: '1980-02-06 00:09:44',
+        content: 'An opportunity? Several of our people died.',
       },
       {
-        id: 'a8',
-        sender: 'Alvar.H',
-        senderColor: '#9932CC',
-        timestamp: '1980-02-06 00:12:15',
-        content: 'Unfortunate but unavoidable casualties. The unique electromagnetic properties we\'ve uncovered could be the key to manipulating the Valenzetti variables.'
+        id: 'a8', sender: 'ALVAR.H', timestamp: '1980-02-06 00:12:15',
+        content: 'Unfortunate but unavoidable. The electromagnetic properties we uncovered could be the key to manipulating the Valenzetti variables.',
       },
       {
-        id: 'a9',
-        sender: 'Pierre.C',
-        senderColor: '#f0ad4e',
-        timestamp: '1980-02-06 00:15:33',
-        content: 'And what about Protocol Candle? Should we proceed with implementation?'
+        id: 'a9', sender: 'PIERRE.C', timestamp: '1980-02-06 00:15:33',
+        content: 'And Protocol Candle? Proceed with implementation?',
       },
       {
-        id: 'a10',
-        sender: 'Alvar.H',
-        senderColor: '#9932CC',
-        timestamp: '1980-02-06 00:18:08',
-        content: 'Protocol Candle is our failsafe. A last resort only if the temporal distortion reaches critical levels. For now, maintain the button protocol at all costs.',
-        isCorrupted: false
+        id: 'a10', sender: 'ALVAR.H', timestamp: '1980-02-06 00:18:08',
+        content: 'Protocol Candle is our failsafe. Last resort only if temporal distortion reaches critical levels. For now: maintain the button protocol at all costs.',
       },
       {
-        id: 'a11',
-        sender: 'SYSTEM',
-        senderColor: '#00ccff',
-        timestamp: '1980-02-06 00:20:00',
+        id: 'a11', sender: 'SYSTEM', timestamp: '1980-02-06 00:20:00',
         content: 'WARNING: Connection terminated unexpectedly. Remaining logs corrupted.',
         isSystem: true
-      }
-    ]
+      },
+    ],
   };
-  
-  // Simulate connection and loading
+
   useEffect(() => {
     if (!isVisible) return;
-    
     setIsLoading(true);
-    setIsConnected(false);
     setConnectionAttempts(0);
-    
-    // Simulate connection attempt
-    const timer = setTimeout(() => {
-      playSound('beep');
-      setConnectionAttempts(1);
-      
-      // Simulate another connection attempt
-      const timer2 = setTimeout(() => {
-        playSound('beep');
-        setConnectionAttempts(2);
-        
-        // Final connection attempt
-        const timer3 = setTimeout(() => {
-          playSound('success');
-          setIsLoading(false);
-          setIsConnected(true);
-          // Load initial messages for general channel
-          setMessages(channelMessages['general']);
-        }, 1500);
-        
-        return () => clearTimeout(timer3);
-      }, 1500);
-      
-      return () => clearTimeout(timer2);
-    }, 1500);
-    
-    return () => clearTimeout(timer);
+
+    const t1 = setTimeout(() => setConnectionAttempts(1), 1200);
+    const t2 = setTimeout(() => setConnectionAttempts(2), 2400);
+    const t3 = setTimeout(() => {
+      setIsLoading(false);
+      setMessages(channelMessages['general']);
+    }, 3600);
+
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [isVisible]);
-  
-  // Auto-scroll to bottom of chat when messages change
+
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-  
-  // Switch channel
-  const handleChannelChange = (channelId: string) => {
-    if (channels.find(c => c.id === channelId)?.locked) {
-      playSound('error');
-      addSystemMessage('Access denied: Insufficient clearance for this channel.');
+
+  const switchChannel = (id: string) => {
+    const ch = channels.find(c => c.id === id);
+    if (ch?.locked) {
+      addSystemMsg('ACCESS DENIED — Insufficient clearance for this channel.');
       return;
     }
-    
-    playSound('click');
-    setActiveChannel(channelId);
-    setMessages(channelMessages[channelId] || []);
+    setActiveChannel(id);
+    setMessages(channelMessages[id] || []);
   };
-  
-  // Add a system message
-  const addSystemMessage = (content: string) => {
-    const systemMessage: ChatMessage = {
-      id: `system-${Date.now()}`,
+
+  const addSystemMsg = (content: string) => {
+    setMessages(prev => [...prev, {
+      id: `sys-${Date.now()}`,
       sender: 'SYSTEM',
-      senderColor: '#00ccff',
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
       content,
-      isSystem: true
-    };
-    
-    setMessages(prev => [...prev, systemMessage]);
+      isSystem: true,
+    }]);
   };
-  
-  // Handle message input
-  const handleMessageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value);
-  };
-  
-  // Handle message send
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!inputValue.trim()) return;
-    
-    // Check for special commands
-    if (inputValue.startsWith('/')) {
-      handleCommand(inputValue);
-      setInputValue('');
-      return;
-    }
-    
-    // Add user message
-    const userMessage: ChatMessage = {
-      id: `user-${Date.now()}`,
-      sender: userHandle,
-      senderColor: '#5cb85c',
-      timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-      content: inputValue
-    };
-    
-    playSound('beep', 'short');
-    setMessages(prev => [...prev, userMessage]);
-    
-    // Check for special trigger phrases
-    if (inputValue.toLowerCase().includes('protocol candle') || 
-        inputValue.toLowerCase().includes('valenzetti') ||
-        inputValue.toLowerCase().includes('incident details')) {
-      // Add system response after a delay
-      setTimeout(() => {
-        const systemResponse: ChatMessage = {
-          id: `system-${Date.now()}`,
-          sender: 'SYSTEM',
-          senderColor: '#00ccff',
-          timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
-          content: 'WARNING: This conversation is being monitored. Discussion of classified protocols is restricted.',
-          isSystem: true
-        };
-        
-        playSound('error');
-        setMessages(prev => [...prev, systemResponse]);
-      }, 1000);
-    }
-    
-    // Reset input
-    setInputValue('');
-  };
-  
-  // Handle special commands
-  const handleCommand = (command: string) => {
-    const cmd = command.toLowerCase().trim();
-    
-    if (cmd === '/help') {
-      addSystemMessage('Available commands: /help, /nick [username], /clear, /download, /exit');
-    } else if (cmd.startsWith('/nick ')) {
-      const newHandle = cmd.substring(6).trim();
-      if (newHandle) {
-        setUserHandle(newHandle);
-        addSystemMessage(`Username changed to ${newHandle}`);
-        playSound('success');
-      }
-    } else if (cmd === '/clear') {
+
+  const handleCommand = (cmd: string) => {
+    const lower = cmd.toLowerCase().trim();
+    if (lower === '/help') {
+      addSystemMsg('Commands: /help  /clear  /download  /exit');
+    } else if (lower === '/clear') {
       setMessages([]);
-      playSound('beep');
-    } else if (cmd === '/download') {
-      // Simulate downloading logs
-      addSystemMessage('Downloading subnet logs...');
-      playSound('beep');
-      
+    } else if (lower === '/download') {
+      addSystemMsg('Downloading subnet logs...');
       setTimeout(() => {
-        addSystemMessage('Download complete. Logs saved to /logs/subnet/');
-        playSound('success');
+        addSystemMsg('Download complete. Logs saved to /logs/subnet/');
         setHasDownloadedLogs(true);
-        
-        // Check if this completes the puzzle
         if (!isCompleted) {
           setTimeout(() => {
-            addSystemMessage('NOTICE: Critical information discovered in logs. Access to Protocol Candle documentation granted.');
+            addSystemMsg('NOTICE: Critical data recovered. Access code OVERRIDE-D108 extracted from logs.');
             setIsCompleted(true);
-            playSound('success');
-            
-            setTimeout(() => {
-              onComplete();
-            }, 2000);
+            setTimeout(onComplete, 2000);
           }, 1500);
         }
       }, 2000);
-    } else if (cmd === '/exit') {
+    } else if (lower === '/exit') {
       onClose();
     } else {
-      addSystemMessage(`Unknown command: ${cmd}`);
-      playSound('error');
+      addSystemMsg(`Unknown command: ${cmd}`);
     }
   };
-  
+
+  const handleSend = (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = inputValue.trim();
+    if (!val) return;
+
+    if (val.startsWith('/')) {
+      handleCommand(val);
+      setInputValue('');
+      return;
+    }
+
+    setMessages(prev => [...prev, {
+      id: `user-${Date.now()}`,
+      sender: 'OPERATOR',
+      timestamp: new Date().toISOString().replace('T', ' ').slice(0, 19),
+      content: val,
+    }]);
+
+    const upper = val.toUpperCase();
+    if (upper.includes('PROTOCOL CANDLE') || upper.includes('VALENZETTI') || upper.includes('INCIDENT')) {
+      setTimeout(() => {
+        addSystemMsg('WARNING: This channel is monitored. Discussion of classified material is restricted.');
+      }, 900);
+    }
+
+    setInputValue('');
+  };
+
   if (!isVisible) return null;
-  
+
+  const overlay: React.CSSProperties = {
+    position: 'fixed', inset: 0, zIndex: 10000,
+    background: 'rgba(0,0,0,0.92)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontFamily: "'VT323', monospace",
+  };
+
+  const win: React.CSSProperties = {
+    width: 820, maxWidth: '97vw', height: '85vh',
+    border: '1px solid var(--bd2)',
+    background: 'var(--panel)',
+    display: 'flex', flexDirection: 'column',
+  };
+
+  const titleBar: React.CSSProperties = {
+    borderBottom: '1px solid var(--bd)',
+    background: 'var(--ph-faint)',
+    padding: '6px 14px',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    fontSize: 13, letterSpacing: 2, color: 'var(--ph-dim)',
+  };
+
+  const senderColor = (sender: string, isSystem?: boolean) => {
+    if (isSystem) return 'var(--ph)';
+    if (sender === 'ALVAR.H') return '#c080ff';
+    if (sender === 'PIERRE.C') return 'var(--am)';
+    if (sender === 'RADZINSKY.S') return 'var(--red)';
+    if (sender === 'OPERATOR') return 'var(--ph)';
+    return 'var(--ph-mid)';
+  };
+
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-4"
-    >
-      <div className="bg-[hsl(var(--dharma-black))] border border-[hsl(var(--dharma-amber))] p-3 max-w-4xl w-full h-[85vh] flex flex-col font-mono">
-        {/* Terminal header - simple phosphor style green text on black with scanlines */}
-        <div className="flex justify-between items-center mb-2 border-b border-[hsl(var(--dharma-amber))] pb-2">
-          <h2 className="text-[hsl(var(--dharma-bright-green))] font-terminal text-base uppercase">
-            {">"} DHARMA SUBNET PROTOCOL v2.3.4
-          </h2>
-          
-          <div className="flex items-center gap-3">
-            <div className={`flex items-center gap-1 text-xs font-terminal uppercase ${isConnected ? 'text-[hsl(var(--dharma-bright-green))]' : 'text-[hsl(var(--dharma-red))]'}`}>
-              {isConnected ? '[LINK ESTABLISHED]' : '[INITIALIZING LINK]'}
-            </div>
-            
-            <button 
-              onClick={onClose}
-              className="text-[hsl(var(--dharma-amber))] hover:text-[hsl(var(--dharma-red))]"
-            >
-              [X]
-            </button>
-          </div>
+    <div style={overlay} onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={win}>
+        {/* Title bar */}
+        <div style={titleBar}>
+          <span>DHARMA SUBNET PROTOCOL v2.3.4 — RESTRICTED</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ph-dim)', fontFamily: "'VT323', monospace", fontSize: 16 }}>
+            [X]
+          </button>
         </div>
-        
+
         {isLoading ? (
-          <div className="flex-1 flex flex-col items-center justify-center font-mono">
-            <div className="text-[hsl(var(--dharma-bright-green))] text-sm mb-4 font-terminal w-full max-w-lg">
-              <div className="mb-3 text-center font-mono text-xs">
-                DHARMA INITIATIVE SUBNET PROTOCOL v2.3.4
-              </div>
-              <div className="uppercase tracking-wider font-mono">{">"} Initializing SUBNET PROTOCOL</div>
-              <div className="mt-1 uppercase tracking-wider font-mono">{">"} Connecting to DHARMA INITIATIVE mainframe</div>
-              <div className="mt-1 uppercase tracking-wider text-yellow-500 animate-pulse font-mono">{">"} Connection attempt {connectionAttempts}/3</div>
-            </div>
-            <div className="w-64 h-6 border border-[hsl(var(--dharma-bright-green))] overflow-hidden bg-black">
-              <div 
-                className="h-full bg-[hsl(var(--dharma-bright-green))] transition-all duration-300"
-                style={{ width: `${connectionAttempts * 33}%` }}
-              ></div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--ph-dim)', fontSize: 16 }}>
+            <div style={{ marginBottom: 20 }}>{'> '}DHARMA INITIATIVE SUBNET PROTOCOL v2.3.4</div>
+            <div>{'> '}CONNECTING TO MAINFRAME</div>
+            <div style={{ color: 'var(--am)', marginTop: 8 }}>{'> '}CONNECTION ATTEMPT {connectionAttempts}/3</div>
+            <div style={{ marginTop: 20, width: 300, height: 8, border: '1px solid var(--bd)', background: 'var(--bg)' }}>
+              <div style={{ height: '100%', width: `${connectionAttempts * 33}%`, background: 'var(--ph-dim)', transition: 'width 0.4s' }} />
             </div>
           </div>
         ) : (
-          <div className="flex flex-1 overflow-hidden">
-            {/* Retro terminal-style channel sidebar */}
-            <div className="w-48 border-r border-[hsl(var(--dharma-bright-green))] pr-3 flex flex-col text-[hsl(var(--dharma-bright-green))]">
-              <div className="text-xs mb-2 font-terminal border-b border-[hsl(var(--dharma-bright-green))] pb-1 uppercase">[ACCESSIBLE CHANNELS]</div>
-              
-              <div className="space-y-1 mb-4 font-mono text-xs">
-                {channels.filter(c => !c.direct).map(channel => (
-                  <button
-                    key={channel.id}
-                    onClick={() => handleChannelChange(channel.id)}
-                    className={`w-full text-left py-1 text-xs flex items-center justify-between font-mono ${
-                      activeChannel === channel.id
-                        ? 'text-black bg-[hsl(var(--dharma-bright-green))]'
-                        : 'text-[hsl(var(--dharma-bright-green))] hover:bg-[hsla(var(--dharma-bright-green),0.2)]'
-                    }`}
-                  >
-                    <span className="flex items-center">
-                      {channel.locked 
-                        ? `[LOCKED] ${channel.name.toUpperCase()}`
-                        : `> ${channel.name.toUpperCase()}`
-                      }
-                    </span>
-                    {channel.unread && (
-                      <span className="ml-1">*</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              
-              <div className="text-xs mb-2 font-terminal border-b border-[hsl(var(--dharma-bright-green))] pb-1 uppercase">[TERMINAL LINKS]</div>
-              
-              <div className="space-y-1 font-mono text-xs">
-                {channels.filter(c => c.direct).map(channel => (
-                  <button
-                    key={channel.id}
-                    onClick={() => handleChannelChange(channel.id)}
-                    className={`w-full text-left py-1 text-xs flex items-center justify-between font-mono ${
-                      activeChannel === channel.id
-                        ? 'text-black bg-[hsl(var(--dharma-bright-green))]'
-                        : 'text-[hsl(var(--dharma-bright-green))] hover:bg-[hsla(var(--dharma-bright-green),0.2)]'
-                    }`}
-                  >
-                    <span className="flex items-center">
-                      {`> ${channel.name.toUpperCase()}`}
-                    </span>
-                    {channel.unread && (
-                      <span className="ml-1">*</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-              
-              <div className="mt-auto pt-4">
-                <button
-                  onClick={() => handleCommand('/download')}
-                  className={`w-full py-2 text-xs flex items-center justify-center font-mono uppercase border ${
-                    hasDownloadedLogs
-                      ? 'bg-[hsl(var(--dharma-bright-green))] text-black border-[hsl(var(--dharma-bright-green))]'
-                      : 'bg-black text-[hsl(var(--dharma-bright-green))] border-[hsl(var(--dharma-bright-green))]'
-                  }`}
-                >
-                  {hasDownloadedLogs ? '[LOGS ARCHIVED]' : '[BACKUP SUBNET DATA]'}
+          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            {/* Sidebar */}
+            <div style={{ width: 190, borderRight: '1px solid var(--bd)', padding: '12px 10px', display: 'flex', flexDirection: 'column', fontSize: 13 }}>
+              <div style={{ color: 'var(--am)', fontSize: 9, letterSpacing: 5, marginBottom: 10 }}>CHANNELS</div>
+              {channels.filter(c => !c.direct).map(ch => (
+                <button key={ch.id} onClick={() => switchChannel(ch.id)} style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '4px 6px',
+                  background: activeChannel === ch.id ? 'var(--ph-faint)' : 'transparent',
+                  border: 'none', cursor: 'pointer', fontFamily: "'VT323', monospace", fontSize: 13,
+                  color: ch.locked ? 'var(--dim)' : activeChannel === ch.id ? 'var(--ph)' : 'var(--ph-dim)',
+                  letterSpacing: 1,
+                }}>
+                  {ch.locked ? '[LOCKED] ' : '> '}{ch.name}
+                  {ch.unread && !ch.locked && <span style={{ color: 'var(--am)', marginLeft: 6 }}>*</span>}
+                </button>
+              ))}
+
+              <div style={{ color: 'var(--am)', fontSize: 9, letterSpacing: 5, margin: '16px 0 10px' }}>DIRECT</div>
+              {channels.filter(c => c.direct).map(ch => (
+                <button key={ch.id} onClick={() => switchChannel(ch.id)} style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '4px 6px',
+                  background: activeChannel === ch.id ? 'var(--ph-faint)' : 'transparent',
+                  border: 'none', cursor: 'pointer', fontFamily: "'VT323', monospace", fontSize: 13,
+                  color: activeChannel === ch.id ? 'var(--ph)' : 'var(--ph-dim)', letterSpacing: 1,
+                }}>
+                  {'> '}{ch.name}
+                </button>
+              ))}
+
+              <div style={{ marginTop: 'auto' }}>
+                <button onClick={() => handleCommand('/download')} style={{
+                  width: '100%', padding: '6px 4px', cursor: 'pointer',
+                  border: '1px solid var(--bd)', background: hasDownloadedLogs ? 'var(--ph-faint)' : 'transparent',
+                  fontFamily: "'VT323', monospace", fontSize: 12, letterSpacing: 1,
+                  color: hasDownloadedLogs ? 'var(--ph)' : 'var(--ph-dim)',
+                }}>
+                  {hasDownloadedLogs ? '[LOGS ARCHIVED]' : '[BACKUP LOGS]'}
                 </button>
               </div>
             </div>
-            
-            {/* Chat main area - styled like a 1970s terminal */}
-            <div className="flex-1 flex flex-col overflow-hidden pl-3">
-              <div className="flex items-center justify-between border-b border-[hsl(var(--dharma-bright-green))] pb-2 mb-3">
-                <div className="text-[hsl(var(--dharma-bright-green))] font-terminal text-xs uppercase">
-                  {"["}{activeChannel === 'general' ? 'CHANNEL:GENERAL' : 
-                   activeChannel === 'engineering' ? 'CHANNEL:ENGINEERING' : 
-                   activeChannel === 'security' ? 'CHANNEL:SECURITY' : 
-                   activeChannel === 'medical' ? 'CHANNEL:MEDICAL' : 
-                   `USER:${activeChannel.toUpperCase()}`}{"]"}
-                </div>
-                
-                <div className="text-xs font-terminal text-[hsl(var(--dharma-bright-green))]">
-                  OPERATOR: <span className="text-[hsl(var(--dharma-bright-green))] font-bold">{userHandle}</span>
-                </div>
+
+            {/* Chat area */}
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', padding: '0 0 0 0' }}>
+              <div style={{ borderBottom: '1px solid var(--bd)', padding: '6px 14px', fontSize: 12, color: 'var(--am)', letterSpacing: 2 }}>
+                {activeChannel === 'alvar' ? '[USER: ALVAR.H]' : `[CHANNEL: ${activeChannel.toUpperCase()}]`}
               </div>
-              
-              {/* Messages styled like old terminal text */}
-              <div className="flex-1 overflow-y-auto mb-3 font-mono text-xs leading-5 p-2 bg-black border border-[hsl(var(--dharma-bright-green))]">
-                {messages.map(message => (
-                  <div key={message.id} className={`mb-2 ${message.isSystem ? 'border-l-2 border-[hsl(var(--dharma-bright-green))] pl-2' : ''}`}>
-                    <div className="flex flex-wrap items-center gap-1 mb-1 font-terminal uppercase">
-                      <span className="font-bold" style={{ color: message.isSystem ? '#00ff00' : message.senderColor }}>
-                        {message.isSystem ? '[SYSTEM]' : `[${message.sender}]`}
+
+              {/* Messages */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', fontSize: 12, lineHeight: 1.6 }}>
+                {messages.map(msg => (
+                  <div key={msg.id} style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, color: 'var(--dim)', letterSpacing: 1 }}>
+                      <span style={{ color: senderColor(msg.sender, msg.isSystem) }}>
+                        {msg.isSystem ? '[SYSTEM]' : `[${msg.sender}]`}
                       </span>
-                      <span className="text-[hsl(var(--dharma-gray))]">:</span>
-                      <span className="text-[hsl(var(--dharma-gray))]">{message.timestamp}</span>
-                      
-                      {message.isCorrupted && (
-                        <span className="ml-1 text-[hsl(var(--dharma-red))] uppercase">
-                          [DATA CORRUPTED]
-                        </span>
-                      )}
+                      {' '}
+                      <span>{msg.timestamp}</span>
+                      {msg.isCorrupted && <span style={{ color: 'var(--red)', marginLeft: 8 }}>[DATA CORRUPTED]</span>}
                     </div>
-                    
-                    <div className={`font-mono ${
-                      message.isSystem 
-                        ? 'text-[hsl(var(--dharma-bright-green))]' 
-                        : message.isCorrupted 
-                          ? 'text-[hsl(var(--dharma-gray))] italic' 
-                          : 'text-[hsl(var(--dharma-bright-green))]'
-                    }`}>
-                      {message.isCorrupted 
-                        ? `${message.content}... <ERROR: DATA UNRECOVERABLE>`
-                        : message.content}
+                    <div style={{
+                      color: msg.isSystem ? 'var(--ph-mid)' : msg.isCorrupted ? 'var(--dim)' : 'var(--ph-dim)',
+                      fontStyle: msg.isCorrupted ? 'italic' : 'normal',
+                      paddingLeft: 8,
+                    }}>
+                      {msg.isCorrupted ? `${msg.content}... <ERROR: DATA UNRECOVERABLE>` : msg.content}
                     </div>
                   </div>
                 ))}
                 <div ref={chatEndRef} />
               </div>
-              
-              {/* Terminal-style input prompt */}
-              <form onSubmit={handleSendMessage} className="mt-auto">
-                <div className="flex items-center">
-                  <span className="text-[hsl(var(--dharma-bright-green))] font-mono mr-2 font-bold">{">"}</span>
-                  <input
-                    type="text"
-                    value={inputValue}
-                    onChange={handleMessageInput}
-                    placeholder="Enter command or message (type /help for commands)..."
-                    className="flex-1 bg-black border-b border-[hsl(var(--dharma-bright-green))] p-2 text-xs text-[hsl(var(--dharma-bright-green))] font-mono caret-[hsl(var(--dharma-bright-green))] focus:outline-none focus:ring-0"
-                    autoFocus
-                  />
-                  
-                  <button
-                    type="submit"
-                    className="ml-2 px-3 py-1 bg-black text-[hsl(var(--dharma-bright-green))] border border-[hsl(var(--dharma-bright-green))] hover:bg-[hsl(var(--dharma-bright-green))] hover:text-black font-mono uppercase text-xs"
-                  >
-                    SEND
-                  </button>
-                </div>
+
+              {/* Input */}
+              <form onSubmit={handleSend} style={{ borderTop: '1px solid var(--bd)', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ color: 'var(--ph-mid)', fontSize: 14, flexShrink: 0 }}>&gt;:</span>
+                <input
+                  type="text"
+                  value={inputValue}
+                  onChange={e => setInputValue(e.target.value)}
+                  placeholder="message or /command"
+                  autoFocus
+                  style={{
+                    flex: 1, background: 'transparent', border: 'none', outline: 'none',
+                    fontFamily: "'VT323', monospace", fontSize: 14, color: 'var(--ph)',
+                  }}
+                />
+                <button type="submit" style={{
+                  background: 'transparent', border: '1px solid var(--bd)', cursor: 'pointer',
+                  fontFamily: "'VT323', monospace", fontSize: 13, color: 'var(--ph-dim)', padding: '2px 12px',
+                }}>
+                  SEND
+                </button>
               </form>
             </div>
           </div>
         )}
-        
+
         {isCompleted && (
-          <div className="mt-3 p-2 bg-[hsla(var(--dharma-green),0.1)] border border-[hsl(var(--dharma-bright-green))] text-center">
-            <p className="text-[hsl(var(--dharma-bright-green))] text-sm flex items-center justify-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              SUBNET LOGS SUCCESSFULLY ARCHIVED
-            </p>
-            <p className="text-[hsl(var(--dharma-green))] text-xs mt-1">
-              Critical information about Protocol Candle has been extracted.
-            </p>
+          <div style={{ padding: '8px 14px', borderTop: '1px solid var(--bd)', color: 'var(--ph)', fontSize: 13, letterSpacing: 1 }}>
+            [+] SUBNET LOGS ARCHIVED — Access code extracted from engineering channel.
           </div>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 };
 

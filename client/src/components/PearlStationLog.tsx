@@ -1,122 +1,149 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface PearlStationLogProps {
   isVisible: boolean;
-  timestamp: string; // Timestamp of failure
+  timestamp: string;
+  onClose: () => void;
 }
 
-const PearlStationLog: React.FC<PearlStationLogProps> = ({ isVisible, timestamp }) => {
-  const [logEntries, setLogEntries] = useState<string[]>([]);
-  const [isPrinting, setIsPrinting] = useState(false);
-  
-  // Effect to handle log printing animation when visible
-  useEffect(() => {
-    if (isVisible) {
-      setIsPrinting(true);
-      
-      // Initial system failure log entry
-      const initialEntry = `SYS_FAIL_${timestamp || Date.now()}`;
-      setLogEntries([initialEntry]);
-      
-      // Generate error log entries at intervals
-      const errorMessages = [
-        "ERROR: Electromagnetic anomaly detected",
-        "ERROR: Failsafe protocol not executed",
-        "ERROR: Swan station protocol breach",
-        "ERROR: Core containment integrity compromised",
-        "META: Temporal variance detected in sector 23",
-        "META: Radiation levels exceeding safety parameters",
-        "META: Automated alert transmitted to all stations",
-        "META: Pearl monitoring systems operating at reduced capacity",
-        "WARNING: Remote terminal access lost",
-        "WARNING: Subject behavioral analysis interrupted",
-        "ERROR: Data corruption detected in logs"
-      ];
-      
-      let count = 0;
-      const printInterval = setInterval(() => {
-        if (count < errorMessages.length) {
-          setLogEntries(prev => [...prev, errorMessages[count]]);
-          count++;
-        } else {
-          clearInterval(printInterval);
-          setTimeout(() => {
-            setIsPrinting(false);
-          }, 2000);
-        }
-      }, 800);
-      
-      return () => clearInterval(printInterval);
-    } else {
-      // Reset when not visible
-      setLogEntries([]);
-      setIsPrinting(false);
-    }
-  }, [isVisible, timestamp]);
-  
-  if (!isVisible) return null;
-  
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="fixed bottom-4 right-4 w-96 max-w-full z-40"
-    >
-      <div className="bg-white rounded shadow-lg overflow-hidden">
-        <div className="bg-gray-100 px-4 py-2 flex justify-between items-center border-b">
-          <h3 className="font-mono text-sm font-semibold">PEARL STATION · PRINTOUT LOG</h3>
-          <button 
-            className="text-gray-500 hover:text-gray-700"
-            onClick={() => setLogEntries([])}
-          >
-            ✕
-          </button>
-        </div>
-        
-        <div className="p-4 bg-white font-mono text-sm">
-          <div className="bg-gray-100 p-3 h-60 overflow-y-auto font-mono text-xs border border-gray-300 whitespace-pre">
-            <AnimatePresence>
-              {logEntries.map((entry, index) => (
-                <motion.div
-                  key={`log-${index}`}
-                  initial={{ opacity: 0, x: -5 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="mb-1"
-                >
-                  {entry}
-                </motion.div>
-              ))}
-              {isPrinting && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: [0, 1, 0] }}
-                  transition={{ repeat: Infinity, duration: 0.8 }}
-                  className="text-gray-400"
-                >
-                  _
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          
-          <div className="mt-3 flex justify-between text-xs text-gray-500">
-            <span>P_LOG.23.42</span>
-            <span className="animate-pulse">■ RECORDING</span>
-          </div>
-        </div>
-        
-        <div className="px-4 py-2 bg-gray-100 border-t border-gray-200 flex justify-between">
-          <span className="text-xs font-mono text-gray-600">DHARMA INITIATIVE © 1977</span>
-          <div className="flex space-x-2">
-            <button className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">PRINT</button>
-            <button className="text-xs bg-gray-200 hover:bg-gray-300 px-2 py-1 rounded">ARCHIVE</button>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-};
+const LOG_LINES = [
+  'PEARL STATION — OBSERVATION LOG — SYS_AUTO',
+  '————————————————————————————',
+  'SUBJECT: SWAN STATION OPERATOR',
+  'EVENT: PROTOCOL 23 — INPUT FAILURE',
+  '————————————————————————————',
+  'META: Electromagnetic containment breach detected',
+  'META: Discharge event initiated — uncontrolled',
+  'ERROR: Swan station input terminal — NO RESPONSE',
+  'ERROR: Failsafe protocol not executed in time',
+  'META: Temporal variance — sector 23 — anomalous',
+  'META: Radiation levels exceeding safe parameters',
+  'META: Pearl monitoring systems — reduced capacity',
+  'META: Automated alert transmitted — all stations',
+  'WARNING: Remote terminal access — LOST',
+  'WARNING: Swan operator behavioural pattern — ERRATIC',
+  'ERROR: Data corruption detected — logs 10881–10894',
+  '————————————————————————————',
+  'Pearl observers note: operator did not appear to',
+  'be under duress. Subject appeared to be listening.',
+  'To what, we cannot determine. Recommend review.',
+  '————————————————————————————',
+  'P_LOG.23.42 — RECORDING COMPLETE',
+];
 
-export default PearlStationLog;
+export default function PearlStationLog({ isVisible, timestamp, onClose }: PearlStationLogProps) {
+  const [visibleLines, setVisibleLines] = useState<string[]>([]);
+  const [isPrinting, setIsPrinting] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isVisible) {
+      setVisibleLines([]);
+      setIsPrinting(false);
+      return;
+    }
+
+    setIsPrinting(true);
+    setVisibleLines([`SYS_FAIL_${timestamp || Date.now()}`]);
+
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    LOG_LINES.forEach((line, i) => {
+      const t = setTimeout(() => {
+        setVisibleLines(prev => [...prev, line]);
+      }, 600 + i * 700);
+      timers.push(t);
+    });
+
+    const done = setTimeout(() => setIsPrinting(false), 600 + LOG_LINES.length * 700 + 800);
+    timers.push(done);
+
+    return () => timers.forEach(clearTimeout);
+  }, [isVisible, timestamp]);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [visibleLines]);
+
+  if (!isVisible) return null;
+
+  const container: React.CSSProperties = {
+    position: 'fixed',
+    bottom: 20,
+    right: 20,
+    width: 340,
+    zIndex: 40000,
+    border: '1px solid var(--bd2)',
+    background: 'var(--panel2)',
+    fontFamily: "'VT323', monospace",
+  };
+
+  const titleBar: React.CSSProperties = {
+    borderBottom: '1px solid var(--bd)',
+    background: 'var(--ph-faint)',
+    padding: '4px 10px',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontSize: 11,
+    letterSpacing: 3,
+    color: 'var(--ph-dim)',
+  };
+
+  return (
+    <div style={container}>
+      <div style={titleBar}>
+        <span>PEARL STATION · PRINT TERMINAL</span>
+        <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--ph-dim)', fontFamily: "'VT323', monospace", fontSize: 13 }}>
+          [X]
+        </button>
+      </div>
+
+      <div
+        ref={scrollRef}
+        style={{
+          height: 220,
+          overflowY: 'auto',
+          padding: '8px 10px',
+          fontSize: 11,
+          lineHeight: 1.7,
+          color: 'var(--ph-dim)',
+        }}
+      >
+        {visibleLines.map((line, i) => (
+          <div key={i} style={{
+            color: line.startsWith('ERROR') ? 'var(--red)'
+              : line.startsWith('WARNING') ? 'var(--am)'
+              : line.startsWith('META') ? 'var(--ph-dim)'
+              : line.startsWith('PEARL') || line.startsWith('SYS') ? 'var(--ph)'
+              : line.startsWith('———') ? 'var(--bd2)'
+              : 'var(--dim)',
+          }}>
+            {line}
+          </div>
+        ))}
+        {isPrinting && (
+          <span className="animate-terminal-blink" style={{ color: 'var(--ph-dim)' }}>_</span>
+        )}
+      </div>
+
+      <div style={{
+        borderTop: '1px solid var(--bd)',
+        padding: '4px 10px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        fontSize: 10,
+        letterSpacing: 2,
+        color: 'var(--dim)',
+      }}>
+        <span>DHARMA INITIATIVE © 1977</span>
+        {isPrinting && (
+          <span className="animate-terminal-blink" style={{ color: 'var(--am)' }}>■ RECORDING</span>
+        )}
+        {!isPrinting && <span style={{ color: 'var(--ph-dim)' }}>■ COMPLETE</span>}
+      </div>
+    </div>
+  );
+}
