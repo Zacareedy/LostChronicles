@@ -1,97 +1,97 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { playSound } from '@/lib/audio';
 import dharmaLogoSvg from '@/assets/dharma-logo-fixed.svg';
 
 interface LoadingProps {
   onLoadComplete: () => void;
 }
 
+const BOOT_LINES = [
+  'DHARMA INITIATIVE — INTRANET NODE SWN-7',
+  'SWAN STATION — SUBLEVEL B — SYSTEM BOOT',
+  'INITIALISING PROTOCOL 23...',
+  'EM CONTAINMENT STATUS: NOMINAL',
+  'LOADING OPERATOR INTERFACE...',
+  'READY — CLEARANCE LEVEL 4',
+];
+
 const Loading: React.FC<LoadingProps> = ({ onLoadComplete }) => {
-  const [progress, setProgress] = useState(0);
+  const [visibleLines, setVisibleLines] = useState<number>(0);
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
-    // Play static sound during loading
-    playSound('static');
+    // Show each line with 600ms delay
+    const timers: ReturnType<typeof setTimeout>[] = [];
 
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        const increment = Math.random() * 15;
-        const newProgress = prev + increment;
-        
-        // Loading complete
-        if (newProgress >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
-            playSound('success');
-            setIsVisible(false);
-            setTimeout(() => {
-              onLoadComplete();
-            }, 1000);
-          }, 1000);
-          return 100;
-        }
-        
-        return newProgress;
-      });
-    }, 400);
+    BOOT_LINES.forEach((_, i) => {
+      const t = setTimeout(() => {
+        setVisibleLines(i + 1);
+      }, 600 * (i + 1));
+      timers.push(t);
+    });
 
-    return () => {
-      clearInterval(interval);
-    };
+    // After last line, wait 1.5s then fade and call onLoadComplete
+    const finalTimer = setTimeout(() => {
+      setIsVisible(false);
+      setTimeout(() => {
+        onLoadComplete();
+      }, 600);
+    }, 600 * BOOT_LINES.length + 1500);
+
+    timers.push(finalTimer);
+
+    return () => timers.forEach(clearTimeout);
   }, [onLoadComplete]);
 
+  if (!isVisible) return null;
+
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[hsl(var(--dharma-black))]"
-          initial={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1 }}
-        >
-          {/* DHARMA Logo SVG */}
-          <div className="mb-12 relative w-64 h-64">
-            <img 
-              src={dharmaLogoSvg} 
-              alt="DHARMA Initiative Logo" 
-              className="w-full h-full" 
-            />
-            
-            {/* Text below SVG */}
-            <div className="absolute -bottom-8 left-0 right-0 text-center">
-              <div className="font-terminal text-[hsl(var(--dharma-amber))] text-xl tracking-wider">
-                DHARMA INITIATIVE
-              </div>
-              <div className="font-terminal text-[hsl(var(--dharma-green))] text-sm">
-                SWAN STATION TERMINAL V3.1
-              </div>
-            </div>
+    <div
+      id="splash"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 99999,
+        background: 'var(--bg, #010a02)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: "'VT323', monospace",
+      }}
+    >
+      {/* Swan logo */}
+      <div style={{ marginBottom: 40, width: 160, height: 160 }}>
+        <img
+          src={dharmaLogoSvg}
+          alt="DHARMA Initiative Logo"
+          style={{ width: '100%', height: '100%' }}
+        />
+      </div>
+
+      {/* Boot lines */}
+      <div style={{
+        width: '100%',
+        maxWidth: 520,
+        padding: '0 20px',
+      }}>
+        {BOOT_LINES.map((line, i) => (
+          <div
+            key={i}
+            style={{
+              fontFamily: "'VT323', monospace",
+              fontSize: 16,
+              letterSpacing: 2,
+              lineHeight: 2,
+              color: i === BOOT_LINES.length - 1 ? 'var(--ph, #4dff7c)' : 'var(--ph-dim, #0f5a25)',
+              opacity: i < visibleLines ? 1 : 0,
+              transition: 'opacity 0.2s',
+            }}
+          >
+            {i < visibleLines ? `> ${line}` : ''}
           </div>
-          
-          {/* Loading indicator with periods */}
-          <div className="w-full max-w-md px-4 mt-8">
-            <div className="text-center font-terminal text-[hsl(var(--dharma-green))] text-lg">
-              <span>LOADING</span>
-              <span className="inline-block w-24 text-left">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <span 
-                    key={i}
-                    className={i < Math.floor(progress / 10) ? 'opacity-100' : 'opacity-0'}
-                  >
-                    .
-                  </span>
-                ))}
-              </span>
-            </div>
-            <div className="text-center font-terminal text-[hsl(var(--dharma-amber))] mt-4">
-              {progress >= 100 ? 'SYSTEM READY' : ''}
-            </div>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+        ))}
+      </div>
+    </div>
   );
 };
 
