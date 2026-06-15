@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { processCommand } from '@/lib/terminal';
 import { playSound } from '@/lib/audio';
+import { getClearance, clearanceLabel } from '@/lib/clearance';
 import { useLocation } from 'wouter';
 
 interface TerminalOutput {
@@ -23,32 +24,26 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
   const [terminalOutput, setTerminalOutput] = useState<TerminalOutput[]>([]);
   const [input, setInput] = useState('');
   const [terminalStatus, setTerminalStatus] = useState('CONNECTED');
-  const [accessLevel, setAccessLevel] = useState(1);
+  const [clearance, setClearanceState] = useState(() => getClearance());
+  const [upgrading, setUpgrading] = useState(false);
   const terminalInputRef = useRef<HTMLInputElement>(null);
   const terminalOutputRef = useRef<HTMLDivElement>(null);
   const [_, setLocation] = useLocation();
 
   useEffect(() => {
-    // Set focus to input when component mounts
-    if (terminalInputRef.current) {
-      terminalInputRef.current.focus();
-    }
-    
-    // Check if user has previously activated system error
-    try {
-      const errorAllowed = localStorage.getItem('dharma_error_allowed');
-      if (errorAllowed === 'true') {
-        setAccessLevel(prev => Math.max(prev, 3));
-      }
-      
-      // Check for Pearl access
-      const pearlAccess = localStorage.getItem('dharma_pearl_access');
-      if (pearlAccess === 'true') {
-        setAccessLevel(prev => Math.max(prev, 4));
-      }
-    } catch (e) {
-      // Ignore localStorage errors
-    }
+    if (terminalInputRef.current) terminalInputRef.current.focus();
+  }, []);
+
+  // Listen for clearance upgrades fired by terminal.ts → clearance.ts
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { level } = (e as CustomEvent<{ level: number }>).detail;
+      setClearanceState(level);
+      setUpgrading(true);
+      setTimeout(() => setUpgrading(false), 2500);
+    };
+    window.addEventListener('dharma-clearance-change', handler);
+    return () => window.removeEventListener('dharma-clearance-change', handler);
   }, []);
 
   // Add typewriter effect
@@ -256,16 +251,9 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
         ]);
       }
     } else if (userInput.toLowerCase().includes('login')) {
-      // Check different login patterns
-      if (userInput.includes('4815162342')) {
+      if (userInput.includes('4815162342') || userInput.includes('dharma77') || userInput.includes('C22/DSTNGSHD-LBRT')) {
         setTerminalStatus('ACCESS GRANTED');
-        setAccessLevel(prev => Math.max(prev, 3));
-      } else if (userInput.includes('dharma77')) {
-        setTerminalStatus('ACCESS GRANTED');
-        setAccessLevel(prev => Math.max(prev, 2));
-      } else if (userInput.includes('C22/DSTNGSHD-LBRT')) {
-        setTerminalStatus('ACCESS GRANTED');
-        setAccessLevel(prev => Math.max(prev, 4));
+        setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
       } else {
         setTerminalStatus('ACCESS DENIED');
         setTimeout(() => setTerminalStatus('CONNECTED'), 3000);
@@ -353,13 +341,39 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
-      className="lg:col-span-2 dharma-panel"
+      className="lg:col-span-2 dharma-panel relative"
+      style={upgrading ? { boxShadow: '0 0 24px 4px rgba(51,255,51,0.55)', transition: 'box-shadow 0.3s' } : {}}
     >
-      <div className="dharma-panel-header border-b border-[hsla(var(--dharma-gray),0.5)]">
+      <div className="dharma-panel-header border-b border-[hsla(var(--dharma-gray),0.5)] flex justify-between items-center">
         <h2 className="dharma-panel-title tracking-[0.5em] text-sm">DHARMA TERMINAL v2.0</h2>
+        <span className="font-terminal text-xs tracking-widest" style={{ color: '#33ff33', opacity: 0.7 }}>
+          CL-{clearance} {clearanceLabel(clearance)}
+        </span>
       </div>
-      
-      <div 
+
+      {/* Clearance upgrade flash */}
+      <AnimatePresence>
+        {upgrading && (
+          <motion.div
+            key="upgrade-flash"
+            initial={{ opacity: 0, scaleY: 0 }}
+            animate={{ opacity: 1, scaleY: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="absolute inset-x-0 top-10 z-20 pointer-events-none flex items-center justify-center"
+            style={{ height: 36 }}
+          >
+            <div
+              className="font-terminal text-sm tracking-widest animate-terminal-blink"
+              style={{ color: '#33ff33', background: '#010601', padding: '4px 20px', border: '1px solid #33ff33' }}
+            >
+              ▲ CLEARANCE {clearance} — {clearanceLabel(clearance)} — GRANTED ▲
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div
         ref={terminalOutputRef}
         className="dharma-panel-content h-72 overflow-auto font-terminal text-[hsl(var(--dharma-green))] text-lg relative"
       >
@@ -372,9 +386,9 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           <form onSubmit={handleSubmit} className="flex relative">
             <span className="mr-2">{'>:'}</span>
             <div className="relative flex-1">
-              <input 
+              <input
                 ref={terminalInputRef}
-                type="text" 
+                type="text"
                 value={input}
                 onChange={(e) => {
                   setInput(e.target.value);
@@ -382,7 +396,7 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
                     playSound('beep', 'short');
                   }
                 }}
-                className="bg-transparent w-full focus:outline-none" 
+                className="bg-transparent w-full focus:outline-none"
                 placeholder=""
                 autoComplete="off"
               />
@@ -391,15 +405,18 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           </form>
         </div>
       </div>
-      
-      {/* Terminal footer with status */}
-      <div className="bg-[hsla(var(--dharma-gray),0.1)] p-2 text-xs text-[hsl(var(--dharma-green))] flex justify-between border-t border-[hsla(var(--dharma-gray),0.3)]" style={{opacity: 1, color: '#33ff33'}}>
-        <span>Use command 'help' for available options</span>
+
+      {/* Terminal footer */}
+      <div
+        className="bg-[hsla(var(--dharma-gray),0.1)] p-2 text-xs flex justify-between border-t border-[hsla(var(--dharma-gray),0.3)]"
+        style={{ color: '#33ff33' }}
+      >
+        <span>Type HELP for commands · AUTHENTICATE to advance clearance</span>
         <span className={
-          terminalStatus === 'ACCESS DENIED' 
-            ? 'text-[hsl(var(--dharma-red))]' 
-            : terminalStatus === 'ACCESS GRANTED' 
-              ? 'text-[hsl(var(--dharma-bright-green))]' 
+          terminalStatus === 'ACCESS DENIED'
+            ? 'text-[hsl(var(--dharma-red))]'
+            : terminalStatus === 'ACCESS GRANTED'
+              ? ''
               : terminalStatus === 'SYSTEM FAILURE'
                 ? 'text-[hsl(var(--dharma-red))] font-bold animate-terminal-blink'
                 : ''
@@ -407,25 +424,17 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           {terminalStatus}
         </span>
       </div>
-      
+
       {/* System Failure Overlay */}
       {isSystemFailure && (
         <div className="absolute top-2 left-2 right-2 z-10 pointer-events-none">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
-            animate={{ 
-              opacity: [0.7, 0.9, 0.7],
-              y: [0, -3, 0]
-            }}
-            transition={{ 
-              repeat: Infinity, 
-              duration: 1.5 
-            }}
+            animate={{ opacity: [0.7, 0.9, 0.7], y: [0, -3, 0] }}
+            transition={{ repeat: Infinity, duration: 1.5 }}
             className="bg-transparent p-2 text-center"
           >
-            <div className="font-terminal text-[hsl(var(--dharma-red))] text-4xl font-bold">
-              
-            </div>
+            <div className="font-terminal text-[hsl(var(--dharma-red))] text-4xl font-bold" />
           </motion.div>
         </div>
       )}
