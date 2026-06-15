@@ -1,164 +1,220 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { DHARMA_NUMBERS } from '@/lib/constants';
+import { playSound, stopSound } from '@/lib/audio';
+
+// Define types for the hieroglyphs
+type Hieroglyph = {
+  name: string;
+  symbol: string;
+  type: 'red' | 'black';
+};
 
 interface SystemFailureProps {
   isActive: boolean;
-  onReset: () => void;
+  onResetSequence: () => void;
+  onFailsafeTrigger?: () => void;
 }
 
-const SystemFailure: React.FC<SystemFailureProps> = ({ isActive, onReset }) => {
-  const [showOverlay, setShowOverlay] = useState(false);
-  const [flashPhase, setFlashPhase] = useState<'idle' | 'flashing' | 'done'>('idle');
-  const flashRef = useRef<HTMLDivElement | null>(null);
+const HIEROGLYPHS: Hieroglyph[] = [
+  { name: 'folded cloth', symbol: '𓇌', type: 'red' }, // S29
+  { name: 'curl', symbol: '𓏭', type: 'red' }, // Z7
+  { name: 'fire drill', symbol: '𓎯', type: 'red' }, // U29
+  { name: 'vulture', symbol: '𓄿', type: 'black' }, // G1
+  { name: 'stick', symbol: '𓏮', type: 'black' }, // Z6
+];
 
+// Create a female voice announcement using the Web Speech API
+const announceSystemFailure = () => {
+  if ('speechSynthesis' in window) {
+    const utterance = new SpeechSynthesisUtterance('System failure. System failure.');
+    utterance.rate = 0.9;
+    utterance.pitch = 1.2;
+    utterance.volume = 0.8;
+    
+    // Try to get a female voice
+    const voices = speechSynthesis.getVoices();
+    const femaleVoice = voices.find(voice => voice.name.includes('female'));
+    if (femaleVoice) {
+      utterance.voice = femaleVoice;
+    }
+    
+    speechSynthesis.speak(utterance);
+  }
+};
+
+const SystemFailure: React.FC<SystemFailureProps> = ({ isActive, onResetSequence, onFailsafeTrigger }) => {
+  const [phase, setPhase] = useState<number>(0);
+  const [showHieroglyphs, setShowHieroglyphs] = useState<boolean>(false);
+  const [currentHieroglyphIndex, setCurrentHieroglyphIndex] = useState<number>(-1);
+  const [isResettable, setIsResettable] = useState<boolean>(false);
+  const [showFailsafePrompt, setShowFailsafePrompt] = useState<boolean>(false);
+  const [userInputBuffer, setUserInputBuffer] = useState<string>('');
+  const [errorCount, setErrorCount] = useState<number>(0);
+  
+  // Refs for system failure elements
+  const terminalRef = useRef<HTMLDivElement>(null);
+  
+  // Handle component lifecycle
   useEffect(() => {
-    if (!isActive) {
-      setShowOverlay(false);
-      setFlashPhase('idle');
-      return;
+    if (isActive) {
+      startFailureSequence();
+    } else {
+      // Reset states when not active
+      setPhase(0);
+      setShowHieroglyphs(false);
+      setCurrentHieroglyphIndex(-1);
+      setIsResettable(false);
+      setShowFailsafePrompt(false);
+      setUserInputBuffer('');
+      setErrorCount(0);
+      
+      // Stop any ongoing sounds
+      stopSound('alarm');
     }
-
-    // Flash sequence: 7 cycles × 180ms
-    setFlashPhase('flashing');
-    let count = 0;
-    const maxFlashes = 7;
-    let on = true;
-
-    if (flashRef.current) {
-      flashRef.current.style.background = '#3a0000';
-    }
-
-    const flashInterval = setInterval(() => {
-      count++;
-      on = !on;
-      if (flashRef.current) {
-        flashRef.current.style.background = on ? '#3a0000' : '#000';
-        flashRef.current.style.opacity = on ? '1' : '0.3';
+    
+    return () => {
+      // Clean up on unmount
+      stopSound('alarm');
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
       }
-      if (count >= maxFlashes * 2) {
-        clearInterval(flashInterval);
-        if (flashRef.current) {
-          flashRef.current.style.background = '#000';
-          flashRef.current.style.opacity = '0';
-        }
-        setFlashPhase('done');
-        setShowOverlay(true);
-      }
-    }, 180);
-
-    return () => clearInterval(flashInterval);
+    };
   }, [isActive]);
-
+  
+  // Process the system failure sequence
+  const startFailureSequence = () => {
+    // Phase 1: Initial System Failure 
+    setPhase(1);
+    playSound('alarm');
+    announceSystemFailure();
+    
+    // Set an interval to repeat the announcement
+    const announcementInterval = setInterval(() => {
+      announceSystemFailure();
+    }, 5000);
+    
+    // Phase 2: Hieroglyphs after a few seconds
+    setTimeout(() => {
+      setPhase(2);
+      setShowHieroglyphs(true);
+      
+      // Gradually reveal hieroglyphs one by one
+      const hieroglyphRevealInterval = setInterval(() => {
+        setCurrentHieroglyphIndex(prev => {
+          const nextIndex = prev + 1;
+          if (nextIndex >= HIEROGLYPHS.length) {
+            clearInterval(hieroglyphRevealInterval);
+            
+            // Enable reset option after all hieroglyphs are shown
+            setTimeout(() => {
+              setIsResettable(true);
+              
+              // Phase 3: Remote Log Transmission happens elsewhere in the app
+              setPhase(3);
+              
+              // Phase 4: Last Chance Protocol
+              setTimeout(() => {
+                setPhase(4);
+                
+                // After a while, show the failsafe key prompt if no reset sequence
+                const failsafeTimeout = setTimeout(() => {
+                  setShowFailsafePrompt(true);
+                }, 30000);
+                
+                return () => clearTimeout(failsafeTimeout);
+              }, 5000);
+            }, 3000);
+          }
+          return nextIndex;
+        });
+      }, 1200); // Each hieroglyph appears with a delay
+      
+      return () => {
+        clearInterval(hieroglyphRevealInterval);
+        clearInterval(announcementInterval);
+      };
+    }, 6000);
+  };
+  
+  // Handle keyboard input during system failure
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isActive || !isResettable) return;
+      
+      // Handle keypress for number sequence or failsafe
+      if (showFailsafePrompt) {
+        if (e.key.toLowerCase() === 'y') {
+          triggerFailsafe();
+        } else if (e.key.toLowerCase() === 'n') {
+          setShowFailsafePrompt(false);
+        }
+      } else {
+        // Process number sequence
+        if (/^[0-9\s]$/.test(e.key)) {
+          setUserInputBuffer(prev => prev + e.key);
+          playSound('typing', 'short');
+        } else if (e.key === 'Enter') {
+          validateInput();
+        } else if (e.key === 'Backspace') {
+          setUserInputBuffer(prev => prev.slice(0, -1));
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isActive, isResettable, showFailsafePrompt, userInputBuffer]);
+  
+  // Validate the entered sequence
+  const validateInput = () => {
+    const numbersString = DHARMA_NUMBERS.join(' ');
+    const cleanInput = userInputBuffer.trim();
+    
+    if (cleanInput === numbersString || cleanInput === DHARMA_NUMBERS.join('')) {
+      // Correct sequence
+      playSound('success');
+      onResetSequence();
+      setUserInputBuffer('');
+    } else {
+      // Incorrect sequence
+      playSound('fail');
+      setUserInputBuffer('');
+      setErrorCount(prev => prev + 1);
+      
+      // After 3 errors, show failsafe option
+      if (errorCount >= 2) {
+        setShowFailsafePrompt(true);
+      }
+    }
+  };
+  
+  // Handle failsafe key
+  const triggerFailsafe = () => {
+    if (onFailsafeTrigger) {
+      // Dramatic effect before triggering failsafe
+      playSound('alarm');
+      
+      // Flash effect
+      const flashEffect = document.createElement('div');
+      flashEffect.className = 'fixed inset-0 bg-white z-[9999] animate-flash';
+      document.body.appendChild(flashEffect);
+      
+      // Remove the flash effect after animation
+      setTimeout(() => {
+        document.body.removeChild(flashEffect);
+        onFailsafeTrigger();
+      }, 1500);
+    }
+  };
+  
   if (!isActive) return null;
-
-  const overlayStyle: React.CSSProperties = {
-    position: 'fixed',
-    inset: 0,
-    zIndex: 60000,
-    background: '#000',
-    display: showOverlay ? 'flex' : 'none',
-    alignItems: 'center',
-    justifyContent: 'center',
-  };
-
-  const boxStyle: React.CSSProperties = {
-    width: 340,
-    border: '3px solid #300',
-    background: '#050000',
-    boxShadow: '0 0 40px #ff000044, inset 0 0 30px #1a000044',
-    padding: '30px 24px',
-    textAlign: 'center',
-    fontFamily: "'VT323', monospace",
-  };
-
-  const glyphStyle: React.CSSProperties = {
-    fontSize: 72,
-    color: '#cc2200',
-    textShadow: '0 0 24px #ff0000, 0 0 48px #660000',
-    fontFamily: "'Segoe UI Historic', 'Noto Sans Egyptian Hieroglyphs', 'Apple Symbols', serif",
-    display: 'block',
-    lineHeight: 1.1,
-  };
-
-  return (
-    <>
-      {/* Flash overlay */}
-      <div
-        ref={flashRef}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 9000,
-          background: '#000',
-          opacity: 0,
-          pointerEvents: 'none',
-          transition: 'none',
-        }}
-      />
-
-      {/* Main hieroglyph screen */}
-      <div id="hieroScreen" style={overlayStyle}>
-        <div className="hiero-box" style={boxStyle}>
-          {/* Two columns of glyphs */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 32, marginBottom: 20 }}>
-            <span
-              className="h-glyph"
-              style={{
-                ...glyphStyle,
-                animation: 'glyph-spin-a 1.6s steps(1) infinite',
-              }}
-            >
-              𓆣
-            </span>
-            <span
-              className="h-glyph"
-              style={{
-                ...glyphStyle,
-                animation: 'glyph-spin-b 1.1s steps(1) infinite',
-              }}
-            >
-              𓆙
-            </span>
-          </div>
-
-          <div style={{
-            color: '#ff2200',
-            fontSize: 22,
-            letterSpacing: 3,
-            fontFamily: "'VT323', monospace",
-            marginBottom: 12,
-          }}>
-            !! EM CONTAINMENT FAILURE !!
-          </div>
-
-          <div style={{
-            color: '#aa1500',
-            fontSize: 14,
-            fontFamily: "'VT323', monospace",
-            letterSpacing: 2,
-            marginBottom: 24,
-          }}>
-            INPUT SEQUENCE WAS NOT EXECUTED IN TIME
-          </div>
-
-          <button
-            onClick={onReset}
-            style={{
-              fontFamily: "'VT323', monospace",
-              fontSize: 16,
-              padding: '8px 16px',
-              background: '#0a0000',
-              border: '1px solid #500',
-              color: '#ff4422',
-              cursor: 'pointer',
-              letterSpacing: 2,
-            }}
-          >
-            [ EMERGENCY RESET — PROTOCOL 23B ]
-          </button>
-        </div>
-      </div>
-    </>
-  );
+  
+  // We're not rendering a separate overlay component anymore
+  // Instead, we're integrating with existing components through callbacks
+  
+  // Return null since the actual UI elements are now rendered by other components
+  return null;
 };
 
 export default SystemFailure;
