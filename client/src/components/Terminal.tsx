@@ -283,6 +283,77 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
     }
   };
 
+  if (!isOpen) return null;
+
+  const overlayStyle: React.CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 10000,
+    background: 'rgba(0,0,0,0.88)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  };
+
+  const windowStyle: React.CSSProperties = {
+    width: 560,
+    maxWidth: '97vw',
+    border: '1px solid var(--bd2)',
+    background: 'var(--panel)',
+    fontFamily: "'VT323', monospace",
+  };
+
+  const titleBarStyle: React.CSSProperties = {
+    background: 'var(--ph-faint)',
+    borderBottom: '1px solid var(--bd)',
+    padding: '6px 12px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    fontFamily: "'VT323', monospace",
+    fontSize: 13,
+    letterSpacing: 2,
+    color: 'var(--ph-dim)',
+  };
+
+  const outputStyle: React.CSSProperties = {
+    height: 540,
+    overflowY: 'auto',
+    padding: '12px 14px',
+    fontFamily: "'VT323', monospace",
+    fontSize: 13,
+    lineHeight: 1.8,
+    background: '#010601',
+    color: 'var(--ph-dim)',
+  };
+
+  const inputRowStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    borderTop: '1px solid var(--bd)',
+    padding: '8px 14px',
+    background: '#010601',
+  };
+
+  const promptStyle: React.CSSProperties = {
+    fontFamily: "'VT323', monospace",
+    fontSize: 14,
+    color: 'var(--ph-mid)',
+    marginRight: 6,
+    flexShrink: 0,
+  };
+
+  const inputStyle: React.CSSProperties = {
+    flex: 1,
+    background: 'transparent',
+    border: 'none',
+    outline: 'none',
+    fontFamily: "'VT323', monospace",
+    fontSize: 14,
+    color: 'var(--ph)',
+    textTransform: 'uppercase',
+  };
+
   return (
     <motion.section
       initial={{ opacity: 0, y: 20 }}

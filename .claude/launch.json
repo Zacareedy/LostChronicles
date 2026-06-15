@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Full Stack Dev (Express + Vite)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["--env-file=.env", "node_modules/tsx/dist/cli.mjs", "server/index.ts"],
+      "port": 5000
+    }
+  ]
+}
