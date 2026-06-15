@@ -9,10 +9,13 @@ import SystemFailure from '@/components/SystemFailure';
 import PearlStationLog from '@/components/PearlStationLog';
 import IncidentReports from '@/components/IncidentReports';
 import SubnetInterface from '@/components/SubnetInterface';
+import BlastDoorMap from '@/components/BlastDoorMap';
+import RadioReceiver from '@/components/RadioReceiver';
 import PuzzleController, { PuzzleControllerRef } from '@/components/PuzzleController';
 import PuzzleLauncher from '@/components/PuzzleLauncher';
 import { playSound, stopSound } from '@/lib/audio';
 import { useLore } from '@/contexts/LoreContext';
+import { getClearance, clearanceLabel } from '@/lib/clearance';
 
 const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -35,6 +38,24 @@ const Home: React.FC = () => {
 
   // Subnet interface state
   const [isSubnetOpen, setIsSubnetOpen] = useState(false);
+
+  // Blast door map state + logo click counter
+  const [isMapOpen, setIsMapOpen] = useState(false);
+  const logoClicks = useRef(0);
+  const logoClickTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Radio receiver state + countdown click counter
+  const [isRadioOpen, setIsRadioOpen] = useState(false);
+  const countdownClicks = useRef(0);
+  const countdownClickTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Live clearance level (mirrors Terminal's state via CustomEvent)
+  const [currentClearance, setCurrentClearance] = useState(() => getClearance());
+  useEffect(() => {
+    const handler = (e: Event) => setCurrentClearance((e as CustomEvent<{level: number}>).detail.level);
+    window.addEventListener('dharma-clearance-change', handler);
+    return () => window.removeEventListener('dharma-clearance-change', handler);
+  }, []);
 
   // Get all state and actions from the LoreContext
   const {
@@ -101,6 +122,16 @@ const Home: React.FC = () => {
         if (subnetFlag === 'true') {
           localStorage.removeItem('dharma_subnet_access');
           setIsSubnetOpen(true);
+        }
+        const mapFlag = localStorage.getItem('dharma_map_access');
+        if (mapFlag === 'true') {
+          localStorage.removeItem('dharma_map_access');
+          setIsMapOpen(true);
+        }
+        const radioFlag = localStorage.getItem('dharma_radio_access');
+        if (radioFlag === 'true') {
+          localStorage.removeItem('dharma_radio_access');
+          setIsRadioOpen(true);
         }
       } catch (e) {}
     }, 500);
@@ -169,6 +200,30 @@ const Home: React.FC = () => {
     setIsPuzzleVisible(false);
   };
 
+  const handleLogoClick = () => {
+    if (getClearance() < 3) return;
+    clearTimeout(logoClickTimer.current);
+    logoClicks.current += 1;
+    if (logoClicks.current >= 4) {
+      logoClicks.current = 0;
+      setIsMapOpen(true);
+    } else {
+      logoClickTimer.current = setTimeout(() => { logoClicks.current = 0; }, 3000);
+    }
+  };
+
+  const handleCountdownClick = () => {
+    if (getClearance() < 2) return;
+    clearTimeout(countdownClickTimer.current);
+    countdownClicks.current += 1;
+    if (countdownClicks.current >= 6) {
+      countdownClicks.current = 0;
+      setIsRadioOpen(true);
+    } else {
+      countdownClickTimer.current = setTimeout(() => { countdownClicks.current = 0; }, 4000);
+    }
+  };
+
   const handleLaunchPuzzle = (puzzleId: string) => {
     setActivePuzzleId(puzzleId);
     triggerSystemStatus(`LAUNCHING ${puzzleId.toUpperCase()} INTERFACE`, 3000);
@@ -193,17 +248,19 @@ const Home: React.FC = () => {
 
       <header className="pt-6 pb-2 px-6 flex justify-between items-center border-b border-[hsla(var(--dharma-gray),0.3)]">
         <div className="flex items-center">
-          <img src={dharmaLogoSvg} alt="DHARMA Initiative" className="w-12 h-12 mr-4" />
+          <img src={dharmaLogoSvg} alt="DHARMA Initiative" className="w-12 h-12 mr-4 cursor-pointer select-none" onClick={handleLogoClick} />
           <div>
             <h1 className="font-terminal text-[hsl(var(--dharma-green))] text-2xl tracking-wider">THE SWAN</h1>
-            <p className="text-xs" style={{ color: 'var(--ph-mid)' }}>STATION 3 · SECURITY LEVEL: 4</p>
+            <p className="text-xs" style={{ color: 'var(--ph-mid)' }}>STATION 3 · SECURITY LEVEL: {currentClearance}</p>
           </div>
         </div>
-        <Countdown
-          onCountdownFinish={handleCountdownFinish}
-          isReset={isCountdownReset}
-          setIsReset={setIsCountdownReset}
-        />
+        <div onClick={handleCountdownClick} className="cursor-pointer select-none">
+          <Countdown
+            onCountdownFinish={handleCountdownFinish}
+            isReset={isCountdownReset}
+            setIsReset={setIsCountdownReset}
+          />
+        </div>
       </header>
 
       <main className="container mx-auto p-4">
@@ -224,7 +281,7 @@ const Home: React.FC = () => {
           >
             {systemStatus}
           </div>
-          <div>SECURITY CLEARANCE LEVEL 4 · USER ID: [REDACTED]</div>
+          <div>SECURITY CLEARANCE LEVEL {currentClearance} — {clearanceLabel(currentClearance)} · USER ID: [REDACTED]</div>
 
           <FooterEasterEgg onUnlockLog={() => unlockAudioLog('unknownSource')} />
         </div>
@@ -262,6 +319,18 @@ const Home: React.FC = () => {
         onComplete={() => {
           try { localStorage.setItem('dharma_subnet_complete', 'true'); } catch {}
         }}
+      />
+
+      {/* Blast Door Map — UV-reveal puzzle, logo 4-click (L3+) or MAP terminal command */}
+      <BlastDoorMap
+        isVisible={isMapOpen}
+        onClose={() => setIsMapOpen(false)}
+      />
+
+      {/* Radio Receiver — frequency dial puzzle, countdown 6-click (L2+) or RADIO terminal command */}
+      <RadioReceiver
+        isVisible={isRadioOpen}
+        onClose={() => setIsRadioOpen(false)}
       />
 
       <PuzzleController

@@ -37,24 +37,27 @@ function grantMessage(newLevel: number): string[] {
   const label = clearanceLabel(newLevel);
   const flavour: Record<number, string[]> = {
     2: [
-      '> Operator identity confirmed.',
+      '> Maritime signal decoded. OPERATOR clearance granted.',
       '> Decryption tools unlocked.',
       '> Intercept log access granted.',
       '>',
-      '> Remember the protocol. It is the only thing that matters here.',
+      '> The man who left that note made it out.',
+      '> We do not know if that was a good thing.',
     ],
     3: [
-      '> Valenzetti sum confirmed. Technician access granted.',
+      '> Carrier wave frequency sum confirmed. TECHNICIAN clearance granted.',
       '> Override and diagnostic tools unlocked.',
       '> Full incident report now accessible.',
+      '> SUBNET access enabled.',
       '>',
       '> The work is difficult. It matters. Do not leave the station.',
     ],
     4: [
-      '> Passphrase verified. Researcher clearance confirmed.',
+      '> Radzinsky\'s cipher cracked. RESEARCHER clearance confirmed.',
       '> Pearl surveillance access granted.',
       '> Classified personnel files unlocked.',
-      '> Kelvin file and coordinates now accessible.',
+      '> Kelvin\'s file and coordinates now accessible.',
+      '> VALENZETTI command now available.',
       '>',
       '> Some things cannot be un-known.',
     ],
@@ -107,11 +110,13 @@ const commands: Record<string, Function> = {
     if (cl >= 2) base.push(
       '>  COMMS         — radio intercept log [L2]',
       '>  DECRYPT [key] — decrypt archived files [L2]',
+      '>  RADIO         — multi-band field receiver [L2]',
     );
     if (cl >= 3) base.push(
       '>  OVERRIDE [p]  — system override protocols [L3]',
       '>  DIAGNOSE [t]  — network diagnostics [L3]',
       '>  SUBNET        — access DHARMA subnet communications [L3]',
+      '>  MAP           — blast door UV analysis [L3]',
     );
     if (cl >= 4) base.push(
       '>  ACCESS [p]    — special access protocols [L4]',
@@ -132,17 +137,10 @@ const commands: Record<string, Function> = {
     const answer = args.trim().toUpperCase().replace(/\s+/g, ' ');
 
     if (!answer) {
-      const hints: Record<number, string> = {
-        1: 'Review the station orientation materials carefully. All operators are verified through them.',
-        2: 'Analyse the intercepted carrier-wave values in COMMS. What is their sum?',
-        3: 'The blast door annotations contain a phrase written twice. Consult RADZINSKY.',
-        4: 'Two paths converge on the same answer. The subnet archives and the incident reports — or V. Kelvin\'s final log. Both name the same designation.',
-        5: 'Maximum clearance achieved.',
-      };
       return [
         `> CLEARANCE: LEVEL ${cl} — ${clearanceLabel(cl)}`,
         cl < 5
-          ? `> UPGRADE PATH: ${hints[cl]}`
+          ? '> VERIFICATION REQUIRED. REVIEW ALL AVAILABLE STATION MATERIALS.'
           : '> No further authentication required.',
         '>',
         '> Usage: AUTHENTICATE [response]',
@@ -265,6 +263,7 @@ const commands: Record<string, Function> = {
       '>  /LOGS/INCIDENT-4-23-1980.TXT ......... [PARTIAL — REDACTED]',
       '>  /LOGS/CYCLE-LOG-10894.TXT',
       '>  /DHARMA/ORIENTATION-REEL-3.TXT',
+      '>  /FILES/PERSONAL-EFFECTS.TXT .......... [CATALOGUED — CYCLE 10801]',
     ];
     if (cl >= 2) list.push(
       '>  /LOGS/ROUSSEAU-TRANSMISSION.TXT ....... [L2]',
@@ -377,9 +376,49 @@ const commands: Record<string, Function> = {
       '>',
       '> — End of transcript. Cycle 9100.',
       '> ─────────────────────────────────────────',
-      '> [TECHNICAL ADDENDUM — SYSTEM VERIFICATION REQUIRED]',
-      '> OPERATOR CLEARANCE VERIFICATION SEQUENCE:',
+      '> [TECHNICAL ADDENDUM — OPERATOR D. HUME — CYCLE 9620]',
+      '> "I set the verification greeting myself, when Kelvin handed',
+      '>  over the terminal. It\'s the word we always said to each other.',
+      '>  I encoded it myself. Standard maritime dot-dash. Here it is:',
+      '>',
       '>   -. .- -- .- ... - .',
+      '>',
+      '>  If you\'re reading this, the station still needs you.',
+      '>  Do not leave. I wish I had not left."',
+      '> ─────────────────────────────────────────',
+    ];
+
+    if (p === 'FILES/PERSONAL-EFFECTS.TXT' || p === 'PERSONAL-EFFECTS.TXT') return [
+      '> FILE: /FILES/PERSONAL-EFFECTS.TXT',
+      '> ─────────────────────────────────────────',
+      '> PERSONAL EFFECTS — OPERATOR A (DEPARTED — CYCLE 10801)',
+      '> Catalogued by: V. Kelvin — Radiotech',
+      '> ─────────────────────────────────────────',
+      '>',
+      '> ITEM 01: Paperback novel — "Our Mutual Friend" by Charles Dickens',
+      '>          [Front cover note: "Not yet. Save it for the last."]',
+      '>          [Back cover note: "Always. — Penny"]',
+      '>',
+      '> ITEM 02: Photograph. Woman on a boat. No date.',
+      '>',
+      '> ITEM 03: Wristwatch. Stopped. Face reads: 8:15.',
+      '>',
+      '> ITEM 04: Torn notebook page.',
+      '>          "I have been here 1,340 days. I talk to myself now.',
+      '>           The button is the only thing keeping me tethered.',
+      '>           If anyone finds this: 4 8 15 16 23 42. Do not stop.',
+      '>           Do not think. Just push it.',
+      '>           — D. Hume"',
+      '>',
+      '> ITEM 05: One keychain, metal. Stamped initials: D.H.',
+      '>',
+      '> ─────────────────────────────────────────',
+      '> NOTE FROM V. KELVIN:',
+      '> "He left in a hurry. Took nothing. Said he could see the ocean',
+      '>  from the hill above the station. I do not know if he made it.',
+      '>  His verification word for the system — the greeting he used —',
+      '>  is encoded in the station orientation transcript.',
+      '>  Standard maritime signalling format. He was proud of that."',
       '> ─────────────────────────────────────────',
     ];
 
@@ -599,6 +638,8 @@ const commands: Record<string, Function> = {
       cl >= 3
         ? '>  CYCLE 10801 — Radzinsky departure. Cause: UNLOGGED.'
         : '>  CYCLE 10801 — [REDACTED — ORDER V.K.]',
+      '>  CYCLE 10801 — Station handover. Personal effects catalogued.',
+      '>                File: READ /FILES/PERSONAL-EFFECTS.TXT',
       '>  CYCLE 10734 — Regular maintenance. No incidents.',
       '>  1980-04-23  — THE INCIDENT.',
       cl >= 3
@@ -640,18 +681,22 @@ const commands: Record<string, Function> = {
       '> SIGNAL: CONTINUOUS LOOP — SECTOR 7',
       '> ORIGIN: UNIDENTIFIED TRANSMITTER',
       '>',
-      '> TRANSCRIPT:',
-      '> "...les numéros sont mauvais..."',
-      '> "...les numéros sont mauvais..."',
+      '> TRANSCRIPT (TRANSLATED — FRENCH):',
+      '> "...the numbers are bad..."',
+      '> "...the numbers are bad..."',
       '>',
-      '> NUMERICAL SEQUENCE EMBEDDED IN CARRIER WAVE:',
+      '> CARRIER WAVE — FREQUENCY PEAKS:',
       '>',
-      '>   FOUR — EIGHT — FIFTEEN — SIXTEEN — TWENTY-THREE — FORTY-TWO',
+      '>   PEAK 01: FOUR          [4 MHz]',
+      '>   PEAK 02: EIGHT         [8 MHz]',
+      '>   PEAK 03: [CORRUPTED]   [-- MHz]  ← capture interference',
+      '>   PEAK 04: [CORRUPTED]   [-- MHz]  ← capture interference',
+      '>   PEAK 05: TWENTY-THREE  [23 MHz]',
+      '>   PEAK 06: FORTY-TWO     [42 MHz]',
       '>',
-      '> ANALYSIS REQUIRED:',
-      '> Cross-reference: VALENZETTI EQUATION.',
-      '> What is the sum of the six carrier-wave values?',
-      '> Type AUTHENTICATE [sum] to proceed.',
+      '> NOTE: Peaks 03 and 04 lost during signal capture.',
+      '> Type DECRYPT FREQUENCIES to attempt data recovery.',
+      '> The sum of all six values is required for authentication.',
       '> ─────────────────────────────────────────',
     ];
   },
@@ -683,9 +728,35 @@ const commands: Record<string, Function> = {
       '> DHARMA primary goal: change one value.',
       '> Current status: UNRESOLVED.',
     ];
+    if (key === 'frequencies') return [
+      '> DECRYPTING CARRIER WAVE — CORRUPTED PEAKS...',
+      '> Accessing backup signal buffer...',
+      '>',
+      '> RECOVERY SUCCESSFUL:',
+      '>   PEAK 03: FIFTEEN   [15 MHz]  ← recovered',
+      '>   PEAK 04: SIXTEEN   [16 MHz]  ← recovered',
+      '>',
+      '> FULL SEQUENCE RESTORED: 4, 8, 15, 16, 23, 42.',
+      '> Sum of all six values: [calculate to authenticate].',
+      '> Cross-reference: VALENZETTI EQUATION.',
+    ];
+    if (key === 'shift') return [
+      '> CIPHER ANALYSIS — RADZINSKY NOTATION SYSTEM:',
+      '>',
+      '> Pattern identified: Caesar cipher, constant shift.',
+      '> Radzinsky\'s known habit: +1 letter shift (A→B, B→C...).',
+      '> His phrase for it: "Always one step ahead of myself."',
+      '>',
+      '> To decode blast door text: subtract 1 from each letter.',
+      '> Example: W→V, J→I, B→A   (first three letters of inscription)',
+      '>',
+      '> Apply to the full blast door inscription.',
+      '> Type BLAST DOOR to view the encoded text.',
+    ];
     return [
       '> ERROR: Key not found.',
-      '> Available: decrypt incident, decrypt blackrock, decrypt valenzetti',
+      '> Available: DECRYPT INCIDENT · DECRYPT FREQUENCIES · DECRYPT SHIFT',
+      '> Also: DECRYPT BLACKROCK · DECRYPT VALENZETTI',
     ];
   },
 
@@ -731,6 +802,38 @@ const commands: Record<string, Function> = {
       '> NOTE: All subnet communications are logged and monitored.',
       '> The engineering channel may contain data of interest.',
       '> Use /download in the subnet to extract archived logs.',
+    ];
+  },
+
+  radio: () => {
+    if (getClearance() < 2) return deny(2);
+    try { localStorage.setItem('dharma_radio_access', 'true'); } catch {}
+    return [
+      '> DHARMA INITIATIVE — FIELD RECEIVER DI-77',
+      '> Powering on...',
+      '> ─────────────────────────────────────────',
+      '> Multi-band receiver online. Launching interface.',
+      '> ─────────────────────────────────────────',
+      '> NOTE: DHARMA station beacons are broadcast on',
+      '> specific assigned frequencies. All six stations',
+      '> transmit on separate bands. Cross-reference',
+      '> station assignments for full spectrum coverage.',
+    ];
+  },
+
+  map: () => {
+    if (getClearance() < 3) return deny(3);
+    try { localStorage.setItem('dharma_map_access', 'true'); } catch {}
+    return [
+      '> BLAST DOOR MAP — UV ANALYSIS PROTOCOL',
+      '> Retrieving archived map data...',
+      '> ─────────────────────────────────────────',
+      '> UV analysis mode active. Launching viewer.',
+      '> ─────────────────────────────────────────',
+      '> NOTE: The blast door carries annotations not',
+      '> visible under standard light. Ultraviolet',
+      '> exposure reveals handwritten notations from',
+      '> previous station occupants.',
     ];
   },
 
@@ -948,6 +1051,26 @@ const commands: Record<string, Function> = {
 const hiddenCommands: Record<string, Function> = {
 
   hello: () => ['> Hello, Operator. Don\'t forget the protocol.'],
+
+  desmond: () => [
+    '> PERSONNEL: D. HUME — FORMER OPERATOR A',
+    '> Status: DEPARTED — Cycle 10801',
+    '>',
+    '> Worked the station for approximately 3 years.',
+    '> Arrived via supply vessel. No formal DHARMA affiliation on record.',
+    '> Recruited directly by V. Kelvin under unusual circumstances.',
+    '>',
+    '> Last documented actions:',
+    '>   — Set up personal verification sequence (orientation reel, Cycle 9620)',
+    '>   — Left all personal belongings at station',
+    '>   — Observed climbing toward Sector 8 ridge (Pearl log, Cycle 10800)',
+    '>',
+    '> Kelvin note: "He saw the boat. I should not have let him see the boat.',
+    '>  That was my mistake. Not his."',
+    '>',
+    '> No confirmed departure. No confirmed survival.',
+    '> File closed — Order V.K.',
+  ],
   why: () => ['> That question is above your current clearance.'],
   namaste: () => ['> NAMASTE AND GOOD LUCK.', '> "To create a better world — through science."'],
 
@@ -1007,10 +1130,19 @@ const hiddenCommands: Record<string, Function> = {
     if (cl >= 3) base.push(
       '>',
       '> Co-authored blast door map (Sublevel A) with V. Kelvin.',
-      '> Final message fragment recovered from Sub-level C terminal:',
-      '>   "Find it. Via domus. There is a way.",',
-      '> The phrase appears twice in the blast door map annotations.',
-      '> Type BLAST DOOR for more context.',
+      '>',
+      '> Known notation habit: Radzinsky encrypted personal writings',
+      '> using a simple letter-shift — each letter advanced one position',
+      '> forward in the alphabet. He called it "staying one step ahead."',
+      '>',
+      '> V. Kelvin noted: "He was paranoid. Even his annotations on the',
+      '> blast door were shifted. I could read them, obviously."',
+      '>',
+      '> Final recovered message fragment (Sub-level C terminal):',
+      '>   "Find it. Step back. The way home."',
+      '>',
+      '> Type BLAST DOOR to view the blast door inscriptions.',
+      '> Type DECRYPT SHIFT for cipher decoding guidance.',
     );
     return base;
   },
@@ -1054,12 +1186,13 @@ const hiddenCommands: Record<string, Function> = {
       '>',
       '> [TECHNICIAN ACCESS — ADDITIONAL ANNOTATIONS]',
       '>   — "CLAIMED TERRITORY — DO NOT ENTER"',
-      '>   — "VIA DOMUS"  (first hand — lower left)',
-      '>   — "VIA DOMUS"  (second hand — upper margin)',
+      '>   — "WJB EPNVT"    (first hand — lower left)',
+      '>   — "WJB EPNVT"    (second hand — upper margin, different writer)',
       '>',
-      '> The phrase appears twice, written by different people.',
-      '> See RADZINSKY for context.',
-      '> Type AUTHENTICATE [phrase from the map] to proceed.',
+      '> The same phrase appears twice, written by two different people.',
+      '> The text appears shifted. Type RADZINSKY for context on the encoding.',
+      '> Type DECRYPT SHIFT for cipher analysis.',
+      '> Type AUTHENTICATE [decoded phrase] to proceed.',
     );
     return base;
   },
