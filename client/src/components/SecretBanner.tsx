@@ -19,7 +19,6 @@ const SecretBanner: React.FC<SecretBannerProps> = ({ message, onDismiss }) => {
   return (
     <div
       id="secBanner"
-      onClick={onDismiss}
       style={{
         position: 'fixed',
         top: 0,
@@ -28,15 +27,28 @@ const SecretBanner: React.FC<SecretBannerProps> = ({ message, onDismiss }) => {
         zIndex: 99997,
         background: 'var(--am)',
         color: '#000',
-        padding: '10px 20px',
+        padding: '8px 20px',
         fontFamily: "'VT323', monospace",
         fontSize: '16px',
-        textAlign: 'center',
-        cursor: 'pointer',
-        borderRadius: 0,
+        letterSpacing: 2,
+        boxSizing: 'border-box',
       }}
     >
       {message}
+      <button
+        onClick={onDismiss}
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          fontFamily: "'VT323', monospace",
+          fontSize: '16px',
+          float: 'right',
+          color: '#000',
+        }}
+      >
+        [X]
+      </button>
     </div>
   );
 };

@@ -17,10 +17,10 @@ const panelStyle: React.CSSProperties = {
 const titleStyle: React.CSSProperties = {
   fontFamily: "'VT323', monospace",
   fontSize: '9px',
-  letterSpacing: '5px',
+  letterSpacing: 5,
   textTransform: 'uppercase',
   color: 'var(--ph-dim)',
-  marginBottom: '12px',
+  marginBottom: 12,
 };
 
 const rowStyle: React.CSSProperties = {
@@ -30,41 +30,48 @@ const rowStyle: React.CSSProperties = {
 
 const buttonStyle: React.CSSProperties = {
   fontFamily: "'VT323', monospace",
-  border: '1px solid var(--bd2)',
-  color: 'var(--ph)',
+  fontSize: '18px',
+  padding: '6px 20px',
+  border: '1px solid var(--bd)',
   background: 'var(--panel)',
-  padding: '6px 24px',
-  marginTop: '12px',
+  color: 'var(--ph-dim)',
   cursor: 'pointer',
-  borderRadius: 0,
+  marginTop: 12,
+  letterSpacing: 3,
 };
 
 const NumberInput: React.FC<NumberInputProps> = ({ onSuccess, onWrong }) => {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [vals, setVals] = useState<string[]>(['', '', '', '', '', '']);
   const [fieldClasses, setFieldClasses] = useState<string[]>(Array(6).fill('nf'));
-  const [rowClass, setRowClass] = useState<string>('');
-  const [btnHover, setBtnHover] = useState(false);
 
   const clearFields = useCallback(() => {
-    inputRefs.current.forEach((el) => {
-      if (el) el.value = '';
-    });
+    setVals(['', '', '', '', '', '']);
   }, []);
 
-  const handleChange = (index: number) => {
-    const el = inputRefs.current[index];
-    if (!el) return;
-    // enforce maxLength 2
-    if (el.value.length > 2) {
-      el.value = el.value.slice(0, 2);
-    }
-    if (el.value.length === 2 && index < 5) {
+  const flashFields = useCallback((cls: string) => {
+    setFieldClasses(Array(6).fill(`nf ${cls}`));
+    setTimeout(() => {
+      setFieldClasses(Array(6).fill('nf'));
+    }, 600);
+  }, []);
+
+  const handleChange = (index: number, raw: string) => {
+    // Strip non-numeric characters and limit to 2 digits
+    const cleaned = raw.replace(/[^0-9]/g, '').slice(0, 2);
+    setVals((prev) => {
+      const next = [...prev];
+      next[index] = cleaned;
+      return next;
+    });
+    if (cleaned.length === 2 && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (e.key === 'Backspace' && (e.target as HTMLInputElement).value === '' && index > 0) {
+    if (e.key === 'Backspace' && vals[index] === '' && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
     if (e.key === 'Enter') {
@@ -73,53 +80,64 @@ const NumberInput: React.FC<NumberInputProps> = ({ onSuccess, onWrong }) => {
   };
 
   const validate = useCallback(() => {
-    const rawVals = inputRefs.current.map((el) => (el ? el.value.trim() : ''));
-    if (rawVals.some((v) => v === '')) return;
+    const parsed = vals.map((v) => (v === '' ? NaN : parseInt(v, 10)));
+    if (parsed.some((v) => isNaN(v))) return;
+    const nums = parsed as number[];
 
-    const vals = rawVals.map(Number);
-
-    const applyAndClear = (
-      classes: string[],
-      classToAdd: string,
-      flashMs: number,
-      shakeRow: boolean,
-      callback: () => void,
-    ) => {
-      if (shakeRow) {
-        setRowClass('num-row-shake');
-        setTimeout(() => setRowClass(''), 400);
+    if (nums.every((v) => v === 0)) {
+      flashFields('flash-err');
+      const row = rowRef.current;
+      if (row) {
+        row.classList.add('num-row-shake');
+        setTimeout(() => row.classList.remove('num-row-shake'), 500);
       }
-      setFieldClasses(classes.map(() => `nf ${classToAdd}`));
       setTimeout(() => {
-        setFieldClasses(Array(6).fill('nf'));
         clearFields();
-        callback();
-      }, flashMs);
-    };
-
-    if (vals.every((v) => v === 0)) {
-      applyAndClear(vals, 'flash-err', 800, true, () => onWrong(vals, 'null_sequence'));
+        onWrong(nums, 'null_sequence');
+      }, 600);
       return;
     }
 
-    if (vals[0] === 42 && vals[5] === 4) {
-      applyAndClear(vals, 'flash-err', 800, true, () => onWrong(vals, 'inverted'));
+    if (nums[0] === 42 && nums[5] === 4) {
+      flashFields('flash-err');
+      const row = rowRef.current;
+      if (row) {
+        row.classList.add('num-row-shake');
+        setTimeout(() => row.classList.remove('num-row-shake'), 500);
+      }
+      setTimeout(() => {
+        clearFields();
+        onWrong(nums, 'inverted');
+      }, 600);
       return;
     }
 
-    const isCorrect = vals.every((v, i) => v === CORRECT[i]);
+    const isCorrect = nums.every((v, i) => v === CORRECT[i]);
 
     if (isCorrect) {
-      applyAndClear(vals, 'flash-ok', 800, false, () => onSuccess(vals));
+      flashFields('flash-ok');
+      setTimeout(() => {
+        clearFields();
+        onSuccess(nums);
+      }, 600);
     } else {
-      applyAndClear(vals, 'flash-err', 800, true, () => onWrong(vals, null));
+      flashFields('flash-err');
+      const row = rowRef.current;
+      if (row) {
+        row.classList.add('num-row-shake');
+        setTimeout(() => row.classList.remove('num-row-shake'), 500);
+      }
+      setTimeout(() => {
+        clearFields();
+        onWrong(nums, null);
+      }, 600);
     }
-  }, [clearFields, onSuccess, onWrong]);
+  }, [vals, clearFields, flashFields, onSuccess, onWrong]);
 
   return (
     <div style={panelStyle}>
       <div style={titleStyle}>EXECUTE PROTOCOL 23</div>
-      <div className={rowClass} style={rowStyle}>
+      <div id="numRow" className="num-row" ref={rowRef} style={rowStyle}>
         {Array.from({ length: 6 }, (_, i) => (
           <input
             key={i}
@@ -128,21 +146,13 @@ const NumberInput: React.FC<NumberInputProps> = ({ onSuccess, onWrong }) => {
             type="number"
             className={fieldClasses[i]}
             placeholder="—"
-            onChange={() => handleChange(i)}
+            value={vals[i]}
+            onChange={(e) => handleChange(i, e.target.value)}
             onKeyDown={(e) => handleKeyDown(e, i)}
           />
         ))}
       </div>
-      <button
-        style={
-          btnHover
-            ? { ...buttonStyle, color: 'var(--ph)', borderColor: 'var(--ph)' }
-            : buttonStyle
-        }
-        onMouseEnter={() => setBtnHover(true)}
-        onMouseLeave={() => setBtnHover(false)}
-        onClick={validate}
-      >
+      <button style={buttonStyle} onClick={validate}>
         EXECUTE
       </button>
     </div>

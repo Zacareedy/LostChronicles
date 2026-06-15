@@ -1,1277 +1,340 @@
-import { playSound } from './audio';
-import { DHARMA_NUMBERS } from './constants';
+declare global {
+  interface Window {
+    cl5: boolean;
+  }
+}
 
-// Current user state
-let isExecutingProtocol = false;
-let pendingAction: string | null = null;
-let accessLevel = 1;
-let commandHistory: string[] = [];
+const commandHistory: string[] = [];
 
-// Terminal commands that will be recognized in the application
-const commands: Record<string, Function> = {
-  help: () => {
-    const basicCommands = [
-      '> Available commands:',
-      '> help - Display this help message',
-      '> status - System status report',
-      '> scan - Scan for signals on the island',
-      '> login <id> - Access restricted areas',
-      '> locate <station> - Find station location',
-      '> puzzle <type> - Access puzzle interfaces',
-      '> upload_log <station> - Upload station log to system',
-      '> clear - Clear terminal'
-    ];
-    
-    // Only show additional commands based on access level
-    if (accessLevel >= 2) {
-      basicCommands.push('> exec - Execute manual override');
-    }
-    
-    if (accessLevel >= 3) {
-      basicCommands.push('> decrypt <file> - Decrypt classified files');
-      basicCommands.push('> override <code> - Override system protocols');
-      // diagnose /sys is removed as requested by users
-      // basicCommands.push('> diagnose /sys - Run system diagnostics');
-    }
-    
-    if (accessLevel >= 4) {
-      basicCommands.push('> access <protocol> - Access special protocols');
-    }
-    
-    // Show developer commands if dev mode is active
-    try {
-      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
-      if (devModeActive) {
-        basicCommands.push('');
-        basicCommands.push('> DEVELOPER COMMANDS:');
-        basicCommands.push('> devmode - Activate developer mode');
-        basicCommands.push('> devmode-exit - Exit developer mode and restore previous state');
-        basicCommands.push('> setcountdown <minutes> <seconds> - Set countdown timer');
-        basicCommands.push('> setcountdown <seconds> - Set countdown timer in seconds');
-        basicCommands.push('> resetall - Reset all app data and return to initial state');
-        basicCommands.push('');
-        basicCommands.push('> PUZZLE COMMANDS:');
-        basicCommands.push('> puzzle hieroglyph - Start Hieroglyph puzzle (RESTRICTED)');
-        basicCommands.push('> puzzle subnet - Start Subnet Protocol puzzle');
-        basicCommands.push('> puzzle blackbox - Start Black Box Archive puzzle');
-        basicCommands.push('> puzzle candle - Start Project Candle puzzle');
-        basicCommands.push('> puzzle void - Start Void Directory puzzle');
-      }
-    } catch (e) {
-      // Ignore localStorage errors
-    }
-    
-    return basicCommands;
-  },
-  
-  status: () => {
-    const powerLevel = Math.floor(Math.random() * 15) + 70; // Random between 70-85%
-    
-    // Show different status based on system state
-    if (pendingAction === 'protocol') {
-      return [
-        '> SYSTEM STATUS: PROTOCOL EXECUTION REQUIRED',
-        `> Electromagnetic containment: UNSTABLE`,
-        `> Power reserve: ${powerLevel}% (DECREASING)`,
-        '> Communication systems: COMPROMISED',
-        '> Last maintenance: 16 days ago',
-        '> WARNING: System failure imminent in 108 minutes',
-        '> Please enter the numbers to reset the system.'
-      ];
-    }
-    
-    return [
-      '> SYSTEM STATUS:',
-      `> Electromagnetic containment: ${accessLevel >= 3 ? 'FLUCTUATING' : 'ACTIVE'}`,
-      `> Power reserve: ${powerLevel}%`,
-      '> Communication systems: LIMITED',
-      '> Last maintenance: 16 days ago',
-      accessLevel >= 2 ? '> WARNING: Protocol execution required' : '> System operational'
-    ];
-  },
-  
-  scan: () => {
-    const stationsDetected = Math.min(accessLevel + 2, 6);
-    
-    if (commandHistory.includes('scan') && Math.random() < 0.3) {
-      // Sometimes show an anomaly on repeat scans
-      setTimeout(() => {
-        playSound('static', 'short');
-      }, 1000);
-      
-      return [
-        '> SCANNING ISLAND...',
-        '> ANOMALY DETECTED',
-        '> Signal interference at coordinates 4.815 N, 162.342 W',
-        '> Unknown energy signature',
-        '> WARNING: Possible security breach'
-      ];
-    }
-    
-    return [
-      '> SCANNING ISLAND...',
-      `> ${stationsDetected} DHARMA stations detected`,
-      '> Signal strength: MODERATE',
-      '> Interference detected in SECTOR 23',
-      accessLevel >= 2 ? '> Pearl station surveillance feed active' : ''
-    ];
-  },
-  
-  login: (args: string, onRevealPuzzle?: () => void) => {
-    if (args === '4815162342') {
-      accessLevel = Math.max(accessLevel, 3);
-      if (onRevealPuzzle) {
-        setTimeout(() => {
-          onRevealPuzzle();
-        }, 1000);
-      }
-      return ['> ACCESS GRANTED: Welcome, Dr. DeGroot', '> Security level 3 access granted'];
-    } else if (args === 'dharma77') {
-      accessLevel = Math.max(accessLevel, 2);
-      return ['> ACCESS GRANTED: Welcome, Station Operator', '> Security level 2 access granted'];
-    } else if (args === 'C22/DSTNGSHD-LBRT') {
-      // This is the code from the system error page
-      accessLevel = Math.max(accessLevel, 4);
-      // Store in localStorage that user found Pearl access code
-      try {
-        localStorage.setItem('dharma_pearl_access', 'true');
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      return [
-        '> DISTINGUISHED LIBERTY PROTOCOL ACTIVATED',
-        '> Pearl station surveillance access granted',
-        '> Security level 4 access granted',
-        '> SYSTEM ALERT: New incident report available'
-      ];
-    } else {
-      playSound('fail');
-      return ['> ACCESS DENIED: Invalid credentials'];
-    }
-  },
-  
-  locate: (args: string, onRevealStation?: (stationName: string) => void) => {
-    const stations: Record<string, string> = {
-      'swan': 'Sector 4: Electromagnetic research',
-      'pearl': 'Sector 8: Psychological research and surveillance',
-      'flame': 'Sector 15: Communications',
-      'arrow': 'Sector 16: Defense',
-      'staff': 'Sector 23: Medical research',
-      'orchid': 'Sector 42: Time research'
-    };
-    
-    if (args && stations[args.toLowerCase()]) {
-      if (onRevealStation) {
-        // Only reveal station if user has sufficient access level
-        // Pearl requires higher access
-        if (args.toLowerCase() === 'pearl' && accessLevel < 2) {
-          return ['> ERROR: Insufficient clearance for Pearl station', '> Security level 2 required'];
-        }
-        // Orchid requires highest access
-        if (args.toLowerCase() === 'orchid' && accessLevel < 4) {
-          return ['> ERROR: Insufficient clearance for Orchid station', '> Security level 4 required'];
-        }
-        
-        onRevealStation(args.toLowerCase());
-      }
-      
-      // Show easter egg hint for Pearl station
-      if (args.toLowerCase() === 'pearl' && accessLevel >= 2) {
-        return [
-          `> LOCATION: ${args.toUpperCase()}`,
-          `> ${stations[args.toLowerCase()]}`,
-          '> Coordinates updated on map',
-          '> NOTE: Pearl station contains monitors of all other stations',
-          '> Access code required for surveillance feed'
-        ];
-      }
-      
-      return [
-        `> LOCATION: ${args.toUpperCase()}`,
-        `> ${stations[args.toLowerCase()]}`,
-        '> Coordinates updated on map'
-      ];
-    } else {
-      return ['> ERROR: Station not found. Try: swan, pearl, flame, arrow, staff, orchid'];
-    }
-  },
-  
-  exec: (args: string) => {
-    if (accessLevel < 2) {
-      return ['> ACCESS DENIED: Security level 2 required'];
-    }
-    
-    // Check if trying to execute subnet daemon
-    if (args === 'subnet.daemon') {
-      return [
-        '> ATTEMPTING TO EXECUTE SUBNET.DAEMON',
-        '> ERROR: DAEMON INITIALIZATION FAILED',
-        '> Path /lib/subnet.daemon not found',
-        '> Try checking /mnt/ directory for network configuration files'
-      ];
-    }
-    
-    // Default behavior for exec with no args - protocol execution
-    if (!args) {
-      isExecutingProtocol = true;
-      pendingAction = 'protocol';
-      
-      return [
-        '> MANUAL OVERRIDE PROTOCOL INITIATED',
-        '> VALENZETTI EQUATION PARAMETERS REQUIRED',
-        '> Enter the numbers: _ _ _ _ _ _'
-      ];
-    }
-    
-    return [
-      `> ATTEMPTING TO EXECUTE: ${args}`,
-      '> ERROR: Command not found or insufficient permissions',
-      '> Please check command syntax and try again'
-    ];
-  },
-  
-  decrypt: (args: string) => {
-    if (accessLevel < 3) {
-      return ['> ACCESS DENIED: Security level 3 required'];
-    }
-    
-    if (args === 'incident') {
-      // Reveal a hidden report
-      try {
-        localStorage.setItem('dharma_incident_unlocked', 'true');
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      
-      return [
-        '> DECRYPTING "THE INCIDENT" FILE...',
-        '> Incident report partially recovered',
-        '> Security incident involving electromagnetic anomaly',
-        '> Several casualties reported',
-        '> Protocol initiated to prevent future incidents',
-        '> Full report now available in archives'
-      ];
-    } else if (args === 'blackrock') {
-      return [
-        '> DECRYPTING "BLACK ROCK" FILE...',
-        '> 19th century slave ship',
-        '> Transported explosives',
-        '> Shipwrecked on island during storm',
-        '> Current location: Dark Territory',
-        '> WARNING: Explosives still viable'
-      ];
-    } else if (args === 'valenzetti') {
-      return [
-        '> DECRYPTING "VALENZETTI EQUATION" FILE...',
-        '> Mathematical expression predicting mankind\'s extinction',
-        '> Core values: 4, 8, 15, 16, 23, 42',
-        '> DHARMA INITIATIVE PRIMARY GOAL: Change at least one core value',
-        '> Current status: FAILURE',
-        '> WARNING: File contains level 5 classified information'
-      ];
-    } else {
-      return [
-        '> ERROR: File not found or insufficient clearance',
-        '> Available files: incident, blackrock, valenzetti'
-      ];
-    }
-  },
-  
-  override: (args: string) => {
-    if (accessLevel < 3) {
-      return ['> ACCESS DENIED: Security level 3 required'];
-    }
-    
-    if (args === 'system-error') {
-      // This is a hidden command that reveals a secret URL
-      try {
-        localStorage.setItem('dharma_error_allowed', 'true');
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      
-      return [
-        '> SYSTEM ERROR PROTOCOL ENGAGED',
-        '> Debug interface available at: /system-error',
-        '> WARNING: UNAUTHORIZED ACCESS TO DEBUG INTERFACE IS PROHIBITED',
-        '> USE AT YOUR OWN RISK'
-      ];
-    } else {
-      return [
-        '> ERROR: Invalid override parameter',
-        '> System integrity maintained'
-      ];
-    }
-  },
-  
-  access: (args: string) => {
-    if (accessLevel < 4) {
-      return ['> ACCESS DENIED: Security level 4 required'];
-    }
-    
-    if (args === 'pearl-surveillance') {
-      try {
-        localStorage.setItem('dharma_surveillance_active', 'true');
-        // Unlock all stations as a reward
-        localStorage.setItem('dharma_all_stations', 'true');
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      
-      return [
-        '> PEARL SURVEILLANCE PROTOCOL ACTIVATED',
-        '> Accessing video feeds from all stations...',
-        '> WARNING: You are now in observation mode',
-        '> All station locations have been revealed on the map',
-        '> New incident report available: SYSTEM FAILURE LOG'
-      ];
-    } else {
-      return [
-        '> ERROR: Protocol not recognized',
-        '> Available protocols: pearl-surveillance'
-      ];
-    }
-  },
-  
-  upload_log: (args: string) => {
-    const validStations = ['swan', 'pearl', 'flame', 'arrow', 'staff', 'orchid'];
-    const stationName = args.toLowerCase();
-    
-    if (!stationName) {
-      return [
-        '> ERROR: Station name required',
-        '> Usage: upload_log <station>',
-        '> Example: upload_log swan'
-      ];
-    }
-    
-    if (!validStations.includes(stationName)) {
-      return [
-        `> ERROR: Unknown station "${stationName}"`,
-        '> Valid stations: swan, pearl, flame, arrow, staff, orchid'
-      ];
-    }
-    
-    // Track uploaded stations
-    try {
-      const uploadedStationsStr = localStorage.getItem('dharma_uploaded_logs') || '[]';
-      const uploadedStations = JSON.parse(uploadedStationsStr);
-      
-      if (uploadedStations.includes(stationName)) {
-        return [
-          `> Station log for ${stationName.toUpperCase()} already uploaded.`,
-          '> No new data to process.'
-        ];
-      }
-      
-      // Add this station to the uploaded logs
-      uploadedStations.push(stationName);
-      localStorage.setItem('dharma_uploaded_logs', JSON.stringify(uploadedStations));
-      
-      // Check if we've reached 3+ stations - reveal the transmission log
-      if (uploadedStations.length >= 3) {
-        localStorage.setItem('dharma_transmission_log_available', 'true');
-        
-        return [
-          `> ${stationName.toUpperCase()} station log uploaded successfully.`,
-          '> Processing data...',
-          '> NEW FILE AVAILABLE: /archive/swan/transmission.log',
-          '> Type "cat /archive/swan/transmission.log" to view file contents.'
-        ];
-      }
-      
-      return [
-        `> ${stationName.toUpperCase()} station log uploaded successfully.`,
-        '> Processing data...',
-        `> ${3 - uploadedStations.length} more station logs required for complete analysis.`
-      ];
-      
-    } catch (e) {
-      // Handle localStorage errors
-      return [
-        `> ${stationName.toUpperCase()} station log uploaded.`,
-        '> Warning: Error storing upload history.'
-      ];
-    }
-  },
+export function getCommandHistory(): string[] {
+  return commandHistory;
+}
 
-  puzzle: (args: string, onRevealPuzzle?: () => void) => {
-    // Check for blackbox recovery
-    if (args === 'blackbox' && localStorage.getItem('dharma_blackbox_recovered') === 'true') {
-      return [
-        '> RECOVERED FILE DETECTED: /recovered/flightpath.mp4',
-        '> Use "play flightpath.mp4" to analyze black box data'
-      ];
-    }
-    
-    // Check if puzzle type is valid
-    const validPuzzles = [
-      'hieroglyph', 'subnet', 
-      'blackbox', 'candle', 'void'
-    ];
-    
-    // Store puzzle type in local storage for app to pick up
-    const launchPuzzle = (puzzleType: string) => {
-      try {
-        localStorage.setItem('dharma_launch_puzzle', puzzleType);
-        // Trigger callback to parent component
-        if (onRevealPuzzle) {
-          setTimeout(() => {
-            onRevealPuzzle();
-          }, 500);
-        }
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-    };
-    
-    if (!args) {
-      return [
-        '> PUZZLE TYPE REQUIRED',
-        '> Usage: puzzle <type>',
-        '> Available puzzles: subnet',
-        '> Additional puzzles require elevated security clearance'
-      ];
-    }
-    
-    const puzzleType = args.toLowerCase();
-    
-    if (!validPuzzles.includes(puzzleType)) {
-      return [
-        `> ERROR: Unknown puzzle type "${puzzleType}"`,
-        '> Available puzzles: subnet'
-      ];
-    }
-    
-    // Check security level for advanced or hidden puzzles
-    if (['hieroglyph', 'blackbox', 'candle', 'void'].includes(puzzleType)) {
-      // These puzzles require access level 3 or dev mode
-      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
-      
-      if (accessLevel < 3 && !devModeActive) {
-        return [
-          '> ACCESS DENIED: This module is currently RESTRICTED',
-          '> Security level 3 required or system administrator override'
-        ];
-      }
-    }
-    
-    // Launch the puzzle
-    launchPuzzle(puzzleType);
-    
-    return [
-      `> LAUNCHING ${puzzleType.toUpperCase()} PUZZLE INTERFACE...`,
-      '> Please wait while the system initializes the module'
-    ];
-  },
+export function addToHistory(cmd: string): void {
+  commandHistory.push(cmd);
+}
 
-  diagnose: (args: string) => {
-    if (accessLevel < 3) {
-      return ['> ACCESS DENIED: Security level 3 required for system diagnostics'];
-    }
-    
-    if (args === '/net') {
-      // The corrupted file table showing subnet.daemon as requested
-      return [
-        '> DHARMA INITIATIVE NETWORK DIAGNOSTIC',
-        '> Scanning network components...',
-        '> WARNING: Corrupted file table detected',
-        '> ----------------------------------------',
-        '> FILE INDEX                 TYPE     STATUS',
-        '> ----------------------------------------',
-        '> /mnt/net_link.sys         SYS      ERR-404',
-        '> /lib/subnet.daemon        DAEMON   INACTIVE',
-        '> /var/log/subnet_access.db DB       CORRUPT',
-        '> /etc/hosts.dharma         CONFIG   OK',
-        '> ----------------------------------------',
-        '> ERROR: Network diagnostics could not complete',
-        '> Try: exec subnet.daemon to initialize network services'
-      ];
-    } else {
-      return [
-        '> ERROR: Invalid diagnostic target',
-        '> Usage: diagnose /net',
-        '> Other diagnostic targets unavailable in this terminal'
-      ];
-    }
-  },
-  
-  "4 8 15 16 23 42": (args: string, onRevealPuzzle?: any, onRevealStation?: any, onCorrectSequence?: () => void) => {
-    // Handle entering the numbers directly
-    if (pendingAction === 'protocol' || isExecutingProtocol) {
-      isExecutingProtocol = false;
-      pendingAction = null;
-      
-      if (onCorrectSequence) {
-        onCorrectSequence();
-      }
-      
-      return [
-        '> NUMBERS ACCEPTED',
-        '> PROTOCOL EXECUTED SUCCESSFULLY',
-        '> System reset complete',
-        '> Electromagnetic field stabilized',
-        '> Counter reset to 108 minutes'
-      ];
-    }
-    
-    return [
-      '> VALENZETTI PARAMETERS RECOGNIZED',
-      '> WARNING: DIRECT INPUT NOT AUTHORIZED',
-      '> Please use appropriate command protocols'
-    ];
-  },
-  
-  ls: (args: string) => {
-    // Parse arguments for ls command
-    let showHidden = false;
-    let dirPath = '';
-    
-    // Handle different argument formats
-    if (args.includes('-a')) {
-      showHidden = true;
-      // Extract the directory path after -a flag
-      const parts = args.split(' ');
-      for (const part of parts) {
-        if (part !== '-a' && part.trim() !== '') {
-          dirPath = part;
-          break;
-        }
-      }
-    } else {
-      dirPath = args;
-    }
-    
-    // Different directories have different contents
-    if (dirPath === '/mnt' || dirPath === '/mnt/') {
-      if (showHidden) {
-        return [
-          '> DIRECTORY LISTING: /mnt',
-          '> .',
-          '> ..',
-          '> .readme',
-          '> .dharmanet',
-          '> net_link.sys.bak',
-          '> dharma_config.dat'
-        ];
-      } else {
-        return [
-          '> DIRECTORY LISTING: /mnt',
-          '> net_link.sys.bak',
-          '> dharma_config.dat'
-        ];
-      }
-    } else if (dirPath === '/mnt/.dharmanet' || dirPath === '/mnt/.dharmanet/') {
-      return [
-        '> DIRECTORY LISTING: /mnt/.dharmanet',
-        '> .',
-        '> ..',
-        '> init_socket.sh           (executable script - use "cat" to run)',
-        '> subnet_log.db            (database file)',
-        '> protocol_candle.ref      (reference document)'
-      ];
-    } else if (!dirPath || dirPath === '.' || dirPath === './') {
-      // Root directory listing
-      const files = [
-        '> DIRECTORY LISTING: /',
-        '> bin/',
-        '> etc/',
-        '> lib/',
-        '> mnt/',
-        '> usr/',
-        '> var/'
-      ];
-      
-      if (showHidden) {
-        files.splice(1, 0, '> .', '> ..');
-      }
-      
-      return files;
-    } else {
-      return [
-        `> DIRECTORY LISTING: ${dirPath}`,
-        '> ERROR: Directory not found or permission denied'
-      ];
-    }
-  },
-  
-  cat: (args: string) => {
-    // View file contents
-    if (args === '/archive/swan/transmission.log') {
-      // Check if user has unlocked this file
-      const transmissionLogAvailable = localStorage.getItem('dharma_transmission_log_available') === 'true';
-      
-      if (!transmissionLogAvailable) {
-        return [
-          '> ERROR: File not found.',
-          '> /archive/swan/transmission.log does not exist.',
-          '> Try uploading station logs first with upload_log command.'
-        ];
-      }
-      
-      // Mark transmission log as found
-      localStorage.setItem('dharma_transmission_found', 'true');
-      
-      return [
-        '> FILE: /archive/swan/transmission.log',
-        '> ----------------------------------------',
-        '> DHARMA INITIATIVE TRANSMISSION LOG',
-        '> SWAN STATION - MONITORING REPORT',
-        '> ----------------------------------------',
-        '> Date: 1985-07-04',
-        '> Operator: S. Goodspeed',
-        '> ',
-        '> 04:08 - Regular system check completed. All normal.',
-        '> ',
-        '> 15:16 - Alternate frequency detected — unknown origin.',
-        '> Signal appears to be broadcasting from coordinates',
-        '> approximately 3km off northwest shore.',
-        '> ',
-        '> 23:42 - Second sweep confirms signal presence.',
-        '> Multiple frequencies detected: 4.8, 15.16, 23.42 MHz',
-        '> Recommendation: Monitor these frequencies for patterns.',
-        '> ',
-        '> NOTE: Radio receiver can be activated with command:',
-        '> radio.listen(frequency)',
-        '> Example: radio.listen(4.8)',
-        '> ----------------------------------------'
-      ];
-    }
-    
-    if (args === '/mnt/.readme') {
-      return [
-        '> FILE: /mnt/.readme',
-        '> ----------------------------------------',
-        '> DHARMA INITIATIVE NETWORK CONFIGURATION',
-        '> Last updated: 1987-06-12',
-        '> ',
-        '> Network administration is handled through the',
-        '> hidden .dharmanet directory. Access to subnet',
-        '> protocol is restricted to authorized personnel.',
-        '> ',
-        '> To initialize subnet connection, use the shell script',
-        '> located at /mnt/.dharmanet/init_socket.sh',
-        '> ',
-        '> Contact Stuart Radzinsky for authorization.',
-        '> ----------------------------------------'
-      ];
-    } else if (args === '/mnt/net_link.sys.bak') {
-      return [
-        '> FILE: /mnt/net_link.sys.bak',
-        '> ----------------------------------------',
-        '> ERROR: File corrupted',
-        '> [DATA UNREADABLE]',
-        '> ----------------------------------------'
-      ];
-    } else if (args === '/mnt/.dharmanet/init_socket.sh') {
-      // Store in localStorage that the subnet puzzle should be launched
-      try {
-        localStorage.setItem('dharma_launch_puzzle', 'subnet');
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      
-      return [
-        '> EXECUTING: /mnt/.dharmanet/init_socket.sh',
-        '> ----------------------------------------',
-        '> Initializing network connection...',
-        '> Connecting to subnet protocol...',
-        '> Opening communication channels...',
-        '> Launching interface module...',
-        '> ----------------------------------------'
-      ];
-    } else if (args === '/mnt/.dharmanet/subnet_log.db') {
-      return [
-        '> FILE: /mnt/.dharmanet/subnet_log.db',
-        '> ----------------------------------------',
-        '> Database format: DHARMA-DB v2.3',
-        '> Status: PARTIALLY CORRUPTED',
-        '> Contents: Communication logs from subnet protocol',
-        '> Last accessed: 12-Jul-1988',
-        '> Notes: Contains multiple references to "protocol candle"',
-        '> and communications with user "Alvar.H"',
-        '> ',
-        '> WARNING: Some logs contradict official records.',
-        '> To view database content, execute the command:',
-        '> cat /mnt/.dharmanet/init_socket.sh',
-        '> ----------------------------------------'
-      ];
-    } else if (args === '/mnt/.dharmanet/protocol_candle.ref') {
-      return [
-        '> FILE: /mnt/.dharmanet/protocol_candle.ref',
-        '> ----------------------------------------',
-        '> PROJECT CANDLE: CLASSIFICATION LEVEL 4',
-        '> ',
-        '> Station designations:',
-        '> SWAN (3) - Electromagnetic Research',
-        '> FLAME (4) - Communications',
-        '> PEARL (5) - Surveillance',
-        '> ARROW (1) - Defense',
-        '> STAFF (6) - Medical Research',
-        '> ORCHID (6) - Time/Space Research',
-        '> ',
-        '> All stations maintain subnet connectivity',
-        '> through FLAME central communications hub.',
-        '> ----------------------------------------'
-      ];
-    } else {
-      return [
-        `> FILE: ${args}`,
-        '> ERROR: File not found or permission denied'
-      ];
-    }
-  },
-  
-  cd: (args: string) => {
-    // Fake directory navigation (just for simulation)
-    if (args === '/mnt' || args === '/mnt/' || args === '../mnt') {
-      return ['> CHANGED DIRECTORY TO: /mnt'];
-    } else if (args === '/mnt/.dharmanet' || args === '.dharmanet') {
-      return ['> CHANGED DIRECTORY TO: /mnt/.dharmanet'];
-    } else if (args === '/' || args === '/..') {
-      return ['> CHANGED DIRECTORY TO: /'];
-    } else if (args === '.' || args === '') {
-      return ['> CURRENT DIRECTORY UNCHANGED'];
-    } else {
-      return [`> ERROR: Cannot change directory to ${args}`, '> No such directory or permission denied'];
-    }
-  },
-  
-  clear: () => []
+const SECRETS: Record<string, string[]> = {
+  HELLO: [
+    `<span class="tm">Hello, Operator. Don't forget the protocol.</span>`,
+  ],
+
+  WHY: [
+    `<span class="td">That question is above your current clearance.</span>`,
+  ],
+
+  OUTSIDE: [
+    `<span class="tr">DO NOT GO OUTSIDE. The quarantine is active. This instruction is not precautionary.</span>`,
+  ],
+
+  QUARANTINE: [
+    `<span class="td">The outside air was last independently tested in 1987. Protocol mandates internal operations only.</span>`,
+    `<span class="td">We have learned there are additional reasons not to go outside. They are not documented here.</span>`,
+  ],
+
+  FAILSAFE: [
+    `<span class="ta">The failsafe key — Sub-level C, housing F-7.</span>`,
+    `<span class="ta">Turning it will trigger uncontrolled discharge. It is the absolute last resort.</span>`,
+    `<span class="ta">Do not remove it from the housing.</span>`,
+    `<span class="tr">If you are considering using it, you have already failed at everything else.</span>`,
+  ],
+
+  SMOKE: [
+    `<span class="td">SONAR ANOMALY LOG — ORGANIC ENTITY DETECTIONS</span>`,
+    `<span class="td">Cycle 10201: Large organic entity detected — bearing 227 — duration 4 min 11 sec</span>`,
+    `<span class="td">Cycle 10445: Large organic entity detected — bearing 109 — duration 2 min 58 sec</span>`,
+    `<span class="td">Cycle 10778: Large organic entity detected — bearing 015 — duration 7 min 22 sec</span>`,
+    `<span class="ta">The anomaly has not breached the station while Protocol 23 is maintained.</span>`,
+    `<span class="td">We do not know if this is causal.</span>`,
+  ],
+
+  JACOB: [
+    `<span class="tr">!! THAT NAME IS NOT TO BE USED ON THIS INTRANET !!</span>`,
+    `<span class="tr">Session has been flagged for security review.</span>`,
+  ],
+
+  PENNY: [
+    `<span class="td">"Not Penny's Boat."</span>`,
+    `<span class="td">Log origin: unknown. Cycle: post-10800.</span>`,
+    `<span class="td">This phrase appears in two other redacted logs. Cross-reference: abandoned.</span>`,
+  ],
+
+  HURLEY: [
+    `<span class="td">Cross-referencing lottery ticket with station protocol sequence...</span>`,
+    `<span class="tr">LEVEL 6 REQUIRED.</span>`,
+  ],
+
+  RADZINSKY: [
+    `<span class="tb">PERSONNEL FILE</span>`,
+    `<span class="td">S. RADZINSKY — Operator A (former)</span>`,
+    `<span class="td">Status: CLASSIFIED — ORDER V.K.</span>`,
+    `<span class="td">Notes: Co-authored blast door map (Sublevel A).</span>`,
+  ],
+
+  SOS: [
+    `<span class="tr">External comms are permanently blocked. §7-B. No exceptions.</span>`,
+    `<span class="td">You are where you need to be. Execute the protocol.</span>`,
+  ],
+
+  'PUSH THE BUTTON': [
+    `<span class="tm">Yes. That is exactly what you are here for.</span>`,
+  ],
+
+  MAMA: [
+    `<span class="td">This is not a record player, Operator.</span>`,
+  ],
+
+  INMAN: [
+    `<span class="tb">PERSONNEL FILE</span>`,
+    `<span class="td">J. INMAN — Former operator.</span>`,
+    `<span class="td">Departure circumstances: unclear. Last active cycle: ~10500-range.</span>`,
+    `<span class="tr">File: REDACTED — ORDER V.K.</span>`,
+  ],
+
+  'BLAST DOOR': [
+    `<span class="td">The blast door map — Sublevel A.</span>`,
+    `<span class="td">Compiled across many years by two operators.</span>`,
+    `<span class="td">One annotation reads: 'I AM HERE.'</span>`,
+    `<span class="ta">We do not know who wrote it. We do not know if they still are.</span>`,
+  ],
+
+  '108': [
+    `<span class="td">108 minutes.</span>`,
+    `<span class="td">We initially believed the interval was chosen for operational convenience.</span>`,
+    `<span class="ta">We no longer hold that belief.</span>`,
+  ],
+
+  WATCH: [
+    `<span class="td">There are camera positions you have not been told about.</span>`,
+    `<span class="ta">The island is always watching.</span>`,
+    `<span class="td">This terminal session is being recorded.</span>`,
+  ],
 };
 
-// Easter eggs and hidden commands
-const hiddenCommands: Record<string, Function> = {
-  'radio.listen': (args: string, onRevealPuzzle?: () => void) => {
-    // Parse the frequency from the args
-    // Format: radio.listen(frequency) or radio.listen frequency
-    if (!args) {
-      return [
-        '> ERROR: Frequency required',
-        '> Usage: radio.listen(frequency) or radio.listen frequency',
-        '> Example: radio.listen(4.8) or radio.listen 4.8'
-      ];
-    }
-    
-    let userFrequency: number | null = null;
-    
-    // Try parenthesis format: radio.listen(4.8)
-    const parenMatch = args.match(/\(([\d.]+)\)/);
-    if (parenMatch) {
-      userFrequency = parseFloat(parenMatch[1]);
-    } else {
-      // Try space format: radio.listen 4.8
-      const spaceMatch = args.trim().match(/^([\d.]+)$/);
-      if (spaceMatch) {
-        userFrequency = parseFloat(spaceMatch[1]);
-      }
-    }
-    
-    // If no valid frequency was found
-    if (userFrequency === null || isNaN(userFrequency)) {
-      return [
-        '> ERROR: Invalid frequency format',
-        '> Usage: radio.listen(frequency) or radio.listen frequency',
-        '> Example: radio.listen(4.8) or radio.listen 4.8'
-      ];
-    }
-    
-    // Check if transmission log was found first
-    const transmissionFound = localStorage.getItem('dharma_transmission_found') === 'true';
-    if (!transmissionFound) {
-      return [
-        '> ERROR: Radio receiver not calibrated',
-        '> Check transmission logs for instructions'
-      ];
-    }
-    
-    // Check if it's one of the special frequencies
-    const specialFrequencies = [4.8, 15.16, 23.42];
-    if (specialFrequencies.includes(userFrequency)) {
-      // Launch the radio puzzle with this frequency pre-set
-      try {
-        localStorage.setItem('dharma_launch_puzzle', 'radio');
-        localStorage.setItem('dharma_radio_frequency', userFrequency.toString());
-        
-        // Trigger the puzzle launch
-        if (onRevealPuzzle) {
-          setTimeout(() => {
-            onRevealPuzzle();
-          }, 500);
-        }
-      } catch (e) {
-        // Ignore localStorage errors
-      }
-      
-      return [
-        `> TUNING RADIO TO: ${userFrequency} MHz`,
-        '> Signal detected...',
-        '> Connecting to radio interface...',
-        '> Analyzing transmission patterns...'
-      ];
-    }
-    
-    // Regular frequencies just return text
-    return [
-      `> TUNING RADIO TO: ${userFrequency} MHz`,
-      '> ...',
-      '> No significant signal detected',
-      '> Try another frequency'
-    ];
-  },
-  
-  'dharma': () => [
-    '> DHARMA INITIATIVE PERSONNEL DATABASE',
-    '> ACCESS RESTRICTED',
-    '> ENTER VALENZETTI PARAMETERS TO CONTINUE'
-  ],
-  
-  'namaste': () => [
-    '> NAMASTE AND GOOD LUCK',
-    '> "The DHARMA Initiative - to create a better future for our world through science."'
-  ],
-  
-  'numbers': () => [
-    '> 4 8 15 16 23 42',
-    '> THE NUMBERS ARE BAD',
-    '> SYSTEM ALERT: SECURITY BREACH DETECTED'
-  ],
-  
-  'jacob': () => [
-    '> [TRANSMISSION INTERCEPTED]',
-    '> "He\'s coming. And he\'s angry."',
-    '> [CONNECTION TERMINATED]'
-  ],
-  
-  'smokey': () => [
-    '> [SECURITY ALERT]', 
-    '> STATION PERIMETER BREACHED',
-    '> HOSTILE ENTITY DETECTED',
-    '> LOCKDOWN INITIATED'
-  ],
-  
-  'oceanic815': () => [
-    '> FLIGHT MANIFEST FOUND',
-    '> SURVIVORS DETECTED ON NORTH SHORE',
-    '> DIRECTIVE: OBSERVE BUT DO NOT ENGAGE'
-  ],
-  
-  'theisland': () => [
-    '> "The Island is not a where, it is a what."',
-    '> ACCESS TO FURTHER INFORMATION RESTRICTED',
-    '> LEVEL 5 CLEARANCE REQUIRED'
-  ],
-  
-  'danielle': () => [
-    '> SEARCHING FOR "DANIELLE"...',
-    '> Reference found: Rousseau, Danielle',
-    '> Status: MAROONED',
-    '> Location: SECTOR 7',
-    '> WARNING: Subject is mentally unstable and considered dangerous',
-    '> Approach with caution'
-  ],
-  
-  'lockdown': () => {
-    try {
-      localStorage.setItem('dharma_lockdown', 'active');
-    } catch (e) {
-      // Ignore localStorage errors
-    }
-    
-    return [
-      '> LOCKDOWN PROTOCOL INITIATED',
-      '> All blast doors engaged',
-      '> WARNING: Map visible on blast door during UV illumination',
-      '> Lockdown will end automatically in 3 minutes'
-    ];
-  },
-  
-  'orientation': () => [
-    '> DHARMA INITIATIVE ORIENTATION',
-    '> STATION 3: THE SWAN',
-    '> HISTORY: Constructed in 1977',
-    '> PURPOSE: Electromagnetic research and containment',
-    '> PROTOCOL: Enter the code every 108 minutes',
-    '> WARNING: Do not attempt to use the computer for communication'
-  ],
-  
-  'hello': () => [
-    '> Hello, operator.',
-    '> How can I assist with today\'s protocol implementation?',
-    '> DHARMA INITIATIVE thanks you for your service.'
-  ],
-  
-  'hanso': () => [
-    '> HANSO FOUNDATION RECORD',
-    '> Founded by Alvar Hanso',
-    '> Mission: Technological innovation for humanity\'s future',
-    '> Funded DHARMA Initiative in 1970',
-    '> Current status: [REDACTED]'
-  ],
-  
-  'what is your name': () => [
-    '> I am DHARMA INITIATIVE COMPUTER INTERFACE VERSION 4.07',
-    '> You may call me DIC-4.0',
-    '> I assist with station operation and protocol compliance'
+const FILES: Record<string, string[]> = {
+  '/PROTOCOL/PROTOCOL-23.TXT': [
+    `<span class="th">Station 3 — Swan. Protocol 23. Established 1980-04-23.</span>`,
+    `<span class="td">Objective: Prevent EM discharge event.</span>`,
+    `<span class="td">Procedure: Input sequence every 108 minutes. Six values. Two digits each. Known to all authorised personnel.</span>`,
+    `<span class="td">Failure stages:</span>`,
+    `<span class="td">  (1) Warning alarm at T-5 min.</span>`,
+    `<span class="td">  (2) System alert at T-1 min.</span>`,
+    `<span class="td">  (3) Uncontrolled discharge if no input.</span>`,
+    `<span class="td">Repeat indefinitely. No exceptions. No substitutions. No delays.</span>`,
+    `<span class="td">Authored: DeGroot, G. / Hanso, A. — 1977. Last revised: Candle, M. — Cycle 9100.</span>`,
   ],
 
-  'devmode': (args: string, onRevealPuzzle?: () => void) => {
-    // Set highest access level
-    accessLevel = 4;
-    
-    // Store all unlock flags in localStorage
-    try {
-      // First, save the current state so we can restore it later
-      const saveCurrentState = () => {
-        // Store the original values
-        const originalState: Record<string, string | null> = {};
-        
-        // List of all flags we're about to modify
-        const flagsToSave = [
-          'dharma_error_allowed',
-          'dharma_pearl_access',
-          'dharma_incident_unlocked',
-          'dharma_surveillance_active',
-          'dharma_lockdown',
-          'dharma_all_stations',
-          'dharma_unlocked_audio_logs',
-          'dharma_unlocked_reports'
-        ];
-        
-        // Save the current values
-        flagsToSave.forEach(flag => {
-          originalState[flag] = localStorage.getItem(flag);
-        });
-        
-        // Also save the main lore state
-        originalState['dharma_lore_state'] = localStorage.getItem('dharma_lore_state');
-        
-        // Store this original state so we can restore it later
-        localStorage.setItem('dharma_pre_devmode_state', JSON.stringify(originalState));
-      };
-      
-      // Save current state before enabling dev mode
-      saveCurrentState();
-      
-      // Unlock all special access and features
-      localStorage.setItem('dharma_error_allowed', 'true');
-      localStorage.setItem('dharma_pearl_access', 'true');
-      localStorage.setItem('dharma_incident_unlocked', 'true');
-      localStorage.setItem('dharma_surveillance_active', 'true');
-      localStorage.setItem('dharma_lockdown', 'active');
-      
-      // Unlock all stations
-      localStorage.setItem('dharma_all_stations', 'true');
-      
-      // Unlock all audio logs
-      const allAudioLogIds = ['orientationVideo', 'distressSignal', 'radioTransmission', 
-                             'blackRock', 'pearlTransmission', 'unknownSource'];
-      localStorage.setItem('dharma_unlocked_audio_logs', JSON.stringify(allAudioLogIds));
-      
-      // Unlock all incident reports
-      const allReportIds = [0, 1, 2, 3, 4, 5]; // All available report IDs
-      localStorage.setItem('dharma_unlocked_reports', JSON.stringify(allReportIds));
-      
-      // Set developer mode flag
-      localStorage.setItem('dharma_devmode_active', 'true');
-      
-      // Refresh the page to apply all changes
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-    } catch (e) {
-      // Ignore localStorage errors
-    }
+  '/LOGS/INCIDENT-4-23-1980.TXT': [
+    `<span class="th">INCIDENT REPORT — CYCLE 1 (ESTABLISHMENT)</span>`,
+    `<span class="td">DATE: 1980-04-23 14:23 LOCAL</span>`,
+    `<span class="td">LOCATION: SUBLEVEL C — MAINTENANCE ACCESS</span>`,
+    `<span class="td">EVENT: Uncontrolled electromagnetic event during scheduled maintenance.</span>`,
+    `<span class="tr">CASUALTIES: [REDACTED — ORDER V.K.]</span>`,
+    `<span class="tr">EQUIPMENT: [REDACTED — ORDER V.K.]</span>`,
+    `<span class="tr">ROOT CAUSE: [REDACTED — ORDER V.K.]</span>`,
+    `<span class="td">RESULT: Protocol 23 established. Station converted to indefinite occupied operation.</span>`,
+    `<span class="ta">[END OF ACCESSIBLE CONTENT — FURTHER DETAIL REQUIRES CLEARANCE 5]</span>`,
+  ],
 
-    // Trigger puzzle reveal if provided
-    if (onRevealPuzzle) {
-      setTimeout(onRevealPuzzle, 1000);
-    }
+  '/LOGS/CYCLE-LOG-10894.TXT': [
+    `<span class="th">CYCLE LOG — 10894</span>`,
+    `<span class="td">OPERATOR: [CLASSIFIED]</span>`,
+    `<span class="tm">EM LEVEL: 73% GAUSS — NORMAL RANGE</span>`,
+    `<span class="td">PREVIOUS CYCLE (10893): Input at T-02:14. No anomaly.</span>`,
+    `<span class="ta">CURRENT CYCLE (10894): Input status: PENDING</span>`,
+    `<span class="ta">SONAR: Degraded (see maintenance log 10891)</span>`,
+    `<span class="td">NOTES: Relief team ETA 540 hours. Supply drop confirmed cycle 10897.</span>`,
+  ],
 
-    return [
-      '> DEVELOPER MODE ACTIVATED',
-      '> Maximum security clearance granted',
-      '> All stations unlocked',
-      '> All audio logs available',
-      '> All incident reports declassified',
-      '> System protocols bypassed',
-      '> Countdown timer control enabled',
-      '> Use "setcountdown <minutes> <seconds>" to adjust timer',
-      '> Use "devmode-exit" to restore the previous application state'
-    ];
-  },
-  
-  'devmode-exit': (args: string) => {
-    // Only available in dev mode
-    try {
-      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
-      if (!devModeActive) {
-        return [
-          '> ERROR: Not in developer mode',
-          '> Developer mode must be active to exit it'
-        ];
-      }
-      
-      // Retrieve the saved pre-devmode state
-      const savedStateJson = localStorage.getItem('dharma_pre_devmode_state');
-      if (!savedStateJson) {
-        return [
-          '> ERROR: No previous state found',
-          '> Unable to restore previous configuration'
-        ];
-      }
-      
-      // Parse the saved state
-      const savedState = JSON.parse(savedStateJson);
-      
-      // Remove the dev mode flag first
-      localStorage.removeItem('dharma_devmode_active');
-      
-      // Restore the saved values for each flag
-      Object.entries(savedState).forEach(([key, value]) => {
-        if (value === null) {
-          localStorage.removeItem(key);
-        } else {
-          localStorage.setItem(key, value as string);
-        }
-      });
-      
-      // Reset access level
-      accessLevel = 1;
-      
-      // Refresh the page to apply the restored state
-      setTimeout(() => {
-        window.location.reload();
-      }, 1500);
-      
-      return [
-        '> DEVELOPER MODE DEACTIVATED',
-        '> Restoring previous station access',
-        '> Restoring previous security clearance',
-        '> Restoring previous audio log access',
-        '> Returning to standard operational procedures',
-        '> System refresh in progress...'
-      ];
-    } catch (e) {
-      // Handle any errors
-      console.error('Error exiting developer mode:', e);
-      return [
-        '> ERROR: Failed to exit developer mode',
-        '> System state could not be restored',
-        '> Manual intervention required'
-      ];
-    }
-  },
-  
-  'setcountdown': (args: string) => {
-    // Only allow in dev mode
-    try {
-      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
-      if (!devModeActive) {
-        return [
-          '> ERROR: ACCESS DENIED',
-          '> Command requires developer mode',
-          '> Enter "devmode" to activate developer tools'
-        ];
-      }
-      
-      // Parse arguments
-      const parts = args.split(' ').filter(Boolean);
-      let minutes = 0;
-      let seconds = 0;
-      
-      if (parts.length === 1) {
-        // If just one number, treat as seconds total
-        seconds = parseInt(parts[0]);
-        if (isNaN(seconds) || seconds < 0) {
-          return [
-            '> ERROR: Invalid input',
-            '> Usage: setcountdown <seconds> or setcountdown <minutes> <seconds>'
-          ];
-        }
-        minutes = Math.floor(seconds / 60);
-        seconds = seconds % 60;
-      } else if (parts.length >= 2) {
-        // If two numbers, treat as minutes and seconds
-        minutes = parseInt(parts[0]);
-        seconds = parseInt(parts[1]);
-        
-        if (isNaN(minutes) || isNaN(seconds) || minutes < 0 || seconds < 0 || seconds > 59) {
-          return [
-            '> ERROR: Invalid input',
-            '> Usage: setcountdown <seconds> or setcountdown <minutes> <seconds>'
-          ];
-        }
-      } else {
-        return [
-          '> ERROR: Missing parameters',
-          '> Usage: setcountdown <seconds> or setcountdown <minutes> <seconds>'
-        ];
-      }
-      
-      // Calculate total seconds
-      const totalSeconds = minutes * 60 + seconds;
-      
-      // Store this in localStorage for the countdown component to use
-      const now = Date.now();
-      const calculatedStartTime = now - (6480 - totalSeconds) * 1000; // 108 minutes = 6480 seconds
-      localStorage.setItem('countdown_start', calculatedStartTime.toString());
-      localStorage.setItem('countdown_was_set', 'true');
-      
-      // Determine message based on time set
-      let riskLevel = 'NOMINAL';
-      if (totalSeconds <= 60) {
-        riskLevel = 'CRITICAL';
-      } else if (totalSeconds <= 180) {
-        riskLevel = 'HIGH';
-      } else if (totalSeconds <= 300) {
-        riskLevel = 'ELEVATED';
-      }
-      
-      return [
-        `> COUNTDOWN TIMER ADJUSTED`,
-        `> New time: ${minutes}:${seconds.toString().padStart(2, '0')}`,
-        `> Risk level: ${riskLevel}`,
-        totalSeconds <= 60 ? '> WARNING: System failure imminent' : ''
-      ].filter(Boolean);
-    } catch (e) {
-      // Ignore localStorage errors
-      return [
-        '> ERROR: Failed to set countdown',
-        '> System storage inaccessible'
-      ];
-    }
-  }
+  '/DHARMA/ORIENTATION-REEL-3.TXT': [
+    `<span class="th">ORIENTATION REEL 3 — TRANSCRIPT</span>`,
+    `<span class="td">[MARVIN CANDLE, speaking to camera]</span>`,
+    `<span class="tm">Hello. I'm Dr. Marvin Candle, and I'd like to welcome you to the Swan station.</span>`,
+    `<span class="td">Your duty here is straightforward. Every 108 minutes, a sequence of numbers must be entered into the computer.</span>`,
+    `<span class="td">Failure to do so will result in a system event of potentially catastrophic magnitude.</span>`,
+    `<span class="tb">We believe this task to be critical not just to the DHARMA Initiative, but to the continued existence of the world as we know it.</span>`,
+    `<span class="tb">Pushing this button is the most important thing you will ever do.</span>`,
+    `<span class="tb">It may be the only important thing you will ever do.</span>`,
+    `<span class="td">[END OF REEL]</span>`,
+  ],
 };
 
-// Process terminal command input and return response
-const processCommand = (
-  input: string, 
-  onRevealPuzzle?: () => void, 
-  onRevealStation?: (stationName: string) => void,
-  onCorrectSequence?: () => void,
-  isSystemFailure?: boolean
-): string[] => {
-  // Add to command history
-  commandHistory.push(input.trim().toLowerCase());
-  
-  // Keep only last 10 commands
-  if (commandHistory.length > 10) {
-    commandHistory = commandHistory.slice(-10);
-  }
-  
-  // Handle special case for entering the numbers during system failure or protocol mode
-  if (pendingAction === 'protocol' || isSystemFailure) {
-    // Check if input matches the numbers pattern
-    const numbersPattern = /^\s*4\s*8\s*15\s*16\s*23\s*42\s*$/;
-    if (numbersPattern.test(input)) {
-      isExecutingProtocol = false;
-      pendingAction = null;
-      playSound('success');
-      
-      if (onCorrectSequence) {
-        onCorrectSequence();
-      }
-      
-      return [
-        '> NUMBERS ACCEPTED',
-        '> PROTOCOL EXECUTED SUCCESSFULLY',
-        '> System reset complete',
-        '> Electromagnetic field stabilized',
-        '> Counter reset to 108 minutes'
-      ];
-    }
-  }
-  
-  // Split input into command and arguments
-  const [cmd, ...args] = input.trim().toLowerCase().split(' ');
-  const argsStr = args.join(' ');
-  
-  // Play a sound when entering command
-  playSound('beep');
-  
-  // Check for resetall developer command to reset all app data
-  if (input.trim().toLowerCase() === 'resetall') {
-    try {
-      // Check if developer mode is active
-      const devModeActive = localStorage.getItem('dharma_devmode_active') === 'true';
-      if (!devModeActive) {
-        return ['> ERROR: This command requires developer mode. Use \'devmode\' first.'];
-      }
-      
-      // Clear all localStorage data
-      const savedDevMode = localStorage.getItem('dharma_devmode_active');
-      localStorage.clear();
-      
-      // Restore dev mode for convenience
-      if (savedDevMode === 'true') {
-        localStorage.setItem('dharma_devmode_active', 'true');
-      }
-      
-      // Reset countdown timer to initial state
-      const now = Date.now();
-      localStorage.setItem('countdown_start', now.toString());
-      
-      // Reset terminal state
-      accessLevel = 1;
-      isExecutingProtocol = false;
-      pendingAction = null;
-      
-      return [
-        '> SYSTEM RESET: All progress has been reset.',
-        '> Stations, logs, and reports have been wiped.',
-        '> Countdown timer has been reset to 108:00.',
-        '> Reload the page to complete reset process.'
-      ];
-    } catch (e) {
-      return ['> ERROR: Failed to reset the system.'];
-    }
-  }
+const CL5_FILES: Record<string, string[]> = {
+  '/FILES/VK-108.TXT': [
+    `<span class="th">THE VALENZETTI EQUATION — SUPPLEMENTAL NOTES</span>`,
+    `<span class="td">Author: V. Kelvin — Cycle 9341 — EYES ONLY</span>`,
+    `<span class="td">The equation was commissioned in 1962 following the Cuban Missile Crisis.</span>`,
+    `<span class="td">Enzo Valenzetti derived it in six weeks. The UN classified it immediately.</span>`,
+    `<span class="tb">It predicts the exact date of human extinction.</span>`,
+    `<span class="td">It has six core factors. You know what they are.</span>`,
+    `<span class="td">Entering the sequence does not change the equation.</span>`,
+    `<span class="ta">You are not saving the world. You are keeping the clock running until someone figures out how to stop it.</span>`,
+    `<span class="td">The sum of the six values is 108. This is why the interval is 108 minutes.</span>`,
+    `<span class="td">The station does not discharge every 108 minutes by coincidence.</span>`,
+    `<span class="td">The station discharges on the interval defined by the equation's own output.</span>`,
+    `<span class="td">DHARMA's stated mission: change the values of one or more factors.</span>`,
+    `<span class="tr">Current progress: none.</span>`,
+    `<span class="td">[END — V. Kelvin, Cycle 9341]</span>`,
+  ],
 
-  // Handle direct input of the DHARMA numbers
-  if (input.trim() === DHARMA_NUMBERS.join(' ')) {
-    return commands["4 8 15 16 23 42"](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
-  }
-  
-  if (commands[cmd]) {
-    return commands[cmd](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
-  } else if (hiddenCommands[cmd]) {
-    playSound('beep');
-    return hiddenCommands[cmd](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
-  } else {
-    // Handle multi-word hidden commands
-    const fullInput = input.trim().toLowerCase();
-    const multiWordCommands = ['what is your name', 'radio.listen'];
-    
-    // Special case for radio.listen if it doesn't contain parentheses but has a frequency
-    if (fullInput.startsWith('radio.listen') && !fullInput.includes('(')) {
-      const parts = fullInput.split(' ');
-      if (parts.length > 1) {
-        // This is in the format "radio.listen 4.8"
-        const freq = parseFloat(parts[1]);
-        if (!isNaN(freq)) {
-          return hiddenCommands['radio.listen'](freq.toString(), onRevealPuzzle, onRevealStation, onCorrectSequence);
-        }
-      }
-    }
-    
-    for (const command of multiWordCommands) {
-      if (fullInput === command && hiddenCommands[command]) {
-        playSound('beep');
-        return hiddenCommands[command](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
-      }
-    }
-    
-    return ['> Unknown command. Type "help" for available commands.'];
-  }
+  '/FILES/COORDINATES.TXT': [
+    `<span class="th">POSITION: 4°48'N 108°42'W</span>`,
+    `<span class="td">MAGNETIC DECLINATION: 11.3° E (anomalous)</span>`,
+    `<span class="td">GRID REF: DHARMA INTERNAL MAP NODE 7</span>`,
+    `<span class="ta">NOTE: These coordinates are not to be shared outside the Initiative.</span>`,
+    `<span class="tr">Transmission of position data constitutes a breach of Protocol 7-B and will result in termination of access.</span>`,
+    `<span class="td">[EYES ONLY — CLEARANCE 5]</span>`,
+  ],
 };
 
-// Reset terminal state (for testing)
-const resetTerminal = () => {
-  isExecutingProtocol = false;
-  pendingAction = null;
-  accessLevel = 1;
-  commandHistory = [];
-};
+function readFile(path: string): string[] {
+  const normalized = path.startsWith('/') ? path.toUpperCase() : `/${path.toUpperCase()}`;
 
-export { commands, hiddenCommands, processCommand, resetTerminal };
+  if (normalized === '/FILES/VK-108.TXT' || normalized === '/FILES/COORDINATES.TXT') {
+    if (!window.cl5) {
+      return [`<span class="tr">ACCESS DENIED: CLEARANCE 5 REQUIRED.</span>`];
+    }
+    return CL5_FILES[normalized];
+  }
+
+  if (normalized in FILES) {
+    return FILES[normalized];
+  }
+
+  return [`<span class="tr">ERROR: File not found: ${path}</span>`];
+}
+
+export function processCommand(cmd: string): string[] {
+  const trimmed = cmd.trim();
+  const upper = trimmed.toUpperCase();
+
+  if (upper in SECRETS) {
+    return SECRETS[upper];
+  }
+
+  if (upper === 'HELP') {
+    return [
+      `<span class="th">DHARMA INITIATIVE — SWAN STATION TERMINAL v4.1</span>`,
+      `<span class="th">DOCUMENTED COMMANDS:</span>`,
+      `<span class="td">  HELP         — list documented commands</span>`,
+      `<span class="td">  STATUS       — current station status</span>`,
+      `<span class="td">  WHO          — personnel on station</span>`,
+      `<span class="td">  FILES        — list available files</span>`,
+      `<span class="td">  READ [path]  — read file contents</span>`,
+      `<span class="td">  PING         — network node status</span>`,
+      `<span class="td">  INCIDENT     — incident log summary</span>`,
+      `<span class="td">  DHARMA       — station directory</span>`,
+      `<span class="td">  VALENZETTI   — equation summary</span>`,
+      `<span class="td">  CLEAR        — clear terminal</span>`,
+      `<span class="td">  EXIT         — close terminal</span>`,
+    ];
+  }
+
+  if (upper === 'STATUS') {
+    return [
+      `<span class="tb">SWAN STATION — SYSTEM STATUS</span>`,
+      `<span class="tm">EM Containment: NORMAL</span>`,
+      `<span class="tm">Failsafe Key: ARMED</span>`,
+      `<span class="tm">Intranet Node: SWN-7</span>`,
+      `<span class="ta">Sonar Array: DEGRADED</span>`,
+      `<span class="ta">EM Anomaly: DETECTED</span>`,
+      `<span class="tm">Protocol: 23</span>`,
+      `<span class="ta">External Comms: BLOCKED §7-B</span>`,
+      `<span class="ta">Quarantine: ACTIVE</span>`,
+    ];
+  }
+
+  if (upper === 'WHO') {
+    return [
+      `<span class="tb">PERSONNEL — SWAN STATION (CURRENT CYCLE)</span>`,
+      `<span class="tm">WICKMUND, G. — Station Chief</span>`,
+      `<span class="tm">CANDLE, M. — Technical Officer</span>`,
+      `<span class="td">[CLASSIFIED] — Operator</span>`,
+      `<span class="td">[CLASSIFIED] — Operator</span>`,
+      `<span class="ta">Relief ETA: 540 hours</span>`,
+    ];
+  }
+
+  if (upper === 'FILES') {
+    return [
+      `<span class="tb">FILE INDEX — SWAN INTRANET</span>`,
+      `<span class="tm">  /protocol/protocol-23.txt</span>`,
+      `<span class="ta">  /logs/incident-4-23-1980.txt [PARTIAL — REDACTED]</span>`,
+      `<span class="tm">  /logs/cycle-log-10894.txt</span>`,
+      `<span class="tm">  /dharma/orientation-reel-3.txt</span>`,
+      `<span class="td">  /files/vk-108.txt [CLEARANCE 5]</span>`,
+      `<span class="td">  /files/coordinates.txt [CLEARANCE 5]</span>`,
+    ];
+  }
+
+  if (upper === 'READ') {
+    return [`<span class="tr">ERROR: No path specified. Usage: READ [path]</span>`];
+  }
+
+  if (upper.startsWith('READ ')) {
+    const path = trimmed.slice(5).trim();
+    if (!path) {
+      return [`<span class="tr">ERROR: No path specified. Usage: READ [path]</span>`];
+    }
+    return readFile(path);
+  }
+
+  if (upper === 'PING') {
+    return [
+      `<span class="tb">PING — INTRANET NODE STATUS</span>`,
+      `<span class="tm">SWN-7       OK        [0ms]</span>`,
+      `<span class="tm">SWN-HUB     OK        [9ms]</span>`,
+      `<span class="ta">PEARL-3     TIMEOUT</span>`,
+      `<span class="tr">FLAME-1     NO ROUTE</span>`,
+      `<span class="tr">STAFF-1     NO ROUTE</span>`,
+      `<span class="tr">ORCHID      REFUSED</span>`,
+      `<span class="ta">WORLD       BLOCKED §7-B</span>`,
+    ];
+  }
+
+  if (upper === 'INCIDENT') {
+    return [
+      `<span class="tb">INCIDENT LOG — SUMMARY</span>`,
+      `<span class="tr">Cycle 1 (1980-04-23): Station establishment event. Details redacted.</span>`,
+      `<span class="ta">Cycle 10734: EM surge — T+14 min late input. No discharge. Operator reprimanded.</span>`,
+      `<span class="tr">Cycle 10801: [REDACTED — ORDER V.K.]</span>`,
+      `<span class="ta">Cycle 10849: Equipment failure — sonar array. See maintenance log.</span>`,
+      `<span class="ta">Cycle 10876: Unauthorized access attempt — Sub-level C. Resolved.</span>`,
+      `<span class="ta">Cycle 10881: Supply drop 48 hours late. Rations at 60%. No protocol impact.</span>`,
+    ];
+  }
+
+  if (upper === 'DHARMA') {
+    return [
+      `<span class="tb">DHARMA INITIATIVE — KNOWN STATIONS</span>`,
+      `<span class="tm">  Swan     — Station 3. EM containment. YOU ARE HERE.</span>`,
+      `<span class="tm">  Pearl    — Station 5. Observation.</span>`,
+      `<span class="tm">  Flame    — Station 4. Communications.</span>`,
+      `<span class="td">  Arrow    — Station 2. Research.</span>`,
+      `<span class="td">  Staff    — Station 6. Medical.</span>`,
+      `<span class="ta">  Orchid   — [EXISTENCE NOT CONFIRMED]</span>`,
+    ];
+  }
+
+  if (upper === 'VALENZETTI') {
+    return [
+      `<span class="tb">THE VALENZETTI EQUATION — SUMMARY</span>`,
+      `<span class="td">Commissioned 1962. Derived by Enzo Valenzetti. Immediately classified by the UN.</span>`,
+      `<span class="td">The equation concerns factors relating to human survival.</span>`,
+      `<span class="td">The DHARMA Initiative was established in part to study and alter these factors.</span>`,
+      `<span class="ta">The sequence you enter every 108 minutes is directly related to the equation's core values.</span>`,
+      `<span class="td">For further detail: READ /files/vk-108.txt</span>`,
+      `<span class="td">[CLEARANCE 5 REQUIRED FOR FULL DOCUMENT]</span>`,
+    ];
+  }
+
+  if (upper === 'CLEAR') {
+    return ['__CLEAR__'];
+  }
+
+  if (upper === 'EXIT') {
+    return ['__EXIT__'];
+  }
+
+  return [`<span class="tr">UNKNOWN COMMAND: ${trimmed}. Type HELP for a list of commands.</span>`];
+}

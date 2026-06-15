@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 
 interface HiddenEyeProps {
   onFound: () => void;
@@ -9,18 +9,16 @@ const ASCII_EYE = ` /|\\
  \\_/`;
 
 const HiddenEye: React.FC<HiddenEyeProps> = ({ onFound }) => {
-  const eyeHit = useRef<boolean>(false);
-  const [found, setFound] = useState(false);
-  const [hovered, setHovered] = useState(false);
+  const [eyeHit, setEyeHit] = useState<boolean>(false);
+  const [isHovered, setIsHovered] = useState<boolean>(false);
 
   const handleClick = () => {
-    if (eyeHit.current) return;
-    eyeHit.current = true;
-    setFound(true);
+    if (eyeHit) return;
+    setEyeHit(true);
     onFound();
   };
 
-  const isAmber = found || hovered;
+  const isAmber = eyeHit || isHovered;
 
   return (
     <div
@@ -34,18 +32,16 @@ const HiddenEye: React.FC<HiddenEyeProps> = ({ onFound }) => {
     >
       <pre
         onClick={handleClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
         style={{
           fontFamily: "'VT323', monospace",
-          fontSize: '14px',
+          fontSize: '11px',
           lineHeight: 1.2,
           margin: 0,
           opacity: isAmber ? 0.9 : 0.22,
           color: isAmber ? 'var(--am)' : 'var(--ph-dim)',
-          cursor: found ? 'default' : hovered ? 'pointer' : 'default',
-          borderRadius: 0,
-          transition: 'opacity 0.2s, color 0.2s',
+          cursor: 'pointer',
         }}
       >
         {ASCII_EYE}

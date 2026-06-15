@@ -1,408 +1,603 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
-import Logo from '@/components/Logo';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Loading from '@/components/Loading';
 import Terminal from '@/components/Terminal';
-import IslandMap from '@/components/IslandMap';
-import LorePanel from '@/components/LorePanel';
 import Countdown from '@/components/Countdown';
-import HiddenPuzzle from '@/components/HiddenPuzzle';
 import SystemFailure from '@/components/SystemFailure';
+import ActivityLog from '@/components/ActivityLog';
+import NumberInput from '@/components/NumberInput';
+import SecretBanner from '@/components/SecretBanner';
+import HiddenEye from '@/components/HiddenEye';
+import SubnetInterface from '@/components/SubnetInterface';
+import IncidentReports from '@/components/IncidentReports';
 import PearlStationLog from '@/components/PearlStationLog';
-import PuzzleController, { PuzzleControllerRef } from '@/components/PuzzleController';
-import PuzzleLauncher from '@/components/PuzzleLauncher';
-import { STATIONS } from '@/lib/constants';
-import { playSound, stopSound } from '@/lib/audio';
-import { useLore } from '@/contexts/LoreContext';
+import dharmaLogoSvg from '@/assets/dharma-logo-fixed.svg';
+
+// Extend Window for cl5 flag
+declare global {
+  interface Window {
+    cl5: boolean;
+  }
+}
+
+interface LogEntry {
+  text: string;
+  cls: 'normal' | 'hi' | 'am' | 'er';
+  time: string;
+}
+
+const KONAMI = [
+  'ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown',
+  'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight',
+  'b', 'a',
+];
 
 const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [isPuzzleVisible, setIsPuzzleVisible] = useState(false);
-  const [isCountdownReset, setIsCountdownReset] = useState(false);
-  
-  // Puzzle launcher state
-  const [isPuzzleMenuVisible, setIsPuzzleMenuVisible] = useState(false);
-  const [activePuzzleId, setActivePuzzleId] = useState<string | null>(null);
-  const puzzleControllerRef = useRef<PuzzleControllerRef>(null);
-  
-  // System failure states
-  const [isSystemFailure, setIsSystemFailure] = useState(false);
-  const [showPearlLog, setShowPearlLog] = useState(false);
+  const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [isSubnetOpen, setIsSubnetOpen] = useState(false);
+  const [isIncidentOpen, setIsIncidentOpen] = useState(false);
+  const [isPearlLogVisible, setIsPearlLogVisible] = useState(false);
   const [failureTimestamp, setFailureTimestamp] = useState('');
-  const [showFailsafeContent, setShowFailsafeContent] = useState(false);
+  const [cl5Unlocked, setCl5Unlocked] = useState(false);
+  const [isCountdownReset, setIsCountdownReset] = useState(false);
+  const [isSystemFailure, setIsSystemFailure] = useState(false);
+  const [bannerMessage, setBannerMessage] = useState<string | null>(null);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
+  const [morseClicks, setMorseClicks] = useState(0);
+  const [cipherClicks, setCipherClicks] = useState(0);
+  const [morseDecoded, setMorseDecoded] = useState(false);
+  const [cipherDecoded, setCipherDecoded] = useState(false);
+  const [logoClicks, setLogoClicks] = useState(0);
+  const [execCount, setExecCount] = useState(0);
+  const [konamiIdx, setKonamiIdx] = useState(0);
+  const [lastActTime, setLastActTime] = useState(Date.now());
 
-  // Get all state and actions from the LoreContext
-  const { 
-    discoveredStations, 
-    unlockedAudioLogs, 
-    unlockedReports, 
-    systemStatus,
-    revealStation,
-    unlockAudioLog,
-    unlockReport,
-    recordTerminalCommand,
-    triggerLoreEvent,
-    triggerSystemStatus
-  } = useLore();
+  const bannerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const inactivityRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inactWarnedRef = useRef<{ mid: boolean; high: boolean }>({ mid: false, high: false });
 
-  useEffect(() => {
-    // Clean up audio when component unmounts
-    return () => {
-      stopSound('static');
-    };
+  // ---- helpers ----
+
+  const addLog = useCallback((msg: string, cls: 'normal' | 'hi' | 'am' | 'er' = 'normal') => {
+    const now = new Date();
+    const time = now.toTimeString().slice(0, 8);
+    setLogEntries(prev => [...prev, { text: msg, cls, time }]);
   }, []);
-  
-  // Check for puzzle launch flags in localStorage
+
+  const showBanner = useCallback((msg: string) => {
+    if (bannerTimerRef.current) clearTimeout(bannerTimerRef.current);
+    setBannerMessage(msg);
+    bannerTimerRef.current = setTimeout(() => setBannerMessage(null), 7000);
+  }, []);
+
+  const updateActivity = useCallback(() => {
+    setLastActTime(Date.now());
+  }, []);
+
+  // ---- initial log entries ----
+  useEffect(() => {
+    if (!isLoading) {
+      addLog('INTRANET NODE SWN-7 — ONLINE', 'hi');
+      addLog('DHARMA INITIATIVE — SWAN STATION — CYCLE 10894', 'normal');
+      addLog('PROTOCOL 23 — SEQUENCE INPUT REQUIRED', 'am');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
+  // ---- inactivity monitor ----
   useEffect(() => {
     if (isLoading) return;
-    
-    // Check if system diagnostics (puzzle menu) should be opened
-    try {
-      const launchPuzzleMenu = localStorage.getItem('dharma_launch_puzzle_menu');
-      if (launchPuzzleMenu === 'true') {
-        // Clear the flag
-        localStorage.removeItem('dharma_launch_puzzle_menu');
-        // Show the puzzle launcher menu
-        setIsPuzzleMenuVisible(true);
-        triggerSystemStatus('DIAGNOSTIC INTERFACE ACTIVE', 3000);
+    inactivityRef.current = setInterval(() => {
+      const elapsed = (Date.now() - lastActTime) / 1000;
+      if (elapsed >= 120 && elapsed < 125 && !inactWarnedRef.current.mid) {
+        inactWarnedRef.current.mid = true;
+        const minLeft = Math.ceil((300 - elapsed) / 60);
+        addLog(`PRESENCE CHECK: Are you still there? Window closes in ${minLeft} min.`, 'am');
       }
-      
-      // Check if a specific puzzle should be launched directly
-      const puzzleToLaunch = localStorage.getItem('dharma_launch_puzzle');
-      if (puzzleToLaunch) {
-        // Clear the flag
-        localStorage.removeItem('dharma_launch_puzzle');
-        
-        console.log(`Launching puzzle: ${puzzleToLaunch}`);
-        
-        // Make sure the puzzle is activated in localStorage directly
-        localStorage.setItem('dharma_active_puzzle', puzzleToLaunch);
-        
-        // Also activate the puzzle through state for redundancy
-        setActivePuzzleId(puzzleToLaunch);
-        
-        // Call the launchPuzzle method directly if it exists
-        if (puzzleControllerRef.current && typeof puzzleControllerRef.current.launchPuzzle === 'function') {
-          setTimeout(() => {
-            if (puzzleControllerRef.current) {
-              puzzleControllerRef.current.launchPuzzle(puzzleToLaunch);
-            }
-          }, 100);
+      if (elapsed >= 300 && elapsed < 305 && !inactWarnedRef.current.high) {
+        inactWarnedRef.current.high = true;
+        addLog('!! OPERATOR ABSENCE — ATTEND TO INPUT TERMINAL IMMEDIATELY !!', 'er');
+      }
+    }, 5000);
+    return () => {
+      if (inactivityRef.current) clearInterval(inactivityRef.current);
+    };
+  }, [isLoading, lastActTime, addLog]);
+
+  // Reset inactivity warn flags when activity happens
+  useEffect(() => {
+    inactWarnedRef.current = { mid: false, high: false };
+  }, [lastActTime]);
+
+  // ---- global activity listeners ----
+  useEffect(() => {
+    window.addEventListener('mousemove', updateActivity);
+    window.addEventListener('keydown', updateActivity);
+    window.addEventListener('click', updateActivity);
+    return () => {
+      window.removeEventListener('mousemove', updateActivity);
+      window.removeEventListener('keydown', updateActivity);
+      window.removeEventListener('click', updateActivity);
+    };
+  }, [updateActivity]);
+
+  // ---- Konami code ----
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      const expected = KONAMI[konamiIdx];
+      if (e.key === expected) {
+        const nextIdx = konamiIdx + 1;
+        if (nextIdx === KONAMI.length) {
+          // Konami complete!
+          window.cl5 = true;
+          setCl5Unlocked(true);
+          setKonamiIdx(0);
+          addLog('!!! KONAMI SEQUENCE — CLEARANCE LEVEL 5 GRANTED !!!', 'hi');
+          showBanner('// ↑↑↓↓←→←→BA — CLEARANCE 5 GRANTED — READ /FILES/VK-108.TXT IN TERMINAL //');
+          setIsTerminalOpen(true);
+        } else {
+          setKonamiIdx(nextIdx);
         }
-        
-        triggerSystemStatus(`LAUNCHING ${puzzleToLaunch.toUpperCase()} INTERFACE`, 3000);
+      } else {
+        setKonamiIdx(0);
       }
-    } catch (e) {
-      console.error('Error launching puzzle:', e);
-      // Ignore localStorage errors but log them in dev
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [konamiIdx, addLog, showBanner]);
+
+  // ---- Morse clicks ----
+  useEffect(() => {
+    if (morseClicks >= 5 && !morseDecoded) {
+      setMorseDecoded(true);
+      addLog('MORSE DECODED: "THE NUMBERS ARE REAL". You are paying attention.', 'hi');
+      showBanner('// MORSE DECODED — "THE NUMBERS ARE REAL" — V.K. — Check the terminal. //');
     }
-  }, [isLoading, triggerSystemStatus]);
+  }, [morseClicks, morseDecoded, addLog, showBanner]);
 
-  const handleLoadComplete = () => {
-    setIsLoading(false);
-    // Start ambient effects
-    stopSound('static');
-  };
-
-  const handleRevealPuzzle = () => {
-    playSound('success');
-    setIsPuzzleVisible(true);
-  };
-
-  const handleRevealStation = (stationName: string) => {
-    // Use the lore context function
-    revealStation(stationName);
-    // Trigger an event to signal that a station was visited
-    triggerLoreEvent('visit_station', stationName);
-  };
-
-  // Event handler for audio log playback
-  const handleLogPlay = (logId: string) => {
-    if (logId === 'scan') {
-      playSound('beep');
-      setTimeout(() => {
-        playSound('static', 'short');
-        triggerSystemStatus('SIGNAL ANALYSIS COMPLETE', 3000);
-      }, 1500);
+  // ---- Cipher clicks ----
+  useEffect(() => {
+    if (cipherClicks >= 3 && !cipherDecoded) {
+      setCipherDecoded(true);
+      addLog('CIPHER DECODED: Message from I.P. — "Maintain silence."', 'am');
     }
-  };
+  }, [cipherClicks, cipherDecoded, addLog]);
 
-  // Handle terminal commands
-  const handleTerminalCommand = (command: string) => {
-    // Record command in the lore context
-    recordTerminalCommand(command);
-  };
+  // ---- Logo clicks ----
+  useEffect(() => {
+    if (logoClicks === 7) {
+      addLog('NOTICE: Multiple manifest accesses. Operator flagged.', 'am');
+      showBanner('// Have you checked the bottom-right corner? Something is watching. //');
+    }
+  }, [logoClicks, addLog, showBanner]);
 
-  const handleCorrectSequence = () => {
-    // Reset countdown when correct sequence is entered
+  // ---- handlers ----
+
+  const handleLoadComplete = () => setIsLoading(false);
+
+  const handleSuccess = (vals: number[]) => {
     setIsCountdownReset(true);
+    const newCount = execCount + 1;
+    setExecCount(newCount);
+    addLog(`SEQUENCE ACCEPTED — PROTOCOL EXECUTED — CYCLE ${10894 + newCount}`, 'hi');
+    if (newCount === 3) showBanner('// ACHIEVEMENT UNLOCKED: THE CANDIDATE — 3 SEQUENCES EXECUTED //');
+    if (newCount === 108) showBanner('// DHARMA COMMENDATION: UNWAVERING DUTY — 108 SEQUENCES COMPLETE //');
+    void vals;
+  };
 
-    // Trigger lore event for sequence completion
-    triggerLoreEvent('correct_sequence_entered');
+  const handleWrong = (_vals: number[], special: string | null) => {
+    if (special === 'null_sequence') {
+      addLog('NULL SEQUENCE ENTRY: Do not enter zeros. This is not a test.', 'er');
+    } else if (special === 'inverted') {
+      addLog('ANOMALY: Inverted sequence detected. Cross-reference Incident 10801.', 'am');
+    } else {
+      addLog('INCORRECT SEQUENCE — SYSTEM INTEGRITY MAINTAINED', 'er');
+    }
   };
 
   const handleCountdownFinish = () => {
-    // Trigger system failure state
-    playSound('alarm');
-    triggerSystemStatus('PROTOCOL REQUIRED', 0); // 0 means don't auto-reset
-    
-    // Generate timestamp for failure
-    const timestamp = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
-    setFailureTimestamp(timestamp);
-    
-    // Activate system failure sequence
-    setIsSystemFailure(true);
-    
-    // If Pearl Station is unlocked, show the logging printout
-    if (discoveredStations.includes('pearl')) {
-      setTimeout(() => {
-        setShowPearlLog(true);
-      }, 5000);
-    }
+    addLog('!! CONTAINMENT FAILURE — SEQUENCE NOT EXECUTED — EM DISCHARGE DETECTED !!', 'er');
+    const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15);
+    setFailureTimestamp(ts);
+    setTimeout(() => {
+      setIsSystemFailure(true);
+      setIsPearlLogVisible(true);
+    }, 800);
   };
-  
-  // Reset system after correct sequence entry during failure
+
   const handleSystemReset = () => {
     setIsSystemFailure(false);
-    setShowPearlLog(false);
+    setIsPearlLogVisible(false);
     setIsCountdownReset(true);
-    triggerSystemStatus('SYSTEM REBOOTING', 3000);
-  };
-  
-  // Handle failsafe key trigger
-  const handleFailsafeTrigger = () => {
-    setIsSystemFailure(false);
-    setShowPearlLog(false);
-    setShowFailsafeContent(true);
-    
-    // Unlock special content
-    unlockReport(3); // Unlock special incident report
-    unlockAudioLog('blackRockLog'); // Unlock special audio log
-    triggerLoreEvent('failsafe_triggered');
-    
-    // Trigger special event for failsafe
-    triggerSystemStatus('ELECTROMAGNETIC DISCHARGE INITIATED', 5000);
+    addLog('EMERGENCY RESET EXECUTED — PROTOCOL 23B — SYSTEM REBOOTING', 'am');
   };
 
-  const handlePuzzleComplete = () => {
-    // Trigger lore event for puzzle completion
-    triggerLoreEvent('puzzle_complete');
+  const handleSubnetComplete = () => {
+    addLog('SUBNET LOGS ARCHIVED — Access code OVERRIDE-D108 extracted.', 'hi');
+    showBanner('// SUBNET DATA RECOVERED — Use code OVERRIDE-D108 in INCIDENT ARCHIVE //');
+  };
 
-    // Close the puzzle modal
-    setIsPuzzleVisible(false);
+  const handleEyeFound = () => {
+    addLog('// You found the Eye. The island is always watching. //', 'am');
+    showBanner('// THE EYE HAS SEEN YOU — Type DHARMA in the terminal. //');
   };
-  
-  // Handle launching a puzzle from the launcher menu
-  const handleLaunchPuzzle = (puzzleId: string) => {
-    setActivePuzzleId(puzzleId);
-    triggerSystemStatus(`LAUNCHING ${puzzleId.toUpperCase()} INTERFACE`, 3000);
-    playSound('click');
+
+  const handleTickerClick = () => {
+    addLog('BROADCAST: External communications remain blocked. No exceptions. §7-B.', 'normal');
   };
-  
-  // Handle puzzle-specific commands detected in activePuzzleId
-  useEffect(() => {
-    if (!activePuzzleId) return;
-    
-    // Pass the command to PuzzleController by setting localStorage flags
-    // that will be detected by the PuzzleController component
-    try {
-      localStorage.setItem('dharma_active_puzzle', activePuzzleId);
-      
-      // Reset activePuzzleId since it's been processed
-      setActivePuzzleId(null);
-    } catch (e) {
-      // Ignore localStorage errors
-    }
-  }, [activePuzzleId]);
+
+  const handleCycleTagClick = () => {
+    addLog('CYCLE 10894: If you read this, the previous operator did not complete their rotation.', 'am');
+  };
 
   if (isLoading) {
     return <Loading onLoadComplete={handleLoadComplete} />;
   }
 
-  return (
-    <div className="relative min-h-screen overflow-hidden">
-      {/* CRT Overlay effects - keeping only the subtle CRT effect, removing scanline */}
-      <div className="absolute inset-0 crt pointer-events-none z-50"></div>
+  // ---- layout styles ----
+  const wrapStyle: React.CSSProperties = {
+    maxWidth: 1020,
+    margin: '0 auto',
+    padding: '0 16px',
+  };
 
-      {/* Header with Dharma Logo */}
-      <header className="pt-6 pb-2 px-6 flex justify-between items-center border-b border-[hsla(var(--dharma-gray),0.3)]">
-        <div className="flex items-center">
-          <Logo className="mr-4" />
-          <div>
-            <h1 className="font-terminal text-[hsl(var(--dharma-amber))] text-2xl tracking-wider">THE SWAN</h1>
-            <p className="text-xs text-[hsl(var(--dharma-gray))]">STATION 3 · SECURITY LEVEL: 4</p>
-          </div>
-        </div>
-        <Countdown 
-          onCountdownFinish={handleCountdownFinish} 
-          isReset={isCountdownReset} 
-          setIsReset={setIsCountdownReset}
-        />
-      </header>
+  const hdrStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '14px 0 10px',
+    borderBottom: '1px solid var(--bd)',
+    marginBottom: 8,
+  };
 
-      {/* Main Content Area */}
-      <main className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Terminal 
-          onRevealPuzzle={handleRevealPuzzle} 
-          onRevealStation={handleRevealStation}
-          onCorrectSequence={handleCorrectSequence}
-          onCommand={handleTerminalCommand}
-          isSystemFailure={isSystemFailure}
-        />
+  const tickerStyle: React.CSSProperties = {
+    fontFamily: "'VT323', monospace",
+    fontSize: 12,
+    letterSpacing: 3,
+    color: 'var(--ph-dim)',
+    padding: '5px 10px',
+    borderBottom: '1px solid var(--bd)',
+    cursor: 'pointer',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+  };
 
-        <IslandMap />
+  const stripStyle = (decoded: boolean): React.CSSProperties => ({
+    fontFamily: "'VT323', monospace",
+    fontSize: 11,
+    letterSpacing: 2,
+    color: decoded ? 'var(--am)' : 'var(--ph-faint)',
+    padding: '4px 10px',
+    borderBottom: '1px solid var(--bd)',
+    cursor: 'pointer',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
+  });
 
-        {/* Combined DHARMA Panel (for mobile) */}
-        <div className="md:hidden mt-4">
-          <LorePanel 
-            className="w-full" 
-            defaultSection="stations"
-          />
-        </div>
-        
-        {/* Individual Panels (for desktop) */}
-        <div className="hidden md:block">
-          {/* Tabbed Lore Panel with all sections, but with default section preselected */}
-          <LorePanel 
-            className="lg:col-span-3 mt-4" 
-            defaultSection="stations" 
-          />
-        </div>
-      </main>
+  const bodyGridStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: '2fr 1fr',
+    gap: 16,
+    marginTop: 12,
+  };
 
-      {/* Footer with Station Info */}
-      <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-[hsl(var(--dharma-gray))] text-xs">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center relative">
-          <div>DHARMA INITIATIVE · STATION 3: THE SWAN · ESTABLISHED 1977</div>
-          <div 
-            className={`font-terminal ${systemStatus === 'PROTOCOL EXECUTION REQUIRED' ? 'text-[hsl(var(--dharma-red))] animate-terminal-blink' : 'text-[hsl(var(--dharma-amber))]'}`}
-          >
-            {systemStatus}
-          </div>
-          <div>SECURITY CLEARANCE LEVEL 4 · USER ID: [REDACTED]</div>
+  const panelTitleStyle: React.CSSProperties = {
+    fontFamily: "'VT323', monospace",
+    fontSize: 9,
+    letterSpacing: 5,
+    textTransform: 'uppercase',
+    color: 'var(--ph-dim)',
+    marginBottom: 12,
+  };
 
-          {/* Hidden Dharma Symbol for secret interaction */}
-          <FooterEasterEgg onUnlockLog={() => unlockAudioLog('unknownSource')} />
-        </div>
-      </footer>
+  const sidePanelStyle: React.CSSProperties = {
+    border: '1px solid var(--bd)',
+    background: 'var(--panel2)',
+    padding: '13px 15px',
+    marginBottom: 12,
+    fontFamily: "'VT323', monospace",
+    fontSize: 13,
+    color: 'var(--ph-dim)',
+  };
 
-      {/* Hidden Puzzle Modal */}
-      <HiddenPuzzle 
-        isVisible={isPuzzleVisible} 
-        onClose={() => setIsPuzzleVisible(false)} 
-        onComplete={handlePuzzleComplete}
-      />
-      
-      {/* System Failure Sequence */}
-      <SystemFailure 
-        isActive={isSystemFailure}
-        onResetSequence={handleSystemReset}
-        onFailsafeTrigger={handleFailsafeTrigger}
-      />
-      
-      {/* Pearl Station Printout Log */}
-      <PearlStationLog 
-        isVisible={showPearlLog}
-        timestamp={failureTimestamp}
-      />
-      
-      {/* Puzzle Controller for ARG elements */}
-      <PuzzleController
-        ref={puzzleControllerRef}
-        onRevealStation={handleRevealStation}
-        onUnlockReport={unlockReport}
-        onUnlockAudioLog={unlockAudioLog}
-      />
-      
-      {/* Puzzle Launcher Menu - For accessing all puzzles */}
-      <PuzzleLauncher
-        isVisible={isPuzzleMenuVisible}
-        onClose={() => setIsPuzzleMenuVisible(false)}
-        onLaunchPuzzle={handleLaunchPuzzle}
-        // Pass in the discovered stations to determine unlocked puzzles
-        unlockedPuzzles={(() => {
-          // Map discovered stations to unlocked puzzles
-          const puzzles: string[] = [];
-          
-          // Hieroglyph puzzle hidden for now (requires dev mode)
-          
-          // Subnet puzzle unlocked when Arrow station is discovered
-          if (discoveredStations.includes('arrow')) {
-            puzzles.push('subnet');
-          }
-          
-          return puzzles;
-        })()}
-      />
-      
-      {/* Failsafe Key Result Content - Only shown after triggering failsafe */}
-      {showFailsafeContent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1 }}
-            className="max-w-2xl p-8 text-center text-white"
-          >
-            <h2 className="text-3xl font-terminal text-[hsl(var(--dharma-amber))] mb-6">FAILSAFE PROTOCOL EXECUTED</h2>
-            <p className="mb-4">The electromagnetic energy has been discharged.</p>
-            <p className="mb-8">New information has been unlocked in your databank.</p>
-            <button 
-              onClick={() => setShowFailsafeContent(false)}
-              className="px-6 py-2 bg-[hsla(var(--dharma-amber),0.2)] border border-[hsl(var(--dharma-amber))] text-[hsl(var(--dharma-amber))] rounded"
-            >
-              CONTINUE
-            </button>
-          </motion.div>
-        </div>
-      )}
-    </div>
-  );
-};
+  const openTermBtnStyle: React.CSSProperties = {
+    width: '100%',
+    fontFamily: "'VT323', monospace",
+    fontSize: 16,
+    letterSpacing: 3,
+    padding: '10px 0',
+    border: '1px solid var(--bd2)',
+    background: 'var(--ph-faint)',
+    color: 'var(--ph)',
+    cursor: 'pointer',
+    textAlign: 'center',
+    marginBottom: 12,
+  };
 
-// Hidden easter egg component for footer
-interface FooterEasterEggProps {
-  onUnlockLog: () => void;
-}
-
-const FooterEasterEgg: React.FC<FooterEasterEggProps> = ({ onUnlockLog }) => {
-  const [clicks, setClicks] = useState(0);
-  const { triggerSystemStatus } = useLore();
-
-  // Reset clicks after a period of inactivity
-  useEffect(() => {
-    if (clicks > 0) {
-      const timeout = setTimeout(() => {
-        setClicks(0);
-      }, 3000);
-
-      return () => clearTimeout(timeout);
-    }
-  }, [clicks]);
-
-  // Check for the correct sequence: 4-8-15-16-23-42 of clicks
-  useEffect(() => {
-    // Specifically looking for the 6th click (index 5)
-    if (clicks === 6) {
-      onUnlockLog();
-      triggerSystemStatus('UNKNOWN TRANSMISSION DETECTED', 3000);
-    }
-  }, [clicks, onUnlockLog, triggerSystemStatus]);
-
-  const handleClick = () => {
-    playSound('beep', 'short');
-    setClicks(prev => Math.min(prev + 1, 6));
+  const footerStyle: React.CSSProperties = {
+    borderTop: '1px solid var(--bd)',
+    padding: '10px 0',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    fontFamily: "'VT323', monospace",
+    fontSize: 11,
+    letterSpacing: 2,
+    color: 'var(--ph-faint)',
+    marginTop: 16,
   };
 
   return (
-    <div 
-      className="absolute bottom-0 right-0 opacity-10 hover:opacity-30 cursor-pointer transition-opacity" 
-      onClick={handleClick}
-    >
-      <div className="w-10 h-10 flex items-center justify-center text-[hsl(var(--dharma-amber))]">
-        ⓘ
+    <>
+      {/* Moving scanline */}
+      <div
+        className="scanline"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '2px',
+          background: 'rgba(77,255,124,0.06)',
+          zIndex: 9997,
+          animation: 'scan 4s linear infinite',
+          pointerEvents: 'none',
+        }}
+      />
+
+      {/* Countdown widget (fixed top-right) */}
+      <Countdown
+        onCountdownFinish={handleCountdownFinish}
+        isReset={isCountdownReset}
+        setIsReset={setIsCountdownReset}
+      />
+
+      {/* Secret banner (fixed top) */}
+      <SecretBanner message={bannerMessage} onDismiss={() => setBannerMessage(null)} />
+
+      {/* Terminal overlay */}
+      <Terminal
+        isOpen={isTerminalOpen}
+        onClose={() => setIsTerminalOpen(false)}
+        onCorrectSequence={() => {
+          setIsCountdownReset(true);
+          addLog('TERMINAL: Sequence accepted via terminal.', 'hi');
+        }}
+        cl5Unlocked={cl5Unlocked}
+        onOpenSubnet={() => {
+          addLog('SUBNET: Establishing connection to PEARL-3 subnet node...', 'am');
+          setIsSubnetOpen(true);
+        }}
+        onOpenIncidentArchive={() => {
+          addLog('INCIDENT ARCHIVE: Accessing classified records...', 'am');
+          setIsIncidentOpen(true);
+        }}
+      />
+
+      {/* Subnet interface overlay */}
+      <SubnetInterface
+        isVisible={isSubnetOpen}
+        onClose={() => setIsSubnetOpen(false)}
+        onComplete={handleSubnetComplete}
+      />
+
+      {/* Incident archive modal */}
+      <IncidentReports
+        isVisible={isIncidentOpen}
+        onClose={() => setIsIncidentOpen(false)}
+      />
+
+      {/* Pearl Station printout log */}
+      <PearlStationLog
+        isVisible={isPearlLogVisible}
+        timestamp={failureTimestamp}
+        onClose={() => setIsPearlLogVisible(false)}
+      />
+
+      {/* Hidden eye (fixed bottom-right) */}
+      <HiddenEye onFound={handleEyeFound} />
+
+      {/* System failure overlay */}
+      <SystemFailure isActive={isSystemFailure} onReset={handleSystemReset} />
+
+      {/* Main content */}
+      <div id="mainContent">
+        <div className="wrap" style={wrapStyle}>
+
+          {/* Header */}
+          <header className="s-hdr" style={hdrStyle}>
+            {/* Left: logo */}
+            <div
+              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}
+              onClick={() => setLogoClicks(prev => prev + 1)}
+            >
+              <img
+                src={dharmaLogoSvg}
+                alt="DHARMA Swan"
+                style={{ width: 52, height: 52 }}
+              />
+            </div>
+
+            {/* Center: station name */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                fontFamily: "'VT323', monospace",
+                fontSize: 26,
+                letterSpacing: 6,
+                color: 'var(--ph)',
+              }}>
+                SWAN STATION
+              </div>
+              <div style={{
+                fontFamily: "'VT323', monospace",
+                fontSize: 11,
+                letterSpacing: 4,
+                color: 'var(--ph-dim)',
+              }}>
+                STATION 3 · INTRANET NODE SWN-7
+              </div>
+            </div>
+
+            {/* Right: cycle tag */}
+            <div
+              id="cycleTag"
+              onClick={handleCycleTagClick}
+              style={{
+                fontFamily: "'VT323', monospace",
+                fontSize: 13,
+                letterSpacing: 3,
+                color: 'var(--ph-dim)',
+                cursor: 'pointer',
+                textAlign: 'right',
+                paddingRight: 100, /* leave room for countdown widget */
+              }}
+            >
+              CYCLE: 10894
+            </div>
+          </header>
+
+          {/* Broadcast ticker */}
+          <div
+            className="ticker"
+            id="ticker"
+            style={tickerStyle}
+            onClick={handleTickerClick}
+          >
+            ◈ BROADCAST — DHARMA INITIATIVE INTERNAL ONLY — CYCLE 10894 — EXTERNAL COMMS BLOCKED §7-B — SEQUENCE INPUT PENDING ◈
+          </div>
+
+          {/* Morse strip */}
+          <div
+            className="morse"
+            style={stripStyle(morseDecoded)}
+            onClick={() => setMorseClicks(prev => prev + 1)}
+          >
+            {morseDecoded
+              ? '// DECODED: "THE NUMBERS ARE REAL" — V. KELVIN — CYCLE 9341 //'
+              : '— — —  · · ·  — ·  · · ·  — — —  · — ·  — ·  — — —  · —  · · ·  · — ·  · · — ·  · — ·  · — ·  · · —'}
+          </div>
+
+          {/* Cipher bar */}
+          <div
+            className="cipher"
+            style={stripStyle(cipherDecoded)}
+            onClick={() => setCipherClicks(prev => prev + 1)}
+          >
+            {cipherDecoded
+              ? 'EXECUTE THE PROTOCOL · MAINTAIN SILENCE · DO NOT LEAVE THE STATION · -I.P.'
+              : '[ROT13]: RKRPHGR GUR CEBGBPBY · ZNVAGNVA FVYRAPR · QB ABG YRNIR GUR FGNGVBA · -V.C.'}
+          </div>
+
+          {/* Body grid */}
+          <div className="body-grid" style={bodyGridStyle}>
+
+            {/* Main column */}
+            <div className="col-main">
+
+              {/* Number input panel */}
+              <div className="s-panel" style={{
+                border: '1px solid var(--bd)',
+                background: 'var(--panel)',
+                padding: '16px 20px',
+                marginBottom: 12,
+              }}>
+                <div style={panelTitleStyle}>PROTOCOL 23 — SEQUENCE INPUT</div>
+                <NumberInput onSuccess={handleSuccess} onWrong={handleWrong} />
+              </div>
+
+              {/* Status table */}
+              <div className="s-panel" style={{
+                border: '1px solid var(--bd)',
+                background: 'var(--panel)',
+                padding: '16px 20px',
+                marginBottom: 12,
+                fontFamily: "'VT323', monospace",
+                fontSize: 13,
+              }}>
+                <div style={panelTitleStyle}>SYSTEM STATUS</div>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <tbody>
+                    {[
+                      ['EM CONTAINMENT', 'NORMAL', 'tm'],
+                      ['FAILSAFE KEY', 'ARMED', 'tm'],
+                      ['INTRANET NODE', 'SWN-7', 'tm'],
+                      ['SONAR ARRAY', 'DEGRADED', 'ta'],
+                      ['EM ANOMALY', 'DETECTED', 'ta'],
+                      ['PROTOCOL', '23', 'tm'],
+                      ['EXTERNAL COMMS', 'BLOCKED §7-B', 'tr'],
+                      ['QUARANTINE', 'ACTIVE', 'ta'],
+                    ].map(([label, val, cls]) => (
+                      <tr key={label} style={{ borderBottom: '1px solid var(--bd)' }}>
+                        <td style={{ padding: '3px 0', color: 'var(--dim)', width: '55%' }}>{label}</td>
+                        <td style={{
+                          padding: '3px 0',
+                          color: cls === 'tm' ? 'var(--ph-dim)' : cls === 'ta' ? 'var(--am)' : 'var(--red)',
+                        }}>{val}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Activity log */}
+              <ActivityLog entries={logEntries} />
+            </div>
+
+            {/* Side column */}
+            <div className="col-side">
+
+              {/* EM Readings */}
+              <div className="s-panel-side" style={sidePanelStyle}>
+                <div style={panelTitleStyle}>EM READINGS</div>
+                <div>EM FIELD: 73% GAUSS</div>
+                <div style={{ color: 'var(--am)' }}>SONAR: DEGRADED</div>
+                <div style={{ color: 'var(--am)' }}>ANOMALY: DETECTED</div>
+                <div>FAILSAFE: ARMED</div>
+              </div>
+
+              {/* Personnel roster */}
+              <div className="s-panel-side" style={sidePanelStyle}>
+                <div style={panelTitleStyle}>PERSONNEL</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2px 8px' }}>
+                  <span>WICKMUND, G.</span><span style={{ color: 'var(--am)' }}>CHIEF</span>
+                  <span>CANDLE, M.</span><span style={{ color: 'var(--ph-dim)' }}>TECH</span>
+                  <span style={{ color: 'var(--dim)' }}>[CLASSIFIED]</span><span style={{ color: 'var(--dim)' }}>OPS-A</span>
+                  <span style={{ color: 'var(--dim)' }}>[CLASSIFIED]</span><span style={{ color: 'var(--dim)' }}>OPS-B</span>
+                </div>
+                <div style={{ marginTop: 8, color: 'var(--ph-faint)', fontSize: 11 }}>RELIEF: 540HRS</div>
+              </div>
+
+              {/* Open terminal button */}
+              <div style={{ marginBottom: 12 }}>
+                <button
+                  style={openTermBtnStyle}
+                  onClick={() => setIsTerminalOpen(true)}
+                >
+                  [ OPEN TERMINAL ]
+                </button>
+              </div>
+
+              {/* Comms status */}
+              <div className="s-panel-side" style={sidePanelStyle}>
+                <div style={panelTitleStyle}>COMMS</div>
+                <div style={{ color: 'var(--red)' }}>COMMS: BLOCKED §7-B</div>
+                <div>LAST CONTACT: 10891</div>
+                <div style={{ color: 'var(--am)' }}>PEARL FEED: TIMEOUT</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <footer className="s-footer" style={footerStyle}>
+            <div>DHARMA INITIATIVE · STATION 3: THE SWAN · ESTABLISHED 1977</div>
+            <div className="animate-terminal-blink" style={{ color: 'var(--ph-dim)', letterSpacing: 3 }}>
+              [ ↑↑↓↓←→←→ ]
+            </div>
+          </footer>
+
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
