@@ -24,13 +24,13 @@
 
 The ARG uses a **5-level clearance progression** persisted in `localStorage` under the key `dharma_clearance_level`.
 
-| Level | Label       | Advances Via        |
-|-------|-------------|---------------------|
-| 1     | VISITOR     | *(starting level)*  |
-| 2     | OPERATOR    | `AUTHENTICATE NAMASTE`   |
-| 3     | TECHNICIAN  | `AUTHENTICATE 108`       |
-| 4     | RESEARCHER  | `AUTHENTICATE VIA DOMUS` |
-| 5     | OMEGA       | `AUTHENTICATE CERBERUS`  |
+| Level | Label       | Advances Via             |
+|-------|-------------|--------------------------|
+| 1     | VISITOR     | *(starting level)*       |
+| 2     | OPERATOR    | `AUTHENTICATE WICKMUND`  |
+| 3     | TECHNICIAN  | `AUTHENTICATE KRONOS`    |
+| 4     | RESEARCHER  | `AUTHENTICATE DARK MATTER` |
+| 5     | OMEGA       | `AUTHENTICATE THANATOS`  |
 
 **Architecture:**
 - `client/src/lib/clearance.ts` — single source of truth: `getClearance()`, `setClearance()`, `clearanceLabel()`
@@ -86,9 +86,9 @@ This backdates the countdown start by 108 minutes, causing immediate system fail
 
 ## Level 1 → 2: "The Dead Operator's Note"
 
-**Answer:** `AUTHENTICATE NAMASTE`  
+**Answer:** `AUTHENTICATE WICKMUND`  
 **Cipher:** Morse code (ITU-R standard)  
-**Theme:** Finding what the previous operator left behind
+**Theme:** Finding the cover identity of the previous operator
 
 ### Full Discovery Path
 
@@ -115,26 +115,27 @@ Contains Desmond Hume's belongings:
 READ /DHARMA/ORIENTATION-REEL-3.TXT
 ```
 Scroll to Desmond's addendum at the end:
-> *"I encoded it myself. Standard maritime dot-dash. Here it is:*  
-> `-. .- -- .- ... - .`"*
+> *"It is the name Kelvin used for himself in the field. His cover name. Encoded in standard maritime dot-dash. Here it is:*  
+> `.-- .. -.-. -.- -- ..- -. -..`"*
 
 **Step 4 — Decode the Morse**
 
 | Signal | Letter |
 |--------|--------|
-| `-. ` | N |
-| `.- ` | A |
+| `.-- ` | W |
+| `.. ` | I |
+| `-.-. ` | C |
+| `-.- ` | K |
 | `-- ` | M |
-| `.- ` | A |
-| `... ` | S |
-| `- ` | T |
-| `. ` | E |
+| `..- ` | U |
+| `-. ` | N |
+| `-.. ` | D |
 
-Result: **NAMASTE**
+Result: **WICKMUND**
 
 **Step 5 — Authenticate**
 ```
-AUTHENTICATE NAMASTE
+AUTHENTICATE WICKMUND
 ```
 
 ### Bonus: Desmond Lore
@@ -144,9 +145,9 @@ Typing `DESMOND` after finding his effects returns his full personnel file with 
 
 ## Level 2 → 3: "The Corrupted Carrier Wave"
 
-**Answer:** `AUTHENTICATE 108`  
-**Cipher:** Arithmetic — sum of six carrier wave frequency values  
-**Theme:** Recovering corrupted signal data to find the hidden sum
+**Answer:** `AUTHENTICATE KRONOS`  
+**Cipher:** Acrostic — first letter of each Greek-designated peak name  
+**Theme:** Recovering corrupted signal data to read the hidden relay designation
 
 ### Full Discovery Path
 
@@ -154,14 +155,14 @@ Typing `DESMOND` after finding his effects returns his full personnel file with 
 ```
 COMMS
 ```
-Output shows 6 carrier wave peaks. **Peaks 03 and 04 are corrupted:**
+Output shows 6 carrier wave peaks in a "Greek Series." **Peaks 03 and 04 are corrupted:**
 ```
-PEAK 01: FOUR          [4 MHz]
-PEAK 02: EIGHT         [8 MHz]
-PEAK 03: [CORRUPTED]   [-- MHz]
-PEAK 04: [CORRUPTED]   [-- MHz]
-PEAK 05: TWENTY-THREE  [23 MHz]
-PEAK 06: FORTY-TWO     [42 MHz]
+PEAK 01: KAPPA       [4 MHz]
+PEAK 02: RHO         [8 MHz]
+PEAK 03: [CORRUPTED] [-- MHz]
+PEAK 04: [CORRUPTED] [-- MHz]
+PEAK 05: OMICRON    [23 MHz]
+PEAK 06: SIGMA      [42 MHz]
 ```
 > *"Type DECRYPT FREQUENCIES to attempt data recovery."*
 
@@ -171,37 +172,34 @@ DECRYPT FREQUENCIES
 ```
 Output:
 ```
-PEAK 03: FIFTEEN   [15 MHz]  ← recovered
-PEAK 04: SIXTEEN   [16 MHz]  ← recovered
+PEAK 03: OMEGA      [15 MHz]  ← recovered
+PEAK 04: NU         [16 MHz]  ← recovered
 
-FULL SEQUENCE RESTORED: 4, 8, 15, 16, 23, 42.
+FULL GREEK SERIES RESTORED:
+  KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA
+
+STATION RELAY DESIGNATION: K-R-O-N-O-S
 ```
 
-**Step 3 — Calculate the sum**
-
+**Step 3 — Authenticate**
 ```
-4 + 8 + 15 + 16 + 23 + 42 = 108
-```
-
-**Step 4 — Authenticate**
-```
-AUTHENTICATE 108
+AUTHENTICATE KRONOS
 ```
 
 ### Cross-reference (optional deeper lore)
 ```
 DECRYPT VALENZETTI
 ```
-Confirms: *"Six core factor values: 4, 8, 15, 16, 23, 42. Their sum: 108."*
+Reveals: *"Six core factor values: 4, 8, 15, 16, 23, 42. Their sum: 108."* (lore only — 108 is not the code)
 
 ### UI Puzzle cross-reference: Radio Receiver
-The **RadioReceiver** component (L2+) presents the same six DHARMA numbers as target frequencies (4.8, 8.0, 15.16, 23.42 MHz). Locking all four and then tuning to **108.0 MHz** reveals the Orchid Station transmission — reinforcing 108 as the answer without stating it directly.
+The **RadioReceiver** component (L2+) uses the same 6 DHARMA numbers as target frequencies (4.8, 8.0, 15.16, 23.42 MHz). Locking all four and tuning to **108.0 MHz** reveals the Orchid Station transmission naming THANATOS — relevant to L4→L5, not L2→L3.
 
 ---
 
 ## Level 3 → 4: "Radzinsky's Cipher"
 
-**Answer:** `AUTHENTICATE VIA DOMUS`  
+**Answer:** `AUTHENTICATE DARK MATTER`  
 **Cipher:** Caesar cipher, shift +1 (each letter advanced one position forward)  
 **Theme:** Decoding an inscription left by a paranoid operator
 
@@ -216,9 +214,9 @@ M→N  N→O  O→P  P→Q  Q→R  R→S  S→T  T→U  U→V  V→W  W→X  X�
 
 To **decode**, shift each letter **−1 backward**:
 ```
-W→V  J→I  B→A  E→D  P→O  N→M  V→U  T→S
+E→D  B→A  S→R  L→K     N→M  B→A  U→T  U→T  F→E  S→R
 ```
-`WJB EPNVT` → **VIA DOMUS**
+`EBSL NBUUFS` → **DARK MATTER**
 
 ### Full Discovery Path
 
@@ -228,8 +226,8 @@ BLAST DOOR
 ```
 At L3+ shows additional annotations:
 ```
-— "WJB EPNVT"    (first hand — lower left)
-— "WJB EPNVT"    (second hand — upper margin, different writer)
+— "EBSL NBUUFS"    (first hand — lower left)
+— "EBSL NBUUFS"    (second hand — upper margin, different writer)
 
 The same phrase appears twice, written by two different people.
 The text appears shifted. Type RADZINSKY for context on the encoding.
@@ -254,32 +252,32 @@ Output:
 Pattern identified: Caesar cipher, constant shift.
 Radzinsky's known habit: +1 letter shift (A→B, B→C...)
 To decode blast door text: subtract 1 from each letter.
-Example: W→V, J→I, B→A   (first three letters of inscription)
+Example: E→D, B→A, S→R, L→K   (first four letters of inscription)
 ```
 
 **Step 4 — Decode manually**
 
 ```
-W J B   E P N V T
-↓ ↓ ↓   ↓ ↓ ↓ ↓ ↓
-V I A   D O M U S
+E B S L   N B U U F S
+↓ ↓ ↓ ↓   ↓ ↓ ↓ ↓ ↓ ↓
+D A R K   M A T T E R
 ```
 
 **Step 5 — Authenticate**
 ```
-AUTHENTICATE VIA DOMUS
+AUTHENTICATE DARK MATTER
 ```
-*(Note: the space is required — VIA DOMUS as two words)*
+*(Note: the space is required — DARK MATTER as two words)*
 
 ### UI Puzzle cross-reference: Blast Door Map
-The **BlastDoorMap** component (L3+, UV-reveal) shows `WJB EPNVT` written twice in different handwriting styles — exactly as the terminal `BLAST DOOR` command describes. Players who find the map before using the terminal get the visual before the textual clue.
+The **BlastDoorMap** component (L3+, UV-reveal) shows `EBSL NBUUFS` written twice in different handwriting styles — exactly as the terminal `BLAST DOOR` command describes. Players who find the map before using the terminal get the visual before the textual clue.
 
 ---
 
-## Level 4 → 5: "The Cerberus Designation"
+## Level 4 → 5: "The Thanatos Designation"
 
-**Answer:** `AUTHENTICATE CERBERUS`  
-**Theme:** Finding DHARMA's internal name for the smoke monster
+**Answer:** `AUTHENTICATE THANATOS`  
+**Theme:** Finding DHARMA's classified field designation for the entity
 
 There are **two convergent paths** to this answer.
 
@@ -304,22 +302,22 @@ READ /LOGS/FINAL-TRANSMISSION.TXT
 Contains:
 ```
 CIPHER TYPE: ROT-13
-ENCODED:     PREOREHF
+ENCODED:     GUNANGBF
 ```
 
 **Step 3 — Decode ROT-13**
 
 ROT-13 shifts each letter 13 positions (A↔N, B↔O, C↔P...):
 
-| Encoded | P | R | E | O | E | R | H | F |
+| Encoded | G | U | N | A | N | G | B | F |
 |---------|---|---|---|---|---|---|---|---|
-| Decoded | C | E | R | B | E | R | U | S |
+| Decoded | T | H | A | N | A | T | O | S |
 
-Result: **CERBERUS**
+Result: **THANATOS**
 
 **Step 4 — Authenticate**
 ```
-AUTHENTICATE CERBERUS
+AUTHENTICATE THANATOS
 ```
 
 ---
@@ -382,7 +380,7 @@ Also in the SECURITY ADDENDUM:
 
 **Step 8 — Authenticate**
 ```
-AUTHENTICATE CERBERUS
+AUTHENTICATE THANATOS
 ```
 
 ---
@@ -391,14 +389,14 @@ AUTHENTICATE CERBERUS
 
 The **PearlStationLog** (paper printout appearing ~5 seconds after countdown failure, even at L1) always includes:
 ```
-CERBERUS event: entity motion detected at outer perimeter during failure window.
+THANATOS event: entity motion detected at outer perimeter during failure window.
 Observation sealed per Protocol 7-J (Radzinsky).
 ```
-This seeds the word `CERBERUS` early. Players who reach L4 will recognize it.
+This seeds the word `THANATOS` early. Players who reach L4 will recognize it.
 
 ### UI Puzzle cross-references: both components
-- **BlastDoorMap** (L3+) includes UV-revealed annotation: `PREOREHF — V.K. 2001` near the lower-right corner. Players who decode the ROT-13 independently arrive at CERBERUS before finding either formal path.
-- **RadioReceiver** (L2+, Orchid transmission at 108.0 MHz) states: *"Entity designation CERBERUS confirmed active. The name is the key."*
+- **BlastDoorMap** (L3+) includes UV-revealed annotation: `GUNANGBF — V.K. 2001` near the lower-right corner. Players who decode the ROT-13 independently arrive at THANATOS before finding either formal path.
+- **RadioReceiver** (L2+, Orchid transmission at 108.0 MHz) states: *"Entity designation THANATOS confirmed active. The name is the key."*
 
 ---
 
@@ -673,10 +671,10 @@ Listened to by:
 The answer map is at line ~156 in `terminal.ts`:
 ```typescript
 const correct: Record<number, string[]> = {
-  1: ['NAMASTE'],
-  2: ['108'],
-  3: ['VIA DOMUS'],
-  4: ['CERBERUS'],
+  1: ['WICKMUND'],
+  2: ['KRONOS'],
+  3: ['DARK MATTER'],
+  4: ['THANATOS'],
 };
 ```
 Multiple answers per level are supported: `1: ['NAMASTE', 'ALTERNATE']`.

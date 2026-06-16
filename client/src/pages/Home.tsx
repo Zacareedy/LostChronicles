@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import dharmaLogoSvg from '@/assets/dharma-logo-fixed.svg';
 import Loading from '@/components/Loading';
@@ -15,7 +15,7 @@ import PuzzleController, { PuzzleControllerRef } from '@/components/PuzzleContro
 import PuzzleLauncher from '@/components/PuzzleLauncher';
 import { playSound, stopSound } from '@/lib/audio';
 import { useLore } from '@/contexts/LoreContext';
-import { getClearance, clearanceLabel } from '@/lib/clearance';
+import { getClearance, setClearance, clearanceLabel } from '@/lib/clearance';
 
 const Home: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
@@ -30,6 +30,7 @@ const Home: React.FC = () => {
   // System failure states
   const [isSystemFailure, setIsSystemFailure] = useState(false);
   const [showPearlLog, setShowPearlLog] = useState(false);
+  const pearlLogTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const [failureTimestamp, setFailureTimestamp] = useState('');
   const [showFailsafeContent, setShowFailsafeContent] = useState(false);
 
@@ -133,6 +134,11 @@ const Home: React.FC = () => {
           localStorage.removeItem('dharma_radio_access');
           setIsRadioOpen(true);
         }
+        const failsafeFlag = localStorage.getItem('dharma_failsafe_activated');
+        if (failsafeFlag === 'true') {
+          localStorage.removeItem('dharma_failsafe_activated');
+          handleFailsafeTrigger();
+        }
       } catch (e) {}
     }, 500);
     return () => clearInterval(interval);
@@ -157,14 +163,15 @@ const Home: React.FC = () => {
     recordTerminalCommand(command);
   };
 
-  const handleCorrectSequence = () => {
+  const handleCorrectSequence = useCallback(() => {
+    clearTimeout(pearlLogTimeoutRef.current);
     setIsCountdownReset(true);
     setIsSystemFailure(false);
     setShowPearlLog(false);
     triggerLoreEvent('correct_sequence_entered');
-  };
+  }, [triggerLoreEvent]);
 
-  const handleCountdownFinish = () => {
+  const handleCountdownFinish = useCallback(() => {
     playSound('alarm');
     triggerSystemStatus('PROTOCOL REQUIRED', 0);
 
@@ -172,12 +179,13 @@ const Home: React.FC = () => {
     setFailureTimestamp(timestamp);
     setIsSystemFailure(true);
 
-    setTimeout(() => {
+    pearlLogTimeoutRef.current = setTimeout(() => {
       setShowPearlLog(true);
     }, 5000);
-  };
+  }, [triggerSystemStatus]);
 
   const handleSystemReset = () => {
+    clearTimeout(pearlLogTimeoutRef.current);
     setIsSystemFailure(false);
     setShowPearlLog(false);
     setIsCountdownReset(true);
@@ -185,14 +193,14 @@ const Home: React.FC = () => {
   };
 
   const handleFailsafeTrigger = () => {
+    clearTimeout(pearlLogTimeoutRef.current);
+    setClearance(1);
+    localStorage.removeItem('dharma_alarm_active');
     setIsSystemFailure(false);
     setShowPearlLog(false);
-    setShowFailsafeContent(true);
-
-    unlockReport(3);
-    unlockAudioLog('blackRockLog');
-    triggerLoreEvent('failsafe_triggered');
-    triggerSystemStatus('ELECTROMAGNETIC DISCHARGE INITIATED', 5000);
+    setShowFailsafeContent(false);
+    setIsCountdownReset(true);
+    triggerSystemStatus('FAILSAFE ACTIVATED — SYSTEM RESET', 5000);
   };
 
   const handlePuzzleComplete = () => {
@@ -332,6 +340,7 @@ const Home: React.FC = () => {
         isVisible={isRadioOpen}
         onClose={() => setIsRadioOpen(false)}
       />
+
 
       <PuzzleController
         ref={puzzleControllerRef}

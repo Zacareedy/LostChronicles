@@ -4,21 +4,23 @@ import { getClearance, setClearance, clearanceLabel } from './clearance';
 
 // ─── Clearance progression ────────────────────────────────────────────────────
 //
-//  L1 VISITOR  → L2 OPERATOR   : AUTHENTICATE NAMASTE
+//  L1 VISITOR  → L2 OPERATOR   : AUTHENTICATE WICKMUND
 //    Clue: Morse code at end of READ /DHARMA/ORIENTATION-REEL-3.TXT
-//    Morse: -. .- -- .- ... - .  = NAMASTE
+//    Morse: .-- .. -.-. -.- -- ..- -. -..  = WICKMUND
 //
-//  L2 OPERATOR → L3 TECHNICIAN : AUTHENTICATE 108
-//    Clue: COMMS command shows intercepted carrier-wave values 4 8 15 16 23 42
-//    Answer: their sum = 108
+//  L2 OPERATOR → L3 TECHNICIAN : AUTHENTICATE KRONOS
+//    Clue: COMMS shows 6 carrier-wave peaks named after Greek designations
+//    DECRYPT FREQUENCIES recovers the two corrupted peaks
+//    First letter of each peak name: K-R-O-N-O-S = KRONOS
 //
-//  L3 TECHNICIAN → L4 RESEARCHER : AUTHENTICATE VIA DOMUS
-//    Clue: BLAST DOOR (L3) and RADZINSKY (L3) both reference "via domus"
-//    The phrase appears twice in blast door annotations
+//  L3 TECHNICIAN → L4 RESEARCHER : AUTHENTICATE DARK MATTER
+//    Clue: BLAST DOOR (L3) shows inscription "EBSL NBUUFS" (Caesar +1)
+//    RADZINSKY (L3) explains the +1 shift encoding habit
+//    Decode: EBSL NBUUFS → DARK MATTER
 //
-//  L4 RESEARCHER → L5 OMEGA : AUTHENTICATE CERBERUS
+//  L4 RESEARCHER → L5 OMEGA : AUTHENTICATE THANATOS
 //    Clue: READ /LOGS/FINAL-TRANSMISSION.TXT (L4) — ROT-13 cipher
-//    Encoded: PREOREHF → decoded: CERBERUS
+//    Encoded: GUNANGBF → decoded: THANATOS
 
 let isExecutingProtocol = false;
 let pendingAction: string | null = null;
@@ -37,7 +39,7 @@ function grantMessage(newLevel: number): string[] {
   const label = clearanceLabel(newLevel);
   const flavour: Record<number, string[]> = {
     2: [
-      '> Maritime signal decoded. OPERATOR clearance granted.',
+      '> Operator verification accepted. OPERATOR clearance granted.',
       '> Decryption tools unlocked.',
       '> Intercept log access granted.',
       '>',
@@ -45,7 +47,7 @@ function grantMessage(newLevel: number): string[] {
       '> We do not know if that was a good thing.',
     ],
     3: [
-      '> Carrier wave frequency sum confirmed. TECHNICIAN clearance granted.',
+      '> Relay designation confirmed. TECHNICIAN clearance granted.',
       '> Override and diagnostic tools unlocked.',
       '> Full incident report now accessible.',
       '> SUBNET access enabled.',
@@ -153,10 +155,10 @@ const commands: Record<string, Function> = {
     ];
 
     const correct: Record<number, string[]> = {
-      1: ['NAMASTE'],
-      2: ['108'],
-      3: ['VIA DOMUS'],
-      4: ['CERBERUS'],
+      1: ['WICKMUND'],
+      2: ['KRONOS'],
+      3: ['DARK MATTER'],
+      4: ['THANATOS'],
     };
 
     const allAnswers = Object.values(correct).flat();
@@ -377,11 +379,12 @@ const commands: Record<string, Function> = {
       '> — End of transcript. Cycle 9100.',
       '> ─────────────────────────────────────────',
       '> [TECHNICAL ADDENDUM — OPERATOR D. HUME — CYCLE 9620]',
-      '> "I set the verification greeting myself, when Kelvin handed',
-      '>  over the terminal. It\'s the word we always said to each other.',
-      '>  I encoded it myself. Standard maritime dot-dash. Here it is:',
+      '> "I set the verification word myself, when Kelvin handed over',
+      '>  the terminal. It is the name Kelvin used for himself in the',
+      '>  field. His cover name. He made me memorise it.',
+      '>  Encoded in standard maritime dot-dash. Here it is:',
       '>',
-      '>   -. .- -- .- ... - .',
+      '>   .-- .. -.-. -.- -- ..- -. -..',
       '>',
       '>  If you\'re reading this, the station still needs you.',
       '>  Do not leave. I wish I had not left."',
@@ -506,7 +509,7 @@ const commands: Record<string, Function> = {
         '> someone would see it and panic.',
         '>',
         '> CIPHER TYPE: ROT-13',
-        '> ENCODED:     PREOREHF',
+        '> ENCODED:     GUNANGBF',
         '>',
         '> "Type AUTHENTICATE [decoded word] if you understand.',
         '>',
@@ -685,18 +688,17 @@ const commands: Record<string, Function> = {
       '> "...the numbers are bad..."',
       '> "...the numbers are bad..."',
       '>',
-      '> CARRIER WAVE — FREQUENCY PEAKS:',
+      '> CARRIER WAVE — FREQUENCY PEAKS (GREEK SERIES):',
       '>',
-      '>   PEAK 01: FOUR          [4 MHz]',
-      '>   PEAK 02: EIGHT         [8 MHz]',
-      '>   PEAK 03: [CORRUPTED]   [-- MHz]  ← capture interference',
-      '>   PEAK 04: [CORRUPTED]   [-- MHz]  ← capture interference',
-      '>   PEAK 05: TWENTY-THREE  [23 MHz]',
-      '>   PEAK 06: FORTY-TWO     [42 MHz]',
+      '>   PEAK 01: KAPPA       [4 MHz]',
+      '>   PEAK 02: RHO         [8 MHz]',
+      '>   PEAK 03: [CORRUPTED] [-- MHz]  ← capture interference',
+      '>   PEAK 04: [CORRUPTED] [-- MHz]  ← capture interference',
+      '>   PEAK 05: OMICRON    [23 MHz]',
+      '>   PEAK 06: SIGMA      [42 MHz]',
       '>',
       '> NOTE: Peaks 03 and 04 lost during signal capture.',
       '> Type DECRYPT FREQUENCIES to attempt data recovery.',
-      '> The sum of all six values is required for authentication.',
       '> ─────────────────────────────────────────',
     ];
   },
@@ -733,11 +735,14 @@ const commands: Record<string, Function> = {
       '> Accessing backup signal buffer...',
       '>',
       '> RECOVERY SUCCESSFUL:',
-      '>   PEAK 03: FIFTEEN   [15 MHz]  ← recovered',
-      '>   PEAK 04: SIXTEEN   [16 MHz]  ← recovered',
+      '>   PEAK 03: OMEGA      [15 MHz]  ← recovered',
+      '>   PEAK 04: NU         [16 MHz]  ← recovered',
       '>',
-      '> FULL SEQUENCE RESTORED: 4, 8, 15, 16, 23, 42.',
-      '> Sum of all six values: [calculate to authenticate].',
+      '> FULL GREEK SERIES RESTORED:',
+      '>   KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA',
+      '>   [4 MHz]  [8 MHz]  [15 MHz]  [16 MHz]  [23 MHz]  [42 MHz]',
+      '>',
+      '> STATION RELAY DESIGNATION: K-R-O-N-O-S',
       '> Cross-reference: VALENZETTI EQUATION.',
     ];
     if (key === 'shift') return [
@@ -748,7 +753,7 @@ const commands: Record<string, Function> = {
       '> His phrase for it: "Always one step ahead of myself."',
       '>',
       '> To decode blast door text: subtract 1 from each letter.',
-      '> Example: W→V, J→I, B→A   (first three letters of inscription)',
+      '> Example: E→D, B→A, S→R, L→K   (first four letters of inscription)',
       '>',
       '> Apply to the full blast door inscription.',
       '> Type BLAST DOOR to view the encoded text.',
@@ -875,7 +880,7 @@ const commands: Record<string, Function> = {
       '> It cannot be found by conventional navigation.',
       '> It does not want to be found.',
       '>',
-      '> THE ENTITY (CERBERUS):',
+      '> THE ENTITY (DESIGNATION: THANATOS):',
       '> Classified as a "security system" in early DHARMA files.',
       '> It predates DHARMA. It predates the stations.',
       '> It judges. We do not know by what criteria.',
@@ -1031,19 +1036,7 @@ const commands: Record<string, Function> = {
     return [`> ERROR: No such directory: ${args}`];
   },
 
-  '4 8 15 16 23 42': (_a: string, _p?: any, _r?: any, onCorrectSequence?: () => void) => {
-    if (pendingAction === 'protocol' || isExecutingProtocol) {
-      isExecutingProtocol = false;
-      pendingAction = null;
-      if (onCorrectSequence) onCorrectSequence();
-      return [
-        '> NUMBERS ACCEPTED.',
-        '> PROTOCOL EXECUTED SUCCESSFULLY.',
-        '> Counter reset to 108 minutes.',
-      ];
-    }
-    return ['> VALENZETTI PARAMETERS RECOGNISED.', '> WARNING: Direct input not authorised outside protocol mode.'];
-  },
+  '4 8 15 16 23 42': () => [],
 };
 
 // ─── Secret / hidden commands (not in HELP) ───────────────────────────────────
@@ -1086,12 +1079,14 @@ const hiddenCommands: Record<string, Function> = {
     '> They are not documented here.',
   ],
 
-  failsafe: () => [
-    '> The failsafe key — Sub-level C, housing F-7.',
-    '> Turning it will trigger uncontrolled discharge.',
-    '> It is the absolute last resort.',
-    '> If you are considering it, you have already failed at everything else.',
-  ],
+  failsafe: (_args: string) => {
+    return [
+      '> The failsafe key — Sub-level C, housing F-7.',
+      '> Turning it will trigger uncontrolled electromagnetic discharge.',
+      '> It is the absolute last resort.',
+      '> If you are considering it, you have already failed at everything else.',
+    ];
+  },
 
   smoke: () => [
     '> SONAR ANOMALY LOG — LARGE ORGANIC ENTITY:',
@@ -1139,7 +1134,7 @@ const hiddenCommands: Record<string, Function> = {
       '> blast door were shifted. I could read them, obviously."',
       '>',
       '> Final recovered message fragment (Sub-level C terminal):',
-      '>   "Find it. Step back. The way home."',
+      '>   "Step back once from every letter. What remains is the truth."',
       '>',
       '> Type BLAST DOOR to view the blast door inscriptions.',
       '> Type DECRYPT SHIFT for cipher decoding guidance.',
@@ -1186,8 +1181,8 @@ const hiddenCommands: Record<string, Function> = {
       '>',
       '> [TECHNICIAN ACCESS — ADDITIONAL ANNOTATIONS]',
       '>   — "CLAIMED TERRITORY — DO NOT ENTER"',
-      '>   — "WJB EPNVT"    (first hand — lower left)',
-      '>   — "WJB EPNVT"    (second hand — upper margin, different writer)',
+      '>   — "EBSL NBUUFS"    (first hand — lower left)',
+      '>   — "EBSL NBUUFS"    (second hand — upper margin, different writer)',
       '>',
       '> The same phrase appears twice, written by two different people.',
       '> The text appears shifted. Type RADZINSKY for context on the encoding.',
@@ -1333,16 +1328,16 @@ const processCommand = (
   commandHistory.push(input.trim().toLowerCase());
   if (commandHistory.length > 10) commandHistory = commandHistory.slice(-10);
 
-  if ((pendingAction === 'protocol' || isSystemFailure) && /^\s*4\s*8\s*15\s*16\s*23\s*42\s*$/.test(input)) {
+  if (/^\s*4\s*8\s*15\s*16\s*23\s*42\s*$/.test(input)) {
+    const alarmIsActive = localStorage.getItem('dharma_alarm_active') === 'true';
+    if (!alarmIsActive && pendingAction !== 'protocol') {
+      return []; // Silent — alarm hasn't started yet
+    }
     isExecutingProtocol = false;
     pendingAction = null;
     playSound('success');
-    if (onCorrectSequence) onCorrectSequence();
-    return [
-      '> NUMBERS ACCEPTED.',
-      '> PROTOCOL EXECUTED SUCCESSFULLY.',
-      '> Counter reset to 108 minutes.',
-    ];
+    if (onCorrectSequence) onCorrectSequence(); // Terminal clears itself in the callback
+    return []; // No messages — terminal clear is handled by onCorrectSequence
   }
 
   const normalised = input.trim().toLowerCase();
@@ -1356,9 +1351,7 @@ const processCommand = (
     return ['> SYSTEM RESET. All progress wiped. Reload the page.'];
   }
 
-  if (input.trim() === DHARMA_NUMBERS.join(' ')) {
-    return commands['4 8 15 16 23 42']('', onRevealPuzzle, onRevealStation, onCorrectSequence);
-  }
+  // Number sequence already handled above (alarm-gated)
 
   // Multi-word exact matches (checked before splitting)
   const multiWord = ['push the button', 'blast door', 'what is your name', 'incident archive'];
