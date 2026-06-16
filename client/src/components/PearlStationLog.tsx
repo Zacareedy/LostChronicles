@@ -28,6 +28,11 @@ const LOG_LINES = [
   'be under duress. Subject appeared to be listening.',
   'To what, we cannot determine. Recommend review.',
   '————————————————————————————',
+  'THANATOS event: entity motion detected at outer',
+  'perimeter during failure window. Duration: 11 min.',
+  'Activity ceased upon protocol restoration.',
+  'Observation sealed per Protocol 7-J (Radzinsky).',
+  '————————————————————————————',
   'P_LOG.23.42 — RECORDING COMPLETE',
 ];
 

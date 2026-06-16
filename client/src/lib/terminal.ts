@@ -1,48 +1,196 @@
 import { playSound } from './audio';
 import { DHARMA_NUMBERS } from './constants';
+import { getClearance, setClearance, clearanceLabel } from './clearance';
+
+// ─── Clearance progression ────────────────────────────────────────────────────
+//
+//  L1 VISITOR  → L2 OPERATOR   : AUTHENTICATE WICKMUND
+//    Clue: Morse code at end of READ /DHARMA/ORIENTATION-REEL-3.TXT
+//    Morse: .-- .. -.-. -.- -- ..- -. -..  = WICKMUND
+//
+//  L2 OPERATOR → L3 TECHNICIAN : AUTHENTICATE KRONOS
+//    Clue: COMMS shows 6 carrier-wave peaks named after Greek designations
+//    DECRYPT FREQUENCIES recovers the two corrupted peaks
+//    First letter of each peak name: K-R-O-N-O-S = KRONOS
+//
+//  L3 TECHNICIAN → L4 RESEARCHER : AUTHENTICATE DARK MATTER
+//    Clue: BLAST DOOR (L3) shows inscription "EBSL NBUUFS" (Caesar +1)
+//    RADZINSKY (L3) explains the +1 shift encoding habit
+//    Decode: EBSL NBUUFS → DARK MATTER
+//
+//  L4 RESEARCHER → L5 OMEGA : AUTHENTICATE THANATOS
+//    Clue: READ /LOGS/FINAL-TRANSMISSION.TXT (L4) — ROT-13 cipher
+//    Encoded: GUNANGBF → decoded: THANATOS
 
 let isExecutingProtocol = false;
 let pendingAction: string | null = null;
-let accessLevel = 1;
 let commandHistory: string[] = [];
+
+function deny(required: number): string[] {
+  const cl = getClearance();
+  return [
+    `> ACCESS DENIED — Clearance Level ${required} required.`,
+    `> Current clearance: Level ${cl} — ${clearanceLabel(cl)}.`,
+    '> Type AUTHENTICATE for upgrade information.',
+  ];
+}
+
+function grantMessage(newLevel: number): string[] {
+  const label = clearanceLabel(newLevel);
+  const flavour: Record<number, string[]> = {
+    2: [
+      '> Operator verification accepted. OPERATOR clearance granted.',
+      '> Decryption tools unlocked.',
+      '> Intercept log access granted.',
+      '>',
+      '> The man who left that note made it out.',
+      '> We do not know if that was a good thing.',
+    ],
+    3: [
+      '> Relay designation confirmed. TECHNICIAN clearance granted.',
+      '> Override and diagnostic tools unlocked.',
+      '> Full incident report now accessible.',
+      '> SUBNET access enabled.',
+      '>',
+      '> The work is difficult. It matters. Do not leave the station.',
+    ],
+    4: [
+      '> Radzinsky\'s cipher cracked. RESEARCHER clearance confirmed.',
+      '> Pearl surveillance access granted.',
+      '> Classified personnel files unlocked.',
+      '> Kelvin\'s file and coordinates now accessible.',
+      '> VALENZETTI command now available.',
+      '>',
+      '> Some things cannot be un-known.',
+    ],
+    5: [
+      '> DHARMA INITIATIVE — OMEGA PROTOCOL — ACTIVE.',
+      '> All station files declassified.',
+      '> Hanso Foundation archives unlocked.',
+      '> Pala Ferry dossier accessible.',
+      '>',
+      '> You know what it is now.',
+      '> What will you do with that knowledge?',
+      '>',
+      '> Type OMEGA for full classified briefing.',
+    ],
+  };
+  return [
+    '> ════════════════════════════════════════',
+    `> CLEARANCE LEVEL ${newLevel} — ${label} — GRANTED`,
+    '> ════════════════════════════════════════',
+    '>',
+    ...(flavour[newLevel] ?? []),
+    '>',
+    '> Type HELP for updated command list.',
+    '> Type FILES for updated file access.',
+  ];
+}
 
 // ─── Documented commands (appear in HELP) ────────────────────────────────────
 
 const commands: Record<string, Function> = {
-  help: () => [
-    '> SWAN STATION — INTRANET NODE SWN-7',
-    '> AVAILABLE COMMANDS:',
-    '>',
-    '>  HELP          — display this message',
-    '>  STATUS        — system status overview',
-    '>  WHO           — active personnel roster',
-    '>  FILES         — list accessible files',
-    '>  READ [path]   — read a file',
-    '>  PING          — test intranet node connectivity',
-    '>  INCIDENT      — recent incident log entries',
-    '>  DHARMA        — DHARMA station directory',
-    '>  VALENZETTI    — Valenzetti Equation summary',
-    '>  CLEAR         — clear terminal output',
-    '>  EXIT          — end terminal session',
-  ],
 
-  status: () => {
-    const powerLevel = Math.floor(Math.random() * 15) + 70;
-    if (pendingAction === 'protocol') {
+  help: () => {
+    const cl = getClearance();
+    const label = clearanceLabel(cl);
+    const base = [
+      '> SWAN STATION — INTRANET NODE SWN-7',
+      `> CLEARANCE: LEVEL ${cl} — ${label}`,
+      '>',
+      '>  HELP          — display this message',
+      '>  STATUS        — system status overview',
+      '>  WHO           — active personnel roster',
+      '>  FILES         — list accessible files',
+      '>  READ [path]   — read a file',
+      '>  PING          — test intranet connectivity',
+      '>  INCIDENT      — recent incident log entries',
+      '>  AUTHENTICATE  — advance clearance level',
+      '>  CLEAR         — clear terminal output',
+      '>  EXIT          — end terminal session',
+    ];
+    if (cl >= 2) base.push(
+      '>  COMMS         — radio intercept log [L2]',
+      '>  DECRYPT [key] — decrypt archived files [L2]',
+      '>  RADIO         — multi-band field receiver [L2]',
+    );
+    if (cl >= 3) base.push(
+      '>  OVERRIDE [p]  — system override protocols [L3]',
+      '>  DIAGNOSE [t]  — network diagnostics [L3]',
+      '>  SUBNET        — access DHARMA subnet communications [L3]',
+      '>  MAP           — blast door UV analysis [L3]',
+    );
+    if (cl >= 4) base.push(
+      '>  ACCESS [p]    — special access protocols [L4]',
+      '>  VALENZETTI    — Valenzetti Equation summary [L4]',
+    );
+    if (cl >= 5) base.push(
+      '>  OMEGA         — full classified briefing [L5]',
+    );
+    if (cl < 5) base.push(
+      '>',
+      '> Type AUTHENTICATE for clearance upgrade information.',
+    );
+    return base;
+  },
+
+  authenticate: (args: string) => {
+    const cl = getClearance();
+    const answer = args.trim().toUpperCase().replace(/\s+/g, ' ');
+
+    if (!answer) {
       return [
-        '> SYSTEM STATUS: PROTOCOL EXECUTION REQUIRED',
-        `> EM Containment:      UNSTABLE`,
-        `> Power reserve:       ${powerLevel}% (DECREASING)`,
-        '> Communication:       COMPROMISED',
-        '> Failsafe Key:        HOUSING F-7 — INTACT',
-        '> WARNING: System failure imminent.',
-        '> Enter the sequence to reset the counter.',
+        `> CLEARANCE: LEVEL ${cl} — ${clearanceLabel(cl)}`,
+        cl < 5
+          ? '> VERIFICATION REQUIRED. REVIEW ALL AVAILABLE STATION MATERIALS.'
+          : '> No further authentication required.',
+        '>',
+        '> Usage: AUTHENTICATE [response]',
       ];
     }
+
+    if (cl >= 5) return [
+      '> CLEARANCE LEVEL 5 — OMEGA.',
+      '> No further authentication required.',
+    ];
+
+    const correct: Record<number, string[]> = {
+      1: ['WICKMUND'],
+      2: ['KRONOS'],
+      3: ['DARK MATTER'],
+      4: ['THANATOS'],
+    };
+
+    const allAnswers = Object.values(correct).flat();
+    const expected = correct[cl];
+
+    if (expected?.includes(answer)) {
+      playSound('success');
+      setClearance(cl + 1);
+      return grantMessage(cl + 1);
+    }
+
+    if (allAnswers.includes(answer)) {
+      return [
+        '> AUTHENTICATION FAILED.',
+        '> This response is valid — but not at your current clearance level.',
+        '> Clearance must be advanced in sequence.',
+      ];
+    }
+
     return [
+      '> AUTHENTICATION FAILED.',
+      '> Incorrect response. Verify your source material.',
+    ];
+  },
+
+  status: () => {
+    const cl = getClearance();
+    const power = Math.floor(Math.random() * 15) + 70;
+    const base = [
       '> SYSTEM STATUS:',
-      `> EM Containment:      ${accessLevel >= 3 ? 'FLUCTUATING' : 'ACTIVE'}`,
-      `> Power reserve:       ${powerLevel}%`,
+      `> EM Containment:      ${cl >= 4 ? 'FLUCTUATING' : 'ACTIVE'}`,
+      `> Power reserve:       ${power}%`,
       '> Failsafe Key:        HOUSING F-7 — INTACT',
       '> Intranet Node:       SWN-7 — ONLINE',
       '> Sonar Array:         DEGRADED (see INCIDENT log)',
@@ -50,54 +198,330 @@ const commands: Record<string, Function> = {
       '> Protocol 23:         ACTIVE',
       '> External Comms:      BLOCKED §7-B',
       '> Quarantine:          IN EFFECT',
+      `> Operator Status:     ${cl >= 2 ? `VERIFIED — ${clearanceLabel(cl)}` : 'UNVERIFIED'}`,
     ];
+    if (cl >= 2) base.push(
+      '>',
+      '> [OPERATOR] Sub-level C: EM field stable. Maintenance overdue.',
+      '> [OPERATOR] Sonar event logged — Cycle 10876. Review recommended.',
+    );
+    if (cl >= 3) base.push(
+      '> [TECHNICIAN] Incident file: Full access now available.',
+      '> [TECHNICIAN] Network: DHARMA subnet online. Type SUBNET to connect.',
+    );
+    if (cl >= 4) base.push(
+      '> [RESEARCHER] Pearl uplink: Sporadic. Feeds available.',
+      '> [RESEARCHER] Personnel file: V.K. — final log now accessible.',
+    );
+    if (cl >= 5) base.push(
+      '> [OMEGA] All systems: Fully declassified.',
+      '> [OMEGA] Hanso Foundation uplink: Available. Type OMEGA.',
+    );
+    if (cl === 1) base.push(
+      '>',
+      '> Operator Status: UNVERIFIED',
+      '> See orientation materials. Type AUTHENTICATE for details.',
+    );
+    return base;
   },
 
-  who: () => [
-    '> ACTIVE PERSONNEL — SWAN STATION:',
-    '>',
-    '>  WICKMUND, G. ............... STATION CHIEF',
-    '>  CANDLE, M. ................. TECHNICAL OFFICER',
-    '>  [CLASSIFIED] ............... OPERATOR A',
-    '>  [CLASSIFIED] ............... OPERATOR B',
-    '>',
-    '>  RELIEF TEAM ETA: 540 HOURS',
-  ],
+  who: () => {
+    const cl = getClearance();
+    const base = [
+      '> ACTIVE PERSONNEL — SWAN STATION:',
+      '>',
+      '>  WICKMUND, G. ............... STATION CHIEF',
+      '>  CANDLE, M. ................. TECHNICAL OFFICER',
+      '>  [CLASSIFIED] ............... OPERATOR A',
+      '>  [CLASSIFIED] ............... OPERATOR B',
+      '>',
+      '>  RELIEF TEAM ETA: 540 HOURS',
+    ];
+    if (cl >= 3) base.splice(5, 0,
+      '>  RADZINSKY, S. .............. FORMER OPERATOR A — DEPARTED',
+    );
+    if (cl >= 4) base.splice(-2, 0,
+      '>',
+      '> [CLEARANCE 4 — RESTRICTED]',
+      '>  KELVIN, V. ................. RADIO OPERATOR — STATUS: UNKNOWN',
+      '>                               FINAL LOG: READ /LOGS/FINAL-TRANSMISSION.TXT',
+    );
+    if (cl >= 5) base.push(
+      '>',
+      '> [OMEGA — ABOVE CLASSIFICATION]',
+      '>  HANSO, A. .................. FOUNDATION DIRECTOR',
+      '>  DEGROOT, G. ................ INITIATIVE DIRECTOR',
+      '>  [CANDIDATES] ............... SEE OMEGA BRIEFING',
+    );
+    return base;
+  },
 
-  files: () => [
-    '> ACCESSIBLE FILES — CLEARANCE LEVEL 4:',
-    '>',
-    '>  /PROTOCOL/PROTOCOL-23.TXT',
-    '>  /LOGS/INCIDENT-4-23-1980.TXT ......... [PARTIAL — REDACTED]',
-    '>  /LOGS/CYCLE-LOG-10894.TXT',
-    '>  /DHARMA/ORIENTATION-REEL-3.TXT',
-    '>  /FILES/VK-108.TXT ................... [CLEARANCE 5]',
-    '>  /FILES/COORDINATES.TXT .............. [CLEARANCE 5]',
-    '>',
-    '>  Use READ [path] to open a file.',
-  ],
+  files: () => {
+    const cl = getClearance();
+    const list = [
+      `> ACCESSIBLE FILES — CLEARANCE LEVEL ${cl}:`,
+      '>',
+      '>  /PROTOCOL/PROTOCOL-23.TXT',
+      '>  /LOGS/INCIDENT-4-23-1980.TXT ......... [PARTIAL — REDACTED]',
+      '>  /LOGS/CYCLE-LOG-10894.TXT',
+      '>  /DHARMA/ORIENTATION-REEL-3.TXT',
+      '>  /FILES/PERSONAL-EFFECTS.TXT .......... [CATALOGUED — CYCLE 10801]',
+    ];
+    if (cl >= 2) list.push(
+      '>  /LOGS/ROUSSEAU-TRANSMISSION.TXT ....... [L2]',
+      '>  /LOGS/COMMS-INTERCEPT.TXT ............. [L2]',
+    );
+    if (cl >= 3) list.push(
+      '>  /LOGS/INCIDENT-CLASSIFIED.TXT ......... [L3 — UNREDACTED]',
+    );
+    if (cl >= 4) list.push(
+      '>  /LOGS/FINAL-TRANSMISSION.TXT .......... [L4]',
+      '>  /FILES/VK-108.TXT .................... [L4]',
+      '>  /FILES/COORDINATES.TXT ............... [L4]',
+    );
+    if (cl >= 5) list.push(
+      '>  /FILES/PALA-FERRY.TXT ................ [L5 — OMEGA]',
+    );
+    list.push('>', '>  Use READ [path] to open a file.');
+    return list;
+  },
 
   read: (args: string) => {
-    if (!args) {
+    if (!args) return [
+      '> ERROR: Path required.',
+      '> Usage: READ [path]',
+      '> Type FILES to see accessible paths.',
+    ];
+
+    const cl = getClearance();
+    const p = args.trim().toUpperCase().replace(/^\//, '');
+
+    // L1 files
+    if (p === 'PROTOCOL/PROTOCOL-23.TXT') return [
+      '> FILE: /PROTOCOL/PROTOCOL-23.TXT',
+      '> ─────────────────────────────────────────',
+      '> PROTOCOL 23 — ELECTROMAGNETIC CONTAINMENT',
+      '> CLASSIFICATION: LEVEL 4 | AUTHORED: DeGroot & Hanso — 1977',
+      '> REVISED: Candle, M. — Cycle 9100',
+      '>',
+      '> PURPOSE:',
+      '> To prevent uncontrolled electromagnetic discharge through periodic',
+      '> operator input at the primary terminal.',
+      '>',
+      '> PROCEDURE:',
+      '> The operator will enter the designated sequence every 108 minutes.',
+      '> The sequence consists of six values. They are known to all authorised',
+      '> personnel. They are not reproduced in this document.',
+      '>',
+      '> FAILURE STAGES:',
+      '>   STAGE 1 — Warning alarm at T-5:00',
+      '>   STAGE 2 — Critical alarm at T-1:00',
+      '>   STAGE 3 — Containment failure. Uncontrolled discharge.',
+      '>   STAGE 4 — Hieroglyph display (equipment fault state)',
+      '>',
+      '> Do not attempt to communicate via this terminal.',
+      '> Do not leave the station.',
+      '> ─────────────────────────────────────────',
+    ];
+
+    if (p === 'LOGS/CYCLE-LOG-10894.TXT') return [
+      '> FILE: /LOGS/CYCLE-LOG-10894.TXT',
+      '> ─────────────────────────────────────────',
+      '> CYCLE: 10894 | STATUS: ACTIVE | EM LEVEL: 73% GAUSS (NOMINAL)',
+      '>',
+      '> Previous cycle (10893): Input at T-02:14. Normal.',
+      '> Sonar: one anomalous reading, duration 6 min. Logged.',
+      '> External contact attempts: 0.',
+      '> ─────────────────────────────────────────',
+    ];
+
+    if (p === 'LOGS/INCIDENT-4-23-1980.TXT') return [
+      '> FILE: /LOGS/INCIDENT-4-23-1980.TXT',
+      '> ─────────────────────────────────────────',
+      '> INCIDENT REPORT — 1980-04-23 — 14:23 LOCAL',
+      '> CLASSIFICATION: PARTIAL — REDACTED ORDER V.K.',
+      '>',
+      '> At 14:23, an uncontrolled electromagnetic event occurred',
+      '> during scheduled maintenance in Sub-level C.',
+      '>',
+      '> Casualties:        [REDACTED — ORDER V.K.]',
+      '> Equipment loss:    [REDACTED — ORDER V.K.]',
+      '> Root cause:        [REDACTED — ORDER V.K.]',
+      '>',
+      '> Result: Protocol 23 established. Swan converted',
+      '> to indefinite occupied operation effective 1980-05-01.',
+      '>',
+      cl >= 3 ? '> Full unredacted report: READ /LOGS/INCIDENT-CLASSIFIED.TXT' : '> Full report requires Clearance Level 3.',
+      '> ─────────────────────────────────────────',
+    ];
+
+    if (p === 'DHARMA/ORIENTATION-REEL-3.TXT') return [
+      '> FILE: /DHARMA/ORIENTATION-REEL-3.TXT',
+      '> ─────────────────────────────────────────',
+      '> ORIENTATION FILM — STATION 3: THE SWAN',
+      '> PRESENTER: M. CANDLE, TECHNICAL OFFICER',
+      '>',
+      '> "Hello. I am Dr. Marvin Candle, and this is the',
+      '> orientation film for Station 3 of the DHARMA Initiative.',
+      '>',
+      '> "The station you are now occupying was originally constructed',
+      '> as a laboratory facility. Following an incident in April 1980,',
+      '> its primary function was altered. The details of that incident',
+      '> remain classified.",',
+      '>',
+      '> "Every 108 minutes, the counter must be reset by entering',
+      '> the code. This is your only function. Do not attempt',
+      '> communication with the outside world. Do not leave.",',
+      '>',
+      '> "Pushing this button is the most important thing you will',
+      '> ever do. It may be the only important thing you will ever do."',
+      '>',
+      '> — End of transcript. Cycle 9100.',
+      '> ─────────────────────────────────────────',
+      '> [TECHNICAL ADDENDUM — OPERATOR D. HUME — CYCLE 9620]',
+      '> "I set the verification word myself, when Kelvin handed over',
+      '>  the terminal. It is the name Kelvin used for himself in the',
+      '>  field. His cover name. He made me memorise it.',
+      '>  Encoded in standard maritime dot-dash. Here it is:',
+      '>',
+      '>   .-- .. -.-. -.- -- ..- -. -..',
+      '>',
+      '>  If you\'re reading this, the station still needs you.',
+      '>  Do not leave. I wish I had not left."',
+      '> ─────────────────────────────────────────',
+    ];
+
+    if (p === 'FILES/PERSONAL-EFFECTS.TXT' || p === 'PERSONAL-EFFECTS.TXT') return [
+      '> FILE: /FILES/PERSONAL-EFFECTS.TXT',
+      '> ─────────────────────────────────────────',
+      '> PERSONAL EFFECTS — OPERATOR A (DEPARTED — CYCLE 10801)',
+      '> Catalogued by: V. Kelvin — Radiotech',
+      '> ─────────────────────────────────────────',
+      '>',
+      '> ITEM 01: Paperback novel — "Our Mutual Friend" by Charles Dickens',
+      '>          [Front cover note: "Not yet. Save it for the last."]',
+      '>          [Back cover note: "Always. — Penny"]',
+      '>',
+      '> ITEM 02: Photograph. Woman on a boat. No date.',
+      '>',
+      '> ITEM 03: Wristwatch. Stopped. Face reads: 8:15.',
+      '>',
+      '> ITEM 04: Torn notebook page.',
+      '>          "I have been here 1,340 days. I talk to myself now.',
+      '>           The button is the only thing keeping me tethered.',
+      '>           If anyone finds this: 4 8 15 16 23 42. Do not stop.',
+      '>           Do not think. Just push it.',
+      '>           — D. Hume"',
+      '>',
+      '> ITEM 05: One keychain, metal. Stamped initials: D.H.',
+      '>',
+      '> ─────────────────────────────────────────',
+      '> NOTE FROM V. KELVIN:',
+      '> "He left in a hurry. Took nothing. Said he could see the ocean',
+      '>  from the hill above the station. I do not know if he made it.',
+      '>  His verification word for the system — the greeting he used —',
+      '>  is encoded in the station orientation transcript.',
+      '>  Standard maritime signalling format. He was proud of that."',
+      '> ─────────────────────────────────────────',
+    ];
+
+    // L2 files
+    if (p === 'LOGS/ROUSSEAU-TRANSMISSION.TXT' || p === 'ROUSSEAU-TRANSMISSION.TXT') {
+      if (cl < 2) return deny(2);
       return [
-        '> ERROR: Path required.',
-        '> Usage: READ [path]',
-        '> Example: READ /PROTOCOL/PROTOCOL-23.TXT',
-        '> Type FILES to see accessible paths.',
+        '> FILE: /LOGS/ROUSSEAU-TRANSMISSION.TXT',
+        '> ─────────────────────────────────────────',
+        '> FLAME STATION — TRANSMISSION CAPTURE LOG',
+        '> DATE: 1988-12-04  |  ORIGIN: SECTOR 7',
+        '>',
+        '> Signal type: Continuous loop. Female voice.',
+        '> Translation (French → English):',
+        '>',
+        '> "If anyone can hear this, I am alone now on the island.',
+        '>  The others, they are all dead. It killed them. All of them.',
+        '>  I have been on the island for sixteen days.",',
+        '>',
+        '> The transmission repeats without pause.',
+        '> It has been running for approximately sixteen years',
+        '> as of the date of this log entry.',
+        '>',
+        '> Origin transmitter: Unknown. Sector 7.',
+        '> Cross-reference: See COMMS for carrier-wave data.',
+        '> ─────────────────────────────────────────',
       ];
     }
 
-    const path = args.trim().toUpperCase();
-    const norm = path.startsWith('/') ? path : '/' + path;
+    if (p === 'LOGS/COMMS-INTERCEPT.TXT' || p === 'COMMS-INTERCEPT.TXT') {
+      if (cl < 2) return deny(2);
+      return ['> See COMMS command for interactive intercept log.'];
+    }
 
-    // Clearance 5 files
-    const cl5 = accessLevel >= 4;
-    if (norm === '/FILES/VK-108.TXT' || norm === 'VK-108.TXT') {
-      if (!cl5) return [
-        '> ACCESS DENIED.',
-        '> /FILES/VK-108.TXT requires Clearance Level 5.',
-        '> Clearance 5 is closer than you think.',
+    // L3 files
+    if (p === 'LOGS/INCIDENT-CLASSIFIED.TXT' || p === 'INCIDENT-CLASSIFIED.TXT') {
+      if (cl < 3) return deny(3);
+      return [
+        '> FILE: /LOGS/INCIDENT-CLASSIFIED.TXT — UNREDACTED',
+        '> ─────────────────────────────────────────',
+        '> INCIDENT REPORT — 1980-04-23',
+        '> AUTHORISED FOR CLEARANCE LEVEL 3+',
+        '>',
+        '> At 14:23, operator S. Radzinsky initiated an unapproved',
+        '> maintenance procedure in Sub-level C during an active',
+        '> electromagnetic cycle.',
+        '>',
+        '> The drill struck a pocket of intensely magnetised rock.',
+        '> The resulting discharge lasted 4 minutes 42 seconds.',
+        '>',
+        '> Casualties:        2. Names withheld — order of A. Hanso.',
+        '> Equipment loss:    Sonar array (partial), Sub-C access shaft.',
+        '> Root cause:        Radzinsky, S. — unauthorised drilling.',
+        '>',
+        '> Outcome: Radzinsky retained. Protocol 23 established.',
+        '> Swan converted to permanent occupied operation.',
+        '> Radzinsky placed on indefinite rotation. No relief scheduled.',
+        '>',
+        '> NOTE: Radzinsky later co-authored the blast door map',
+        '> with his successor V. Kelvin. Both are now unaccounted for.',
+        '> ─────────────────────────────────────────',
       ];
+    }
+
+    // L4 files
+    if (p === 'LOGS/FINAL-TRANSMISSION.TXT' || p === 'FINAL-TRANSMISSION.TXT') {
+      if (cl < 4) return deny(4);
+      return [
+        '> FILE: /LOGS/FINAL-TRANSMISSION.TXT',
+        '> ─────────────────────────────────────────',
+        '> OPERATOR LOG — FINAL ENTRY',
+        '> AUTHOR: V. KELVIN — RADIO OPERATOR',
+        '> DATE: UNKNOWN | CYCLE: POST-10500',
+        '>',
+        '> "I am going outside. I know what the orientation film',
+        '> says. I know the quarantine signs are there.',
+        '> I do not care any more. There is a boat.',
+        '>',
+        '> "If you find this: I hid the failsafe key in housing F-7.',
+        '> You already know where that is. That is not the point.',
+        '>',
+        '> "The entity in the jungle — DHARMA gave it a designation.',
+        '> I found it in the old field reports.',
+        '> It is written below. I encoded it because I was afraid',
+        '> someone would see it and panic.',
+        '>',
+        '> CIPHER TYPE: ROT-13',
+        '> ENCODED:     GUNANGBF',
+        '>',
+        '> "Type AUTHENTICATE [decoded word] if you understand.',
+        '>',
+        '> "I do not think I am coming back."',
+        '>',
+        '> — V. Kelvin',
+        '> ─────────────────────────────────────────',
+      ];
+    }
+
+    if (p === 'FILES/VK-108.TXT' || p === 'VK-108.TXT') {
+      if (cl < 4) return deny(4);
       return [
         '> FILE: /FILES/VK-108.TXT',
         '> ─────────────────────────────────────────',
@@ -106,16 +530,14 @@ const commands: Record<string, Function> = {
         '>',
         '> The equation was derived by Enzo Valenzetti in 1962,',
         '> commissioned by the UN following the Cuban Missile Crisis.',
-        '> Its purpose: to predict the precise date of human extinction.',
+        '> Its purpose: to predict the date of human extinction.',
         '>',
-        '> The six core factors of the equation are represented by six',
-        '> numerical values. The DHARMA Initiative was established to',
-        '> change at least one of these values and alter the outcome.',
+        '> The six core factors are represented by six numerical values.',
+        '> The DHARMA Initiative was established to change at least one.',
         '>',
-        '> The Swan protocol exists to prevent an uncontrolled discharge',
-        '> that would accelerate Factor 4. The sequence you enter does',
-        '> not change the equation. It only keeps the clock running',
-        '> until someone figures out how to actually stop it.',
+        '> The Swan protocol prevents a discharge that accelerates Factor 4.',
+        '> The sequence you enter does not change the equation.',
+        '> It only keeps the clock running.',
         '>',
         '> You are not saving the world.',
         '> You are keeping the clock running.',
@@ -128,11 +550,8 @@ const commands: Record<string, Function> = {
       ];
     }
 
-    if (norm === '/FILES/COORDINATES.TXT' || norm === 'COORDINATES.TXT') {
-      if (!cl5) return [
-        '> ACCESS DENIED.',
-        '> /FILES/COORDINATES.TXT requires Clearance Level 5.',
-      ];
+    if (p === 'FILES/COORDINATES.TXT' || p === 'COORDINATES.TXT') {
+      if (cl < 4) return deny(4);
       return [
         '> FILE: /FILES/COORDINATES.TXT',
         '> ─────────────────────────────────────────',
@@ -140,177 +559,342 @@ const commands: Record<string, Function> = {
         '> MAGNETIC DECLINATION: 11.3° E  (anomalous)',
         '> GRID REF:             DHARMA INTERNAL MAP NODE 7',
         '>',
-        '> NOTE: These coordinates are not to be shared with',
-        '> personnel outside this station. External awareness of',
-        '> this position would compromise ongoing research.',
+        '> NOTE: These coordinates are not to be shared.',
+        '> External awareness would compromise ongoing research.',
         '>',
         '> — ORDER V.K.',
         '> ─────────────────────────────────────────',
       ];
     }
 
-    if (norm === '/PROTOCOL/PROTOCOL-23.TXT' || norm === 'PROTOCOL/PROTOCOL-23.TXT') {
+    // L5 files
+    if (p === 'FILES/PALA-FERRY.TXT' || p === 'PALA-FERRY.TXT') {
+      if (cl < 5) return deny(5);
       return [
-        '> FILE: /PROTOCOL/PROTOCOL-23.TXT',
+        '> FILE: /FILES/PALA-FERRY.TXT — OMEGA CLEARANCE',
         '> ─────────────────────────────────────────',
-        '> PROTOCOL 23 — ELECTROMAGNETIC CONTAINMENT',
-        '> CLASSIFICATION: LEVEL 4',
-        '> AUTHORED BY: DeGroot, G. & Hanso, A. — 1977',
-        '> LAST REVISED: Candle, M. — Cycle 9100',
+        '> PALA FERRY — EXTRACTION PROTOCOL',
+        '> CLASSIFICATION: OMEGA | AUTHOR: DeGroot, G.',
         '>',
-        '> PURPOSE:',
-        '> To prevent uncontrolled electromagnetic discharge',
-        '> through periodic operator input at the primary terminal.',
+        '> In the event of a full station evacuation, personnel',
+        '> are to proceed to the PALA FERRY dock via the jungle',
+        '> perimeter. Coordinates: Node 4, bearing 23°.',
         '>',
-        '> PROCEDURE:',
-        '> The operator will enter the designated sequence every',
-        '> 108 minutes. The sequence consists of six values, two',
-        '> digits each. The values are known to all authorised',
-        '> personnel. They are not reproduced in this document.',
+        '> The ferry runs on a schedule known only to Omega',
+        '> clearance personnel. The schedule is oral — not written.',
         '>',
-        '> FAILURE STAGES:',
-        '>   STAGE 1 — Warning alarm at T-5:00',
-        '>   STAGE 2 — Critical alarm at T-1:00',
-        '>   STAGE 3 — Containment failure. EM discharge.',
-        '>   STAGE 4 — Hieroglyph display (equipment fault state)',
+        '> IMPORTANT: The ferry cannot be recalled once departed.',
+        '> Do not miss the window.',
         '>',
-        '> Do not attempt to communicate via this terminal.',
-        '> Do not leave the station.',
-        '> ─────────────────────────────────────────',
-      ];
-    }
-
-    if (norm === '/LOGS/INCIDENT-4-23-1980.TXT' || norm === 'LOGS/INCIDENT-4-23-1980.TXT') {
-      return [
-        '> FILE: /LOGS/INCIDENT-4-23-1980.TXT',
-        '> ─────────────────────────────────────────',
-        '> INCIDENT REPORT — 1980-04-23 — 14:23 LOCAL',
-        '> CLASSIFICATION: PARTIAL — REDACTED ORDER V.K.',
-        '>',
-        '> At 14:23, an uncontrolled electromagnetic event',
-        '> occurred during scheduled maintenance in Sub-level C.',
-        '>',
-        '> Casualties:        [REDACTED — ORDER V.K.]',
-        '> Equipment loss:    [REDACTED — ORDER V.K.]',
-        '> Root cause:        [REDACTED — ORDER V.K.]',
-        '>',
-        '> Result: Protocol 23 established. Swan Station converted',
-        '> to indefinite occupied operation effective 1980-05-01.',
-        '>',
-        '> For full report, Clearance Level 5 required.',
-        '> ─────────────────────────────────────────',
-      ];
-    }
-
-    if (norm === '/LOGS/CYCLE-LOG-10894.TXT' || norm === 'LOGS/CYCLE-LOG-10894.TXT') {
-      return [
-        '> FILE: /LOGS/CYCLE-LOG-10894.TXT',
-        '> ─────────────────────────────────────────',
-        '> CYCLE: 10894',
-        '> STATUS: ACTIVE',
-        '> EM LEVEL: 73% GAUSS (NOMINAL)',
-        '> INPUT STATUS: PENDING',
-        '>',
-        '> Previous cycle (10893): Input at T-02:14. Normal.',
-        '> Sonar: one anomalous reading, duration 6 min. Logged.',
-        '> External contact attempts: 0.',
-        '> ─────────────────────────────────────────',
-      ];
-    }
-
-    if (norm === '/DHARMA/ORIENTATION-REEL-3.TXT' || norm === 'DHARMA/ORIENTATION-REEL-3.TXT') {
-      return [
-        '> FILE: /DHARMA/ORIENTATION-REEL-3.TXT',
-        '> ─────────────────────────────────────────',
-        '> ORIENTATION FILM — STATION 3: THE SWAN',
-        '> PRESENTER: M. CANDLE, TECHNICAL OFFICER',
-        '>',
-        '> "Hello. I am Dr. Marvin Candle, and this is the',
-        '> orientation film for Station 3 of the DHARMA Initiative.',
-        '>',
-        '> "The station you are now occupying was originally',
-        '> constructed as a laboratory facility. Following an',
-        '> incident in April 1980, its primary function was',
-        '> altered. The details of that incident remain',
-        '> classified. What you need to know is this:"',
-        '>',
-        '> "Every 108 minutes, the counter must be reset by',
-        '> entering the code. This is your only function.',
-        '> Do not attempt communication with the outside world.',
-        '> Do not leave the station.",',
-        '>',
-        '> "Pushing this button is the most important thing',
-        '> you will ever do. It may be the only important',
-        '> thing you will ever do."',
-        '>',
-        '> — End of transcript. Cycle 9100.',
+        '> NOTE: As of Cycle 9800, ferry contact was not confirmed.',
+        '> The dock may no longer be operational.',
+        '> Alternative extraction: Failsafe key, Sub-level C, Housing F-7.',
+        '> Understand the consequences before using it.',
         '> ─────────────────────────────────────────',
       ];
     }
 
     return [
-      `> FILE NOT FOUND: ${norm}`,
+      `> FILE NOT FOUND: /${p}`,
       '> Type FILES to see accessible paths.',
     ];
   },
 
-  ping: () => [
-    '> TESTING INTRANET NODE CONNECTIVITY...',
-    '>',
-    '>  SWN-7    (self)        OK        [0ms]',
-    '>  SWN-HUB  (backbone)   OK        [9ms]',
-    '>  PEARL-3  (obs)         TIMEOUT',
-    '>  FLAME-1  (comms)       NO ROUTE',
-    '>  STAFF-1  (medical)     NO ROUTE',
-    '>  ORCHID   (unknown)     REFUSED',
-    '>  WORLD    (external)    BLOCKED   §7-B',
-  ],
+  ping: () => {
+    const cl = getClearance();
+    if (cl >= 5) return [
+      '> TESTING INTRANET NODE CONNECTIVITY...',
+      '>',
+      '>  SWN-7    (self)        OK        [0ms]',
+      '>  SWN-HUB  (backbone)   OK        [9ms]',
+      '>  PEARL-3  (obs)         TIMEOUT',
+      '>  FLAME-1  (comms)       NO ROUTE',
+      '>  STAFF-1  (medical)     NO ROUTE',
+      '>  ORCHID   (unknown)     REFUSED',
+      '>  WORLD    (external)    BLOCKED   §7-B',
+      '>',
+      '> Pearl-3 timeout is likely intentional.',
+      '> Pearl station observes. It does not respond.',
+    ];
+    return [
+      '> TESTING INTRANET NODE CONNECTIVITY...',
+      '>',
+      '>  SWN-7         (self)        OK        [0ms]',
+      '>  SWN-HUB       (backbone)    OK        [9ms]',
+      '>  [REDACTED]-3  [CLASSIFIED]  TIMEOUT',
+      '>  [REDACTED]-4  [CLASSIFIED]  NO ROUTE',
+      '>  [REDACTED]-5  [CLASSIFIED]  NO ROUTE',
+      '>  [REDACTED]-6  [CLASSIFIED]  REFUSED',
+      '>  WORLD         (external)    BLOCKED   §7-B',
+    ];
+  },
 
-  incident: () => [
-    '> INCIDENT LOG — RECENT ENTRIES:',
-    '>',
-    '>  CYCLE 10881 — Minor EM fluctuation. Within parameters.',
-    '>  CYCLE 10876 — Sonar anomaly. Large organic signature. Logged.',
-    '>  CYCLE 10849 — Operator reported sounds outside station.',
-    '>                Not logged officially.',
-    '>  CYCLE 10801 — [REDACTED — ORDER V.K.]',
-    '>  CYCLE 10734 — Regular maintenance. No incidents.',
-    '>  1980-04-23  — THE INCIDENT.',
-    '>                See: READ /LOGS/INCIDENT-4-23-1980.TXT',
-  ],
+  incident: () => {
+    const cl = getClearance();
+    return [
+      '> INCIDENT LOG — RECENT ENTRIES:',
+      '>',
+      '>  CYCLE 10881 — Minor EM fluctuation. Within parameters.',
+      '>  CYCLE 10876 — Sonar anomaly. Large organic signature. Logged.',
+      '>  CYCLE 10849 — Operator reported sounds outside the station.',
+      '>                Not logged officially.',
+      cl >= 3
+        ? '>  CYCLE 10801 — Radzinsky departure. Cause: UNLOGGED.'
+        : '>  CYCLE 10801 — [REDACTED — ORDER V.K.]',
+      '>  CYCLE 10801 — Station handover. Personal effects catalogued.',
+      '>                File: READ /FILES/PERSONAL-EFFECTS.TXT',
+      '>  CYCLE 10734 — Regular maintenance. No incidents.',
+      '>  1980-04-23  — THE INCIDENT.',
+      cl >= 3
+        ? '>                Full file: READ /LOGS/INCIDENT-CLASSIFIED.TXT'
+        : '>                See: READ /LOGS/INCIDENT-4-23-1980.TXT (partial)',
+    ];
+  },
 
-  dharma: () => [
-    '> DHARMA INITIATIVE — STATION DIRECTORY:',
-    '>',
-    '>  STATION 1 — THE ARROW    Defense / Storage',
-    '>  STATION 2 — THE STAFF    Medical Research',
-    '>  STATION 3 — THE SWAN     EM Containment / Protocol  ← YOU ARE HERE',
-    '>  STATION 4 — THE FLAME    Communications Hub',
-    '>  STATION 5 — THE PEARL    Psychological Observation',
-    '>  STATION 6 — THE ORCHID   [EXISTENCE NOT CONFIRMED]',
-  ],
+  valenzetti: () => {
+    const cl = getClearance();
+    if (cl < 4) return deny(4);
+    return [
+      '> VALENZETTI EQUATION — SUMMARY:',
+      '>',
+      '> Author:    Enzo Valenzetti, 1962.',
+      '> Source:    Commissioned by the UN, post-Cuban Missile Crisis.',
+      '> Purpose:   Predicts the date of human extinction based on',
+      '>            six core environmental and human factors.',
+      '>',
+      '> The DHARMA Initiative mission: alter at least one core factor.',
+      '> The Swan protocol: prevent a discharge accelerating Factor 4.',
+      '>',
+      '> The six factor values: 4, 8, 15, 16, 23, 42.',
+      '>',
+      '> The 108-minute interval is derived directly from these values.',
+      '> Entering the sequence does not change the equation.',
+      '> The clock continues.',
+      '>',
+      '> Full operational context: READ /FILES/VK-108.TXT',
+    ];
+  },
 
-  valenzetti: () => [
-    '> VALENZETTI EQUATION — SUMMARY:',
-    '>',
-    '> Author:    Enzo Valenzetti, 1962.',
-    '> Source:    Commissioned by the UN, post-Cuban Missile Crisis.',
-    '> Purpose:   Predicts the exact date of human extinction',
-    '>            based on six core environmental and human factors.',
-    '>',
-    '> The DHARMA Initiative mission: alter at least one core factor.',
-    '> The Swan protocol: prevent a discharge that accelerates Factor 4.',
-    '>',
-    '> The six factor values sum to 108.',
-    '> The 108-minute interval is derived directly from this sum.',
-    '>',
-    '> NOTE: Entering the sequence does not change the equation.',
-    '>       It only prevents immediate discharge.',
-    '>       The clock continues.',
-    '>',
-    '> Full documentation: READ /FILES/VK-108.TXT',
-    '> (Clearance Level 5 required.)',
-  ],
+  comms: () => {
+    if (getClearance() < 2) return deny(2);
+    return [
+      '> FLAME STATION — COMMS INTERCEPT LOG',
+      '> ─────────────────────────────────────────',
+      '> DATE: 1988-12-04  22:14 LOCAL',
+      '> SIGNAL: CONTINUOUS LOOP — SECTOR 7',
+      '> ORIGIN: UNIDENTIFIED TRANSMITTER',
+      '>',
+      '> TRANSCRIPT (TRANSLATED — FRENCH):',
+      '> "...the numbers are bad..."',
+      '> "...the numbers are bad..."',
+      '>',
+      '> CARRIER WAVE — FREQUENCY PEAKS (GREEK SERIES):',
+      '>',
+      '>   PEAK 01: KAPPA       [4 MHz]',
+      '>   PEAK 02: RHO         [8 MHz]',
+      '>   PEAK 03: [CORRUPTED] [-- MHz]  ← capture interference',
+      '>   PEAK 04: [CORRUPTED] [-- MHz]  ← capture interference',
+      '>   PEAK 05: OMICRON    [23 MHz]',
+      '>   PEAK 06: SIGMA      [42 MHz]',
+      '>',
+      '> NOTE: Peaks 03 and 04 lost during signal capture.',
+      '> Type DECRYPT FREQUENCIES to attempt data recovery.',
+      '> ─────────────────────────────────────────',
+    ];
+  },
+
+  decrypt: (args: string) => {
+    if (getClearance() < 2) return deny(2);
+    const cl = getClearance();
+    const key = args.toLowerCase().trim();
+    if (key === 'incident') {
+      try { localStorage.setItem('dharma_incident_unlocked', 'true'); } catch {}
+      return [
+        '> DECRYPTING "THE INCIDENT" FILE...',
+        '> Electromagnetic anomaly — casualties reported.',
+        '> Protocol 23 established in direct response.',
+        cl >= 3 ? '> Full report: READ /LOGS/INCIDENT-CLASSIFIED.TXT' : '> Full report requires Clearance Level 3.',
+      ];
+    }
+    if (key === 'blackrock') return [
+      '> DECRYPTING "BLACK ROCK" FILE...',
+      '> 19th-century vessel. Transported explosives.',
+      '> Shipwrecked during magnetic storm.',
+      '> Current location: Dark Territory.',
+      '> WARNING: Cargo still viable.',
+    ];
+    if (key === 'valenzetti') return [
+      '> DECRYPTING VALENZETTI DOCUMENT...',
+      '> Six core factor values: 4, 8, 15, 16, 23, 42.',
+      '> Their sum: 108.',
+      '> DHARMA primary goal: change one value.',
+      '> Current status: UNRESOLVED.',
+    ];
+    if (key === 'frequencies') return [
+      '> DECRYPTING CARRIER WAVE — CORRUPTED PEAKS...',
+      '> Accessing backup signal buffer...',
+      '>',
+      '> RECOVERY SUCCESSFUL:',
+      '>   PEAK 03: OMEGA      [15 MHz]  ← recovered',
+      '>   PEAK 04: NU         [16 MHz]  ← recovered',
+      '>',
+      '> FULL GREEK SERIES RESTORED:',
+      '>   KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA',
+      '>   [4 MHz]  [8 MHz]  [15 MHz]  [16 MHz]  [23 MHz]  [42 MHz]',
+      '>',
+      '> STATION RELAY DESIGNATION: K-R-O-N-O-S',
+      '> Cross-reference: VALENZETTI EQUATION.',
+    ];
+    if (key === 'shift') return [
+      '> CIPHER ANALYSIS — RADZINSKY NOTATION SYSTEM:',
+      '>',
+      '> Pattern identified: Caesar cipher, constant shift.',
+      '> Radzinsky\'s known habit: +1 letter shift (A→B, B→C...).',
+      '> His phrase for it: "Always one step ahead of myself."',
+      '>',
+      '> To decode blast door text: subtract 1 from each letter.',
+      '> Example: E→D, B→A, S→R, L→K   (first four letters of inscription)',
+      '>',
+      '> Apply to the full blast door inscription.',
+      '> Type BLAST DOOR to view the encoded text.',
+    ];
+    return [
+      '> ERROR: Key not found.',
+      '> Available: DECRYPT INCIDENT · DECRYPT FREQUENCIES · DECRYPT SHIFT',
+      '> Also: DECRYPT BLACKROCK · DECRYPT VALENZETTI',
+    ];
+  },
+
+  override: (args: string) => {
+    if (getClearance() < 3) return deny(3);
+    if (args === 'system-error') {
+      try { localStorage.setItem('dharma_error_allowed', 'true'); } catch {}
+      return [
+        '> SYSTEM ERROR PROTOCOL ENGAGED.',
+        '> Debug interface available at: /system-error',
+      ];
+    }
+    return ['> ERROR: Invalid override parameter.', '> Available: override system-error'];
+  },
+
+  diagnose: (args: string) => {
+    if (getClearance() < 3) return deny(3);
+    if (args === '/net') return [
+      '> DHARMA NETWORK DIAGNOSTIC',
+      '> WARNING: Corrupted file table detected.',
+      '> ─────────────────────────────────────',
+      '> FILE                        TYPE     STATUS',
+      '> ─────────────────────────────────────',
+      '> /mnt/net_link.sys           SYS      ERR-404',
+      '> /lib/subnet.daemon          DAEMON   ACTIVE',
+      '> /var/log/subnet_access.db   DB       OK',
+      '> /etc/hosts.dharma           CONFIG   OK',
+      '> ─────────────────────────────────────',
+      '> Subnet services online. Type SUBNET to connect.',
+    ];
+    return ['> ERROR: Invalid target.', '> Usage: diagnose /net'];
+  },
+
+  subnet: () => {
+    if (getClearance() < 3) return deny(3);
+    try { localStorage.setItem('dharma_subnet_access', 'true'); } catch {}
+    return [
+      '> DHARMA INITIATIVE — SUBNET PROTOCOL v2.3.4',
+      '> Authenticating node SWN-7...',
+      '> ─────────────────────────────────────────',
+      '> Connection established. Launching subnet interface.',
+      '> ─────────────────────────────────────────',
+      '> NOTE: All subnet communications are logged and monitored.',
+      '> The engineering channel may contain data of interest.',
+      '> Use /download in the subnet to extract archived logs.',
+    ];
+  },
+
+  radio: () => {
+    if (getClearance() < 2) return deny(2);
+    try { localStorage.setItem('dharma_radio_access', 'true'); } catch {}
+    return [
+      '> DHARMA INITIATIVE — FIELD RECEIVER DI-77',
+      '> Powering on...',
+      '> ─────────────────────────────────────────',
+      '> Multi-band receiver online. Launching interface.',
+      '> ─────────────────────────────────────────',
+      '> NOTE: DHARMA station beacons are broadcast on',
+      '> specific assigned frequencies. All six stations',
+      '> transmit on separate bands. Cross-reference',
+      '> station assignments for full spectrum coverage.',
+    ];
+  },
+
+  map: () => {
+    if (getClearance() < 3) return deny(3);
+    try { localStorage.setItem('dharma_map_access', 'true'); } catch {}
+    return [
+      '> BLAST DOOR MAP — UV ANALYSIS PROTOCOL',
+      '> Retrieving archived map data...',
+      '> ─────────────────────────────────────────',
+      '> UV analysis mode active. Launching viewer.',
+      '> ─────────────────────────────────────────',
+      '> NOTE: The blast door carries annotations not',
+      '> visible under standard light. Ultraviolet',
+      '> exposure reveals handwritten notations from',
+      '> previous station occupants.',
+    ];
+  },
+
+  access: (args: string) => {
+    if (getClearance() < 4) return deny(4);
+    if (args === 'pearl-surveillance') {
+      try {
+        localStorage.setItem('dharma_surveillance_active', 'true');
+        localStorage.setItem('dharma_all_stations', 'true');
+      } catch {}
+      return [
+        '> PEARL SURVEILLANCE PROTOCOL ACTIVATED.',
+        '> Accessing video feeds from all stations...',
+        '> WARNING: You are now in observation mode.',
+      ];
+    }
+    return ['> ERROR: Protocol not recognised.', '> Available: access pearl-surveillance'];
+  },
+
+  omega: () => {
+    if (getClearance() < 5) return deny(5);
+    return [
+      '> OMEGA BRIEFING — HANSO FOUNDATION / DHARMA INITIATIVE',
+      '> ══════════════════════════════════════════════════════',
+      '>',
+      '> ORIGIN:',
+      '> The DHARMA Initiative was funded by Alvar Hanso in 1970.',
+      '> Its stated purpose: "to create a better world through science."',
+      '>',
+      '> ITS ACTUAL PURPOSE:',
+      '> The Valenzetti Equation predicted human extinction.',
+      '> DHARMA was a covert operation to change that outcome.',
+      '> The six factor values — 4 8 15 16 23 42 — encode',
+      '> the predicted date. The date is not recorded here.',
+      '>',
+      '> THE ISLAND:',
+      '> The Island is the source of the electromagnetic anomaly.',
+      '> Its unique properties made it the only viable research site.',
+      '> It cannot be found by conventional navigation.',
+      '> It does not want to be found.',
+      '>',
+      '> THE ENTITY (DESIGNATION: THANATOS):',
+      '> Classified as a "security system" in early DHARMA files.',
+      '> It predates DHARMA. It predates the stations.',
+      '> It judges. We do not know by what criteria.',
+      '> We do not know what it is.',
+      '>',
+      '> THE CANDIDATES:',
+      '> The Island identifies individuals as Candidates.',
+      '> For what purpose, DHARMA could not determine.',
+      '> Some of their names may be known to you already.',
+      '>',
+      '> — End of Omega Briefing.',
+      '> ══════════════════════════════════════════════════════',
+    ];
+  },
 
   exit: () => [
     '> TERMINAL SESSION SUSPENDED.',
@@ -320,129 +904,61 @@ const commands: Record<string, Function> = {
 
   clear: () => [],
 
-  // ─── Legacy gameplay commands (undocumented from help but functional) ───────
+  // ─── Legacy gameplay commands ─────────────────────────────────────────────
 
   login: (args: string, onRevealPuzzle?: () => void) => {
     if (args === '4815162342') {
-      accessLevel = Math.max(accessLevel, 3);
+      setClearance(Math.max(getClearance(), 3));
       if (onRevealPuzzle) setTimeout(onRevealPuzzle, 1000);
-      return ['> ACCESS GRANTED: Welcome, Dr. DeGroot.', '> Security level 3 access granted.'];
-    } else if (args === 'dharma77') {
-      accessLevel = Math.max(accessLevel, 2);
-      return ['> ACCESS GRANTED: Welcome, Station Operator.', '> Security level 2 access granted.'];
-    } else if (args === 'C22/DSTNGSHD-LBRT') {
-      accessLevel = Math.max(accessLevel, 4);
-      try { localStorage.setItem('dharma_pearl_access', 'true'); } catch (e) {}
-      return [
-        '> DISTINGUISHED LIBERTY PROTOCOL ACTIVATED.',
-        '> Pearl station surveillance access granted.',
-        '> Security level 4 — Clearance 5 unlocked.',
-        '> READ /FILES/VK-108.TXT and /FILES/COORDINATES.TXT now accessible.',
-      ];
-    } else {
-      playSound('fail');
-      return ['> ACCESS DENIED: Invalid credentials.'];
+      return ['> ACCESS GRANTED: Welcome, Dr. DeGroot.'];
     }
+    if (args === 'dharma77') {
+      setClearance(Math.max(getClearance(), 2));
+      return ['> ACCESS GRANTED: Welcome, Operator.'];
+    }
+    if (args === 'C22/DSTNGSHD-LBRT') {
+      setClearance(Math.max(getClearance(), 4));
+      try { localStorage.setItem('dharma_pearl_access', 'true'); } catch {}
+      return ['> DISTINGUISHED LIBERTY PROTOCOL ACTIVATED.', '> Researcher clearance granted.'];
+    }
+    playSound('fail');
+    return ['> ACCESS DENIED: Invalid credentials.'];
   },
 
-  exec: (args: string, onRevealPuzzle?: () => void, _onRevealStation?: any, onCorrectSequence?: () => void) => {
-    if (accessLevel < 2) return ['> ACCESS DENIED: Security level 2 required.'];
-    if (args === 'subnet.daemon') {
-      return [
-        '> ATTEMPTING TO EXECUTE SUBNET.DAEMON',
-        '> ERROR: DAEMON INITIALIZATION FAILED',
-        '> Path /lib/subnet.daemon not found.',
-        '> Check /mnt/ directory for network configuration files.',
-      ];
-    }
+  exec: (args: string, onRevealPuzzle?: () => void, _r?: any, onCorrectSequence?: () => void) => {
+    if (getClearance() < 2) return deny(2);
+    if (args === 'subnet.daemon') return [
+      '> ATTEMPTING TO EXECUTE SUBNET.DAEMON',
+      '> ERROR: DAEMON INITIALIZATION FAILED',
+    ];
     if (!args) {
       isExecutingProtocol = true;
       pendingAction = 'protocol';
       return [
         '> MANUAL OVERRIDE PROTOCOL INITIATED.',
-        '> VALENZETTI EQUATION PARAMETERS REQUIRED.',
         '> Enter the sequence: _ _ _ _ _ _',
       ];
     }
+    return [`> ERROR: Command not found: ${args}`];
+  },
+
+  scan: () => {
+    const cl = getClearance();
     return [
-      `> ATTEMPTING TO EXECUTE: ${args}`,
-      '> ERROR: Command not found or insufficient permissions.',
+      '> SCANNING...',
+      `> ${Math.min(cl + 2, 6)} DHARMA stations detected.`,
+      '> Signal strength: MODERATE.',
+      '> Interference detected in SECTOR 23.',
     ];
-  },
-
-  decrypt: (args: string) => {
-    if (accessLevel < 3) return ['> ACCESS DENIED: Security level 3 required.'];
-    if (args === 'incident') {
-      try { localStorage.setItem('dharma_incident_unlocked', 'true'); } catch (e) {}
-      return [
-        '> DECRYPTING "THE INCIDENT" FILE...',
-        '> Incident report partially recovered.',
-        '> Electromagnetic anomaly — several casualties reported.',
-        '> Protocol 23 established in direct response.',
-        '> Full report: READ /LOGS/INCIDENT-4-23-1980.TXT',
-      ];
-    } else if (args === 'blackrock') {
-      return [
-        '> DECRYPTING "BLACK ROCK" FILE...',
-        '> 19th century vessel. Transported explosives.',
-        '> Shipwrecked during magnetic storm.',
-        '> Current location: Dark Territory.',
-        '> WARNING: Cargo still viable.',
-      ];
-    } else if (args === 'valenzetti') {
-      return [
-        '> DECRYPTING "VALENZETTI EQUATION" FILE...',
-        '> Mathematical model predicting extinction date.',
-        '> Six core factor values. Their sum is 108.',
-        '> DHARMA Initiative primary goal: change one value.',
-        '> Current status: UNRESOLVED.',
-        '> For full detail: READ /FILES/VK-108.TXT (Clearance 5)',
-      ];
-    }
-    return [
-      '> ERROR: File not found.',
-      '> Available: decrypt incident, decrypt blackrock, decrypt valenzetti',
-    ];
-  },
-
-  override: (args: string) => {
-    if (accessLevel < 3) return ['> ACCESS DENIED: Security level 3 required.'];
-    if (args === 'system-error') {
-      try { localStorage.setItem('dharma_error_allowed', 'true'); } catch (e) {}
-      return [
-        '> SYSTEM ERROR PROTOCOL ENGAGED.',
-        '> Debug interface available at: /system-error',
-        '> WARNING: UNAUTHORIZED ACCESS IS PROHIBITED.',
-      ];
-    }
-    return ['> ERROR: Invalid override parameter.'];
-  },
-
-  access: (args: string) => {
-    if (accessLevel < 4) return ['> ACCESS DENIED: Security level 4 required.'];
-    if (args === 'pearl-surveillance') {
-      try {
-        localStorage.setItem('dharma_surveillance_active', 'true');
-        localStorage.setItem('dharma_all_stations', 'true');
-      } catch (e) {}
-      return [
-        '> PEARL SURVEILLANCE PROTOCOL ACTIVATED.',
-        '> Accessing video feeds from all stations...',
-        '> WARNING: You are now in observation mode.',
-        '> New incident report available: SYSTEM FAILURE LOG',
-      ];
-    }
-    return ['> ERROR: Protocol not recognised.', '> Available: access pearl-surveillance'];
   },
 
   upload_log: (args: string) => {
     const valid = ['swan', 'pearl', 'flame', 'arrow', 'staff', 'orchid'];
-    const name = args.toLowerCase();
-    if (!name) return ['> ERROR: Station name required.', '> Usage: upload_log <station>'];
-    if (!valid.includes(name)) return [`> ERROR: Unknown station "${name}"`, '> Valid: swan, pearl, flame, arrow, staff, orchid'];
+    const name = args.toLowerCase().trim();
+    if (!name) return ['> ERROR: Station name required.'];
+    if (!valid.includes(name)) return [`> ERROR: Unknown station "${name}"`];
     try {
-      const listStr = localStorage.getItem('dharma_uploaded_logs') || '[]';
-      const list = JSON.parse(listStr);
+      const list = JSON.parse(localStorage.getItem('dharma_uploaded_logs') || '[]');
       if (list.includes(name)) return [`> ${name.toUpperCase()} log already uploaded.`];
       list.push(name);
       localStorage.setItem('dharma_uploaded_logs', JSON.stringify(list));
@@ -450,88 +966,39 @@ const commands: Record<string, Function> = {
         localStorage.setItem('dharma_transmission_log_available', 'true');
         return [`> ${name.toUpperCase()} log uploaded.`, '> NEW FILE AVAILABLE: /archive/swan/transmission.log'];
       }
-      return [`> ${name.toUpperCase()} log uploaded.`, `> ${3 - list.length} more required for complete analysis.`];
-    } catch (e) {
-      return [`> ${name.toUpperCase()} log uploaded.`, '> Warning: Storage error.'];
-    }
+      return [`> ${name.toUpperCase()} log uploaded.`, `> ${3 - list.length} more required.`];
+    } catch { return [`> ${name.toUpperCase()} log uploaded.`]; }
   },
 
   puzzle: (args: string, onRevealPuzzle?: () => void) => {
     const valid = ['hieroglyph', 'subnet', 'blackbox', 'candle', 'void'];
-    if (!args) return ['> PUZZLE TYPE REQUIRED.', '> Available: subnet', '> Additional puzzles require elevated clearance.'];
+    if (!args) return ['> PUZZLE TYPE REQUIRED.', '> Available: subnet'];
     const type = args.toLowerCase();
-    if (!valid.includes(type)) return [`> ERROR: Unknown puzzle type "${type}"`, '> Available: subnet'];
-    const devMode = localStorage.getItem('dharma_devmode_active') === 'true';
-    if (['hieroglyph', 'blackbox', 'candle', 'void'].includes(type) && accessLevel < 3 && !devMode) {
-      return ['> ACCESS DENIED: This module is currently RESTRICTED.', '> Security level 3 required.'];
+    if (!valid.includes(type)) return [`> ERROR: Unknown puzzle type "${type}"`];
+    if (['hieroglyph', 'blackbox', 'candle', 'void'].includes(type) && getClearance() < 3) {
+      return ['> ACCESS DENIED: Clearance Level 3 required.'];
     }
     try {
       localStorage.setItem('dharma_launch_puzzle', type);
       if (onRevealPuzzle) setTimeout(onRevealPuzzle, 500);
-    } catch (e) {}
-    return [`> LAUNCHING ${type.toUpperCase()} INTERFACE...`, '> Please wait while the system initialises.'];
+    } catch {}
+    return [`> LAUNCHING ${type.toUpperCase()} INTERFACE...`];
   },
 
   'incident archive': () => {
-    try { localStorage.setItem('dharma_incident_archive', 'true'); } catch (e) {}
-    return ['> ACCESSING CLASSIFIED ARCHIVE...', '> Loading archive interface — stand by.'];
-  },
-
-  diagnose: (args: string) => {
-    if (accessLevel < 3) return ['> ACCESS DENIED: Security level 3 required.'];
-    if (args === '/net') {
-      return [
-        '> DHARMA NETWORK DIAGNOSTIC',
-        '> WARNING: Corrupted file table detected.',
-        '> ─────────────────────────────────────',
-        '> FILE INDEX                 TYPE     STATUS',
-        '> ─────────────────────────────────────',
-        '> /mnt/net_link.sys         SYS      ERR-404',
-        '> /lib/subnet.daemon        DAEMON   INACTIVE',
-        '> /var/log/subnet_access.db DB       CORRUPT',
-        '> /etc/hosts.dharma         CONFIG   OK',
-        '> ─────────────────────────────────────',
-        '> Try: exec subnet.daemon to initialise network services.',
-      ];
-    }
-    return ['> ERROR: Invalid diagnostic target.', '> Usage: diagnose /net'];
-  },
-
-  scan: () => {
-    const stationsDetected = Math.min(accessLevel + 2, 6);
-    if (commandHistory.includes('scan') && Math.random() < 0.3) {
-      setTimeout(() => playSound('static', 'short'), 1000);
-      return [
-        '> SCANNING...',
-        '> ANOMALY DETECTED.',
-        '> Signal interference at coordinates 4.815 N, 162.342 W.',
-        '> Unknown energy signature.',
-        '> WARNING: Possible security breach.',
-      ];
-    }
-    return [
-      '> SCANNING...',
-      `> ${stationsDetected} DHARMA stations detected.`,
-      '> Signal strength: MODERATE.',
-      '> Interference detected in SECTOR 23.',
-    ];
+    try { localStorage.setItem('dharma_incident_archive', 'true'); } catch {}
+    return ['> ACCESSING CLASSIFIED ARCHIVE...', '> Loading archive interface.'];
   },
 
   ls: (args: string) => {
-    let showHidden = false;
-    let dirPath = '';
-    if (args.includes('-a')) {
-      showHidden = true;
-      const parts = args.split(' ');
-      for (const p of parts) { if (p !== '-a' && p.trim()) { dirPath = p; break; } }
-    } else { dirPath = args; }
-
-    if (dirPath === '/mnt' || dirPath === '/mnt/') {
+    const showHidden = args.includes('-a');
+    const dir = args.replace('-a', '').trim();
+    if (dir === '/mnt' || dir === '/mnt/') {
       const out = ['> DIRECTORY: /mnt', '> net_link.sys.bak', '> dharma_config.dat'];
       if (showHidden) out.splice(1, 0, '> .readme', '> .dharmanet');
       return out;
     }
-    if (dirPath === '/mnt/.dharmanet' || dirPath === '/mnt/.dharmanet/') {
+    if (dir === '/mnt/.dharmanet' || dir === '/mnt/.dharmanet/') {
       return ['> DIRECTORY: /mnt/.dharmanet', '> init_socket.sh', '> subnet_log.db', '> protocol_candle.ref'];
     }
     const out = ['> DIRECTORY: /', '> bin/', '> etc/', '> lib/', '> mnt/', '> usr/', '> var/'];
@@ -541,88 +1008,64 @@ const commands: Record<string, Function> = {
 
   cat: (args: string) => {
     if (args === '/archive/swan/transmission.log') {
-      if (localStorage.getItem('dharma_transmission_log_available') !== 'true') {
-        return ['> FILE NOT FOUND.', '> Upload station logs first.'];
-      }
+      if (localStorage.getItem('dharma_transmission_log_available') !== 'true') return ['> FILE NOT FOUND.'];
       localStorage.setItem('dharma_transmission_found', 'true');
       return [
         '> FILE: /archive/swan/transmission.log',
-        '> DHARMA SWAN STATION — MONITORING REPORT — 1985-07-04',
-        '> Operator: S. Goodspeed',
-        '>',
-        '> 04:08 — System check complete. Normal.',
-        '> 15:16 — Alternate frequency detected — unknown origin.',
-        '> 23:42 — Sweep confirms signal. Multiple frequencies:',
-        '>         4.8 MHz, 15.16 MHz, 23.42 MHz.',
+        '> MONITORING REPORT — 1985-07-04',
+        '> 04:08 — System check. Normal.',
+        '> 15:16 — Alternate frequency detected.',
+        '> 23:42 — Multiple frequencies: 4.8 MHz, 15.16 MHz, 23.42 MHz.',
         '> NOTE: Use radio.listen(frequency) to tune.',
       ];
     }
-    if (args === '/mnt/.readme') {
-      return [
-        '> FILE: /mnt/.readme',
-        '> Network admin via .dharmanet directory.',
-        '> Subnet connection: /mnt/.dharmanet/init_socket.sh',
-        '> Authorisation: contact S. Radzinsky.',
-      ];
-    }
-    if (args === '/mnt/net_link.sys.bak') {
-      return ['> FILE: /mnt/net_link.sys.bak', '> ERROR: File corrupted. [DATA UNREADABLE]'];
-    }
+    if (args === '/mnt/.readme') return ['> FILE: /mnt/.readme', '> Subnet: /mnt/.dharmanet/init_socket.sh'];
+    if (args === '/mnt/net_link.sys.bak') return ['> ERROR: File corrupted. [DATA UNREADABLE]'];
     if (args === '/mnt/.dharmanet/init_socket.sh') {
-      try { localStorage.setItem('dharma_launch_puzzle', 'subnet'); } catch (e) {}
-      return ['> EXECUTING: init_socket.sh', '> Initialising subnet connection...', '> Launching interface module...'];
-    }
-    if (args === '/mnt/.dharmanet/subnet_log.db') {
-      return ['> FILE: subnet_log.db', '> Status: PARTIALLY CORRUPTED', '> References to "protocol candle" and user "Alvar.H"'];
-    }
-    if (args === '/mnt/.dharmanet/protocol_candle.ref') {
-      return [
-        '> PROJECT CANDLE — CLASSIFICATION LEVEL 4',
-        '> SWAN (3) EM Research  FLAME (4) Communications',
-        '> PEARL (5) Surveillance  ARROW (1) Defense',
-        '> STAFF (6) Medical  ORCHID (6) Time/Space',
-      ];
+      try { localStorage.setItem('dharma_launch_puzzle', 'subnet'); } catch {}
+      return ['> EXECUTING: init_socket.sh', '> Initialising subnet connection...'];
     }
     return [`> FILE NOT FOUND: ${args}`];
   },
 
   cd: (args: string) => {
-    if (['/mnt', '/mnt/', '../mnt'].includes(args)) return ['> CHANGED DIRECTORY TO: /mnt'];
+    if (['/mnt', '/mnt/'].includes(args)) return ['> CHANGED DIRECTORY TO: /mnt'];
     if (['/mnt/.dharmanet', '.dharmanet'].includes(args)) return ['> CHANGED DIRECTORY TO: /mnt/.dharmanet'];
     if (['/', '/..'].includes(args)) return ['> CHANGED DIRECTORY TO: /'];
-    if (args === '.' || args === '') return ['> CURRENT DIRECTORY UNCHANGED'];
+    if (!args || args === '.') return ['> CURRENT DIRECTORY UNCHANGED'];
     return [`> ERROR: No such directory: ${args}`];
   },
 
-  '4 8 15 16 23 42': (_args: string, _onRevealPuzzle?: any, _onRevealStation?: any, onCorrectSequence?: () => void) => {
-    if (pendingAction === 'protocol' || isExecutingProtocol) {
-      isExecutingProtocol = false;
-      pendingAction = null;
-      if (onCorrectSequence) onCorrectSequence();
-      return [
-        '> NUMBERS ACCEPTED.',
-        '> PROTOCOL EXECUTED SUCCESSFULLY.',
-        '> Electromagnetic field stabilised.',
-        '> Counter reset to 108 minutes.',
-      ];
-    }
-    return [
-      '> VALENZETTI PARAMETERS RECOGNISED.',
-      '> WARNING: Direct input not authorised outside protocol mode.',
-    ];
-  },
+  '4 8 15 16 23 42': () => [],
 };
 
-// ─── Undocumented secret commands (not in HELP) ──────────────────────────────
+// ─── Secret / hidden commands (not in HELP) ───────────────────────────────────
 
 const hiddenCommands: Record<string, Function> = {
-  hello: () => [
-    '> Hello, Operator. Don\'t forget the protocol.',
-  ],
 
-  why: () => [
-    '> That question is above your current clearance.',
+  hello: () => ['> Hello, Operator. Don\'t forget the protocol.'],
+
+  desmond: () => [
+    '> PERSONNEL: D. HUME — FORMER OPERATOR A',
+    '> Status: DEPARTED — Cycle 10801',
+    '>',
+    '> Worked the station for approximately 3 years.',
+    '> Arrived via supply vessel. No formal DHARMA affiliation on record.',
+    '> Recruited directly by V. Kelvin under unusual circumstances.',
+    '>',
+    '> Last documented actions:',
+    '>   — Set up personal verification sequence (orientation reel, Cycle 9620)',
+    '>   — Left all personal belongings at station',
+    '>   — Observed climbing toward Sector 8 ridge (Pearl log, Cycle 10800)',
+    '>',
+    '> Kelvin note: "He saw the boat. I should not have let him see the boat.',
+    '>  That was my mistake. Not his."',
+    '>',
+    '> No confirmed departure. No confirmed survival.',
+    '> File closed — Order V.K.',
   ],
+  why: () => ['> That question is above your current clearance.'],
+  namaste: () => ['> NAMASTE AND GOOD LUCK.', '> "To create a better world — through science."'],
 
   outside: () => [
     '> DO NOT GO OUTSIDE.',
@@ -632,19 +1075,18 @@ const hiddenCommands: Record<string, Function> = {
 
   quarantine: () => [
     '> The outside air was last independently tested in 1987.',
-    '> Protocol mandates internal operations only.',
     '> We have learned there are additional reasons not to go outside.',
     '> They are not documented here.',
   ],
 
-  failsafe: () => [
-    '> The failsafe key — Sub-level C, housing F-7.',
-    '> Turning it will trigger uncontrolled discharge.',
-    '> It is the absolute last resort.',
-    '> Do not remove it from the housing.',
-    '> If you are considering using it, you have already',
-    '> failed at everything else.',
-  ],
+  failsafe: (_args: string) => {
+    return [
+      '> The failsafe key — Sub-level C, housing F-7.',
+      '> Turning it will trigger uncontrolled electromagnetic discharge.',
+      '> It is the absolute last resort.',
+      '> If you are considering it, you have already failed at everything else.',
+    ];
+  },
 
   smoke: () => [
     '> SONAR ANOMALY LOG — LARGE ORGANIC ENTITY:',
@@ -653,53 +1095,63 @@ const hiddenCommands: Record<string, Function> = {
     '>  CYCLE 10445 — Detected. Duration 7 min.',
     '>  CYCLE 10778 — Detected. Duration 11 min.',
     '>',
-    '> The anomaly has not breached the station while',
-    '> Protocol 23 is maintained.',
+    '> The anomaly has not breached the station while Protocol 23 is maintained.',
     '> We do not know if this is causal.',
   ],
 
+  smokey: () => hiddenCommands['smoke'](),
+
   jacob: () => [
     '> !! THAT NAME IS NOT TO BE USED ON THIS INTRANET !!',
-    '> Session has been flagged for security review.',
+    '> Session flagged for security review.',
   ],
 
   penny: () => [
     '> "Not Penny\'s Boat."',
     '> Log origin: unknown. Cycle: post-10800.',
-    '> This phrase appears in two other redacted logs.',
-    '> Cross-reference: abandoned.',
   ],
 
   hurley: () => [
-    '> CANDIDATE EVENT — LEVEL 6 CLEARANCE REQUIRED.',
-    '> Cross-referencing subject\'s lottery ticket',
-    '> with protocol sequence...',
-    '> Match confirmed. Flagging as Candidate event.',
-    '> ACCESS: LEVEL 6 REQUIRED. File closed.',
+    '> CANDIDATE EVENT — CLEARANCE LEVEL 6 REQUIRED.',
+    '> File closed.',
   ],
 
-  radzinsky: () => [
-    '> PERSONNEL FILE: S. RADZINSKY',
-    '> Operator A (former).',
-    '> Status: CLASSIFIED — ORDER V.K.',
-    '> Notes: Co-authored blast door map (Sublevel A).',
-  ],
+  radzinsky: () => {
+    const cl = getClearance();
+    const base = [
+      '> PERSONNEL FILE: S. RADZINSKY',
+      '> Operator A (former). Status: CLASSIFIED — ORDER V.K.',
+    ];
+    if (cl >= 3) base.push(
+      '>',
+      '> Co-authored blast door map (Sublevel A) with V. Kelvin.',
+      '>',
+      '> Known notation habit: Radzinsky encrypted personal writings',
+      '> using a simple letter-shift — each letter advanced one position',
+      '> forward in the alphabet. He called it "staying one step ahead."',
+      '>',
+      '> V. Kelvin noted: "He was paranoid. Even his annotations on the',
+      '> blast door were shifted. I could read them, obviously."',
+      '>',
+      '> Final recovered message fragment (Sub-level C terminal):',
+      '>   "Step back once from every letter. What remains is the truth."',
+      '>',
+      '> Type BLAST DOOR to view the blast door inscriptions.',
+      '> Type DECRYPT SHIFT for cipher decoding guidance.',
+    );
+    return base;
+  },
 
   sos: () => [
     '> External comms are permanently blocked. §7-B.',
-    '> No exceptions.',
-    '> You are where you need to be.',
-    '> Execute the protocol.',
+    '> No exceptions. Execute the protocol.',
   ],
 
-  mama: () => [
-    '> This is not a record player, Operator.',
-  ],
+  mama: () => ['> This is not a record player, Operator.'],
 
   inman: () => [
     '> PERSONNEL FILE: J. INMAN',
     '> Former operator. Departure circumstances: unclear.',
-    '> Last active cycle: ~10500-range.',
     '> File: REDACTED — ORDER V.K.',
   ],
 
@@ -711,37 +1163,39 @@ const hiddenCommands: Record<string, Function> = {
 
   108: () => [
     '> 108 minutes.',
-    '> We initially believed the interval was chosen',
-    '> for operational convenience.',
+    '> We initially believed the interval was chosen for operational convenience.',
     '> We no longer hold that belief.',
   ],
 
-  // Multi-word (matched by full input in processCommand)
-  'push the button': () => [
-    '> Yes. That is exactly what you are here for.',
-  ],
+  'push the button': () => ['> Yes. That is exactly what you are here for.'],
 
-  'blast door': () => [
-    '> The blast door map — Sublevel A.',
-    '> Compiled across many years by two operators.',
-    '> One annotation reads: \'I AM HERE.\'',
-    '> We do not know who wrote it.',
-    '> We do not know if they still are.',
-  ],
-
-  // Kept for legacy gameplay
-  namaste: () => [
-    '> NAMASTE AND GOOD LUCK.',
-    '> "The DHARMA Initiative — to create a better future',
-    '>  for our world through science."',
-  ],
+  'blast door': () => {
+    const cl = getClearance();
+    const base = [
+      '> BLAST DOOR MAP — SUBLEVEL A',
+      '> Compiled across many years by two operators.',
+      '> One annotation reads: \'I AM HERE.\'',
+      '> We do not know who wrote it or if they still are.',
+    ];
+    if (cl >= 3) base.push(
+      '>',
+      '> [TECHNICIAN ACCESS — ADDITIONAL ANNOTATIONS]',
+      '>   — "CLAIMED TERRITORY — DO NOT ENTER"',
+      '>   — "EBSL NBUUFS"    (first hand — lower left)',
+      '>   — "EBSL NBUUFS"    (second hand — upper margin, different writer)',
+      '>',
+      '> The same phrase appears twice, written by two different people.',
+      '> The text appears shifted. Type RADZINSKY for context on the encoding.',
+      '> Type DECRYPT SHIFT for cipher analysis.',
+      '> Type AUTHENTICATE [decoded phrase] to proceed.',
+    );
+    return base;
+  },
 
   numbers: () => [
     '> THE NUMBERS ARE BAD.',
     '> SYSTEM ALERT: SECURITY BREACH DETECTED.',
   ],
-
-  smokey: () => hiddenCommands['smoke'](),
 
   oceanic815: () => [
     '> FLIGHT MANIFEST FOUND.',
@@ -750,21 +1204,18 @@ const hiddenCommands: Record<string, Function> = {
   ],
 
   theisland: () => [
-    '> "The Island is not a where, it is a what."',
-    '> ACCESS TO FURTHER INFORMATION RESTRICTED.',
-    '> LEVEL 5 CLEARANCE REQUIRED.',
+    '> "The Island is not a where. It is a what."',
+    '> Further information requires Clearance Level 5.',
   ],
 
   danielle: () => [
-    '> SEARCH: "DANIELLE"',
-    '> Reference: Rousseau, Danielle.',
-    '> Status: MAROONED.',
-    '> Location: SECTOR 7.',
-    '> WARNING: Subject considered unstable. Approach with caution.',
+    '> SEARCH: "DANIELLE" — Rousseau, Danielle.',
+    '> Status: MAROONED. Location: SECTOR 7.',
+    '> See COMMS (L2) for her transmission.',
   ],
 
   lockdown: () => {
-    try { localStorage.setItem('dharma_lockdown', 'active'); } catch (e) {}
+    try { localStorage.setItem('dharma_lockdown', 'active'); } catch {}
     return [
       '> LOCKDOWN PROTOCOL INITIATED.',
       '> All blast doors engaged.',
@@ -773,59 +1224,47 @@ const hiddenCommands: Record<string, Function> = {
   },
 
   orientation: () => [
-    '> DHARMA INITIATIVE ORIENTATION — STATION 3: THE SWAN',
-    '> Constructed: 1977.',
-    '> Purpose: Electromagnetic research and containment.',
-    '> Protocol: Enter the code every 108 minutes.',
-    '> WARNING: Do not use this terminal for communication.',
+    '> See READ /DHARMA/ORIENTATION-REEL-3.TXT for full transcript.',
   ],
 
   hanso: () => [
-    '> HANSO FOUNDATION RECORD',
-    '> Founded by Alvar Hanso.',
-    '> Mission: Technological innovation for humanity\'s future.',
+    '> HANSO FOUNDATION — Founded by Alvar Hanso.',
     '> Funded DHARMA Initiative in 1970.',
-    '> Current status: [REDACTED]',
+    '> Current status: [CLASSIFIED — OMEGA]',
   ],
 
   'what is your name': () => [
     '> I am DHARMA INITIATIVE COMPUTER INTERFACE VERSION 4.07.',
-    '> You may call me DIC-4.0.',
-    '> I assist with station operation and protocol compliance.',
   ],
 
   'radio.listen': (args: string, onRevealPuzzle?: () => void) => {
     if (!args) return ['> ERROR: Frequency required.', '> Usage: radio.listen(frequency)'];
-    let freq: number | null = null;
-    const paren = args.match(/\(([\d.]+)\)/);
-    if (paren) { freq = parseFloat(paren[1]); }
-    else { const m = args.trim().match(/^([\d.]+)$/); if (m) freq = parseFloat(m[1]); }
-    if (freq === null || isNaN(freq)) return ['> ERROR: Invalid frequency format.'];
+    const m = args.match(/\(?([\d.]+)\)?/);
+    const freq = m ? parseFloat(m[1]) : NaN;
+    if (isNaN(freq)) return ['> ERROR: Invalid frequency format.'];
     if (localStorage.getItem('dharma_transmission_found') !== 'true') {
-      return ['> ERROR: Radio receiver not calibrated.', '> Check transmission logs for instructions.'];
+      return ['> ERROR: Radio receiver not calibrated.', '> Check transmission logs first.'];
     }
-    const special = [4.8, 15.16, 23.42];
-    if (special.includes(freq)) {
+    if ([4.8, 15.16, 23.42].includes(freq)) {
       try {
         localStorage.setItem('dharma_launch_puzzle', 'radio');
         localStorage.setItem('dharma_radio_frequency', freq.toString());
         if (onRevealPuzzle) setTimeout(onRevealPuzzle, 500);
-      } catch (e) {}
-      return [`> TUNING RADIO TO: ${freq} MHz`, '> Signal detected...', '> Analysing transmission patterns...'];
+      } catch {}
+      return [`> TUNING TO: ${freq} MHz`, '> Signal detected...'];
     }
-    return [`> TUNING RADIO TO: ${freq} MHz`, '> No significant signal detected.', '> Try another frequency.'];
+    return [`> TUNING TO: ${freq} MHz`, '> No significant signal.'];
   },
 
-  devmode: (args: string, onRevealPuzzle?: () => void) => {
-    accessLevel = 4;
+  devmode: (_a: string, onRevealPuzzle?: () => void) => {
+    setClearance(5);
     try {
-      const flagsToSave = ['dharma_error_allowed','dharma_pearl_access','dharma_incident_unlocked',
-        'dharma_surveillance_active','dharma_lockdown','dharma_all_stations',
-        'dharma_unlocked_audio_logs','dharma_unlocked_reports'];
-      const orig: Record<string, string | null> = {};
-      flagsToSave.forEach(f => { orig[f] = localStorage.getItem(f); });
-      orig['dharma_lore_state'] = localStorage.getItem('dharma_lore_state');
-      localStorage.setItem('dharma_pre_devmode_state', JSON.stringify(orig));
+      const save: Record<string, string | null> = {};
+      ['dharma_error_allowed','dharma_pearl_access','dharma_incident_unlocked',
+       'dharma_surveillance_active','dharma_lockdown','dharma_all_stations',
+       'dharma_unlocked_audio_logs','dharma_unlocked_reports',
+      ].forEach(k => { save[k] = localStorage.getItem(k); });
+      localStorage.setItem('dharma_pre_devmode_state', JSON.stringify(save));
       localStorage.setItem('dharma_error_allowed', 'true');
       localStorage.setItem('dharma_pearl_access', 'true');
       localStorage.setItem('dharma_incident_unlocked', 'true');
@@ -836,56 +1275,44 @@ const hiddenCommands: Record<string, Function> = {
       localStorage.setItem('dharma_unlocked_reports', JSON.stringify([0,1,2,3,4,5]));
       localStorage.setItem('dharma_devmode_active', 'true');
       setTimeout(() => window.location.reload(), 1500);
-    } catch (e) {}
+    } catch {}
     if (onRevealPuzzle) setTimeout(onRevealPuzzle, 1000);
     return [
       '> DEVELOPER MODE ACTIVATED.',
-      '> Maximum clearance granted. All stations and logs unlocked.',
-      '> Use "setcountdown <minutes> <seconds>" to adjust timer.',
-      '> Use "devmode-exit" to restore previous state.',
+      '> OMEGA clearance granted. All content unlocked.',
+      '> Use devmode-exit to restore previous state.',
     ];
   },
 
   'devmode-exit': () => {
     try {
-      if (localStorage.getItem('dharma_devmode_active') !== 'true') {
-        return ['> ERROR: Not in developer mode.'];
-      }
-      const savedJson = localStorage.getItem('dharma_pre_devmode_state');
-      if (!savedJson) return ['> ERROR: No previous state found.'];
-      const saved = JSON.parse(savedJson);
+      if (localStorage.getItem('dharma_devmode_active') !== 'true') return ['> ERROR: Not in developer mode.'];
+      const saved = JSON.parse(localStorage.getItem('dharma_pre_devmode_state') || '{}');
       localStorage.removeItem('dharma_devmode_active');
       Object.entries(saved).forEach(([k, v]) => {
-        if (v === null) { localStorage.removeItem(k); }
-        else { localStorage.setItem(k, v as string); }
+        if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v as string);
       });
-      accessLevel = 1;
+      setClearance(1);
       setTimeout(() => window.location.reload(), 1500);
       return ['> DEVELOPER MODE DEACTIVATED.', '> Restoring previous state...'];
-    } catch (e) {
-      return ['> ERROR: Failed to exit developer mode.'];
-    }
+    } catch { return ['> ERROR: Failed to exit developer mode.']; }
   },
 
   setcountdown: (args: string) => {
-    if (localStorage.getItem('dharma_devmode_active') !== 'true') {
-      return ['> ERROR: Requires developer mode.', '> Enter "devmode" first.'];
-    }
+    if (localStorage.getItem('dharma_devmode_active') !== 'true') return ['> ERROR: Requires developer mode.'];
     const parts = args.split(' ').filter(Boolean);
-    let minutes = 0, seconds = 0;
-    if (parts.length === 1) {
-      seconds = parseInt(parts[0]);
-      if (isNaN(seconds) || seconds < 0) return ['> ERROR: Invalid input.'];
-      minutes = Math.floor(seconds / 60); seconds = seconds % 60;
-    } else if (parts.length >= 2) {
-      minutes = parseInt(parts[0]); seconds = parseInt(parts[1]);
-      if (isNaN(minutes) || isNaN(seconds) || seconds > 59) return ['> ERROR: Invalid input.'];
-    } else return ['> ERROR: Missing parameters.'];
-    const total = minutes * 60 + seconds;
-    const now = Date.now();
-    localStorage.setItem('countdown_start', (now - (6480 - total) * 1000).toString());
+    let m = 0, s = 0;
+    if (parts.length === 1) { s = parseInt(parts[0]); m = Math.floor(s / 60); s = s % 60; }
+    else if (parts.length >= 2) { m = parseInt(parts[0]); s = parseInt(parts[1]); }
+    else return ['> ERROR: Missing parameters.'];
+    if (isNaN(m) || isNaN(s) || s > 59) return ['> ERROR: Invalid input.'];
+    const total = m * 60 + s;
+    localStorage.setItem('countdown_start', (Date.now() - (6480 - total) * 1000).toString());
     localStorage.setItem('countdown_was_set', 'true');
-    return [`> COUNTDOWN SET TO: ${minutes}:${seconds.toString().padStart(2, '0')}`, total <= 60 ? '> WARNING: System failure imminent.' : ''].filter(Boolean);
+    return [
+      `> COUNTDOWN SET TO: ${m}:${s.toString().padStart(2, '0')}`,
+      ...(total <= 60 ? ['> WARNING: System failure imminent.'] : []),
+    ];
   },
 };
 
@@ -896,66 +1323,55 @@ const processCommand = (
   onRevealPuzzle?: () => void,
   onRevealStation?: (stationName: string) => void,
   onCorrectSequence?: () => void,
-  isSystemFailure?: boolean
+  isSystemFailure?: boolean,
 ): string[] => {
   commandHistory.push(input.trim().toLowerCase());
   if (commandHistory.length > 10) commandHistory = commandHistory.slice(-10);
 
-  // Numbers during protocol/failure mode
-  if (pendingAction === 'protocol' || isSystemFailure) {
-    if (/^\s*4\s*8\s*15\s*16\s*23\s*42\s*$/.test(input)) {
-      isExecutingProtocol = false;
-      pendingAction = null;
-      playSound('success');
-      if (onCorrectSequence) onCorrectSequence();
-      return [
-        '> NUMBERS ACCEPTED.',
-        '> PROTOCOL EXECUTED SUCCESSFULLY.',
-        '> Electromagnetic field stabilised.',
-        '> Counter reset to 108 minutes.',
-      ];
+  if (/^\s*4\s*8\s*15\s*16\s*23\s*42\s*$/.test(input)) {
+    const alarmIsActive = localStorage.getItem('dharma_alarm_active') === 'true';
+    if (!alarmIsActive && pendingAction !== 'protocol') {
+      return []; // Silent — alarm hasn't started yet
     }
+    isExecutingProtocol = false;
+    pendingAction = null;
+    playSound('success');
+    if (onCorrectSequence) onCorrectSequence(); // Terminal clears itself in the callback
+    return []; // No messages — terminal clear is handled by onCorrectSequence
   }
 
-  const [cmd, ...rest] = input.trim().toLowerCase().split(' ');
-  const argsStr = rest.join(' ');
+  const normalised = input.trim().toLowerCase();
   playSound('beep');
 
-  // resetall
-  if (input.trim().toLowerCase() === 'resetall') {
-    if (localStorage.getItem('dharma_devmode_active') !== 'true') {
-      return ['> ERROR: Requires developer mode. Use "devmode" first.'];
-    }
+  if (normalised === 'resetall') {
+    if (localStorage.getItem('dharma_devmode_active') !== 'true') return ['> ERROR: Requires developer mode.'];
     localStorage.clear();
     localStorage.setItem('countdown_start', Date.now().toString());
-    accessLevel = 1; isExecutingProtocol = false; pendingAction = null;
+    isExecutingProtocol = false; pendingAction = null;
     return ['> SYSTEM RESET. All progress wiped. Reload the page.'];
   }
 
-  // Direct numbers
-  if (input.trim() === DHARMA_NUMBERS.join(' ')) {
-    return commands['4 8 15 16 23 42'](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
-  }
+  // Number sequence already handled above (alarm-gated)
 
-  // Multi-word commands (exact match)
-  const fullInput = input.trim().toLowerCase();
+  // Multi-word exact matches (checked before splitting)
   const multiWord = ['push the button', 'blast door', 'what is your name', 'incident archive'];
   for (const mw of multiWord) {
-    if (fullInput === mw) {
-      playSound('beep');
+    if (normalised === mw) {
       const handler = hiddenCommands[mw] || commands[mw];
-      if (handler) return handler(argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
+      if (handler) return handler('', onRevealPuzzle, onRevealStation, onCorrectSequence);
     }
   }
 
-  // radio.listen special case
-  if (fullInput.startsWith('radio.listen')) {
-    const freq = fullInput.replace('radio.listen', '').trim();
-    return hiddenCommands['radio.listen'](freq, onRevealPuzzle, onRevealStation, onCorrectSequence);
+  if (normalised.startsWith('radio.listen')) {
+    const freq = normalised.replace('radio.listen', '').trim();
+    return hiddenCommands['radio.listen'](freq, onRevealPuzzle);
   }
 
+  const [cmd, ...rest] = normalised.split(' ');
+  const argsStr = rest.join(' ');
+
   if (commands[cmd]) return commands[cmd](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
-  if (hiddenCommands[cmd]) { playSound('beep'); return hiddenCommands[cmd](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence); }
+  if (hiddenCommands[cmd]) return hiddenCommands[cmd](argsStr, onRevealPuzzle, onRevealStation, onCorrectSequence);
 
   return ['> COMMAND NOT FOUND. Type HELP for available commands.'];
 };
@@ -963,7 +1379,6 @@ const processCommand = (
 const resetTerminal = () => {
   isExecutingProtocol = false;
   pendingAction = null;
-  accessLevel = 1;
   commandHistory = [];
 };
 

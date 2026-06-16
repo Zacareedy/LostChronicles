@@ -3,7 +3,7 @@ export const DHARMA_NUMBERS = [4, 8, 15, 16, 23, 42];
 
 // Countdown settings
 export const COUNTDOWN_MINUTES = 108;
-export const COUNTDOWN_SECONDS = 0;
+export const COUNTDOWN_SECONDS = 59;
 export const WARNING_THRESHOLD = 60; // seconds at which to start warning
 
 // Island stations information

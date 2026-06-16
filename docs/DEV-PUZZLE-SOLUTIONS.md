@@ -1,216 +1,685 @@
-# DHARMA COMPUTER SYSTEM - DEVELOPER SOLUTIONS GUIDE
+# LOSTCHRONICLES — DEVELOPER PUZZLE & CLEARANCE GUIDE
 
-> **CONFIDENTIAL: DEVELOPER REFERENCE ONLY**  
-> This document contains solutions and developer-only information about the DHARMA Initiative computer system puzzles.  
-> Do not share this information with end users.
+> **DEV REFERENCE ONLY** — Contains all puzzle answers, discovery paths, unlock codes, and internal architecture.  
+> Last updated: June 2026 — reflects current codebase.
+
+---
 
 ## Table of Contents
-1. [Developer Mode Access](#developer-mode-access)
-2. [Subnet Protocol Interface](#subnet-protocol-interface)
-3. [Numbers Transmission Receiver](#numbers-transmission-receiver)
-4. [The Black Box Archive](#the-black-box-archive)
-5. [Project Candle](#project-candle)
-6. [The Void Directory](#the-void-directory)
-7. [Emergency Reset Procedures](#emergency-reset-procedures)
+
+1. [System Overview](#system-overview)
+2. [Dev Mode & Quick Testing](#dev-mode--quick-testing)
+3. [Clearance Level 1 → 2: "The Dead Operator's Note"](#level-1--2-the-dead-operators-note)
+4. [Clearance Level 2 → 3: "The Corrupted Carrier Wave"](#level-2--3-the-corrupted-carrier-wave)
+5. [Clearance Level 3 → 4: "Radzinsky's Cipher"](#level-3--4-radzinskys-cipher)
+6. [Clearance Level 4 → 5: "The Cerberus Designation"](#level-4--5-the-cerberus-designation)
+7. [Content Unlocked Per Level](#content-unlocked-per-level)
+8. [Component Triggers & LocalStorage Keys](#component-triggers--localstorage-keys)
+9. [All Terminal Commands Reference](#all-terminal-commands-reference)
+10. [Architecture Notes](#architecture-notes)
 
 ---
 
-## Developer Mode Access
+## System Overview
 
-To access developer mode, enter `devmode` in the terminal. This unlocks special commands:
+The ARG uses a **5-level clearance progression** persisted in `localStorage` under the key `dharma_clearance_level`.
 
-- `resetall`: Resets all application state to default values
-- `setcountdown <seconds>`: Sets the countdown timer to a specific value
-- `unlock <puzzle_id>`: Instantly unlocks a specific puzzle
-- `showallstations`: Reveals all stations on the map
-- `devmode-exit`: Returns to regular application state
+| Level | Label       | Advances Via             |
+|-------|-------------|--------------------------|
+| 1     | VISITOR     | *(starting level)*       |
+| 2     | OPERATOR    | `AUTHENTICATE WICKMUND`  |
+| 3     | TECHNICIAN  | `AUTHENTICATE KRONOS`    |
+| 4     | RESEARCHER  | `AUTHENTICATE DARK MATTER` |
+| 5     | OMEGA       | `AUTHENTICATE THANATOS`  |
 
-### Developer IDs Reference
+**Architecture:**
+- `client/src/lib/clearance.ts` — single source of truth: `getClearance()`, `setClearance()`, `clearanceLabel()`
+- `client/src/lib/terminal.ts` — all command logic and puzzle content
+- Clearance changes fire `CustomEvent('dharma-clearance-change', { detail: { level } })`
+- `Terminal.tsx` and `Home.tsx` both listen to this event to update their UI
 
-Each puzzle and element has a unique ID for use with the `unlock` command:
+---
+
+## Dev Mode & Quick Testing
+
+### Enter Dev Mode
+```
+devmode
+```
+Sets clearance to L5 and unlocks all localStorage flags. Reloads the page automatically.
+
+### Exit Dev Mode
+```
+devmode-exit
+```
+Restores the exact state before `devmode` was typed, reloads.
+
+### Reset Everything
+Only works inside dev mode:
+```
+resetall
+```
+Wipes all localStorage and resets countdown. Requires page reload after.
+
+### Set Countdown Timer
+Only works inside dev mode:
+```
+setcountdown 1 30    → sets timer to 1:30
+setcountdown 10      → sets timer to 10 seconds
+```
+
+### Manual Clearance Jump
+The cleanest way to test a specific level without playing through is to open the browser console and run:
+```javascript
+localStorage.setItem('dharma_clearance_level', '3');
+window.dispatchEvent(new CustomEvent('dharma-clearance-change', { detail: { level: 3 } }));
+```
+No page reload needed.
+
+### Trigger System Failure Immediately
+```javascript
+localStorage.setItem('countdown_start', (Date.now() - 6480000).toString());
+```
+This backdates the countdown start by 108 minutes, causing immediate system failure on the next tick.
+
+---
+
+## Level 1 → 2: "The Dead Operator's Note"
+
+**Answer:** `AUTHENTICATE WICKMUND`  
+**Cipher:** Morse code (ITU-R standard)  
+**Theme:** Finding the cover identity of the previous operator
+
+### Full Discovery Path
+
+**Step 1 — Find the personal effects**
+```
+INCIDENT
+```
+Output includes:
+> `CYCLE 10801 — Station handover. Personal effects catalogued.`  
+> `File: READ /FILES/PERSONAL-EFFECTS.TXT`
+
+**Step 2 — Read the effects file**
+```
+READ /FILES/PERSONAL-EFFECTS.TXT
+```
+Contains Desmond Hume's belongings:
+- Notebook page signed "D. Hume" with the numbers `4 8 15 16 23 42`
+- Book "Our Mutual Friend" with Penny's inscription
+- Stopped watch showing 8:15
+- V. Kelvin's note: *"His verification word is encoded in the orientation transcript. Standard maritime signalling format."*
+
+**Step 3 — Read the orientation reel**
+```
+READ /DHARMA/ORIENTATION-REEL-3.TXT
+```
+Scroll to Desmond's addendum at the end:
+> *"It is the name Kelvin used for himself in the field. His cover name. Encoded in standard maritime dot-dash. Here it is:*  
+> `.-- .. -.-. -.- -- ..- -. -..`"*
+
+**Step 4 — Decode the Morse**
+
+| Signal | Letter |
+|--------|--------|
+| `.-- ` | W |
+| `.. ` | I |
+| `-.-. ` | C |
+| `-.- ` | K |
+| `-- ` | M |
+| `..- ` | U |
+| `-. ` | N |
+| `-.. ` | D |
+
+Result: **WICKMUND**
+
+**Step 5 — Authenticate**
+```
+AUTHENTICATE WICKMUND
+```
+
+### Bonus: Desmond Lore
+Typing `DESMOND` after finding his effects returns his full personnel file with V. Kelvin's confession about the boat.
+
+---
+
+## Level 2 → 3: "The Corrupted Carrier Wave"
+
+**Answer:** `AUTHENTICATE KRONOS`  
+**Cipher:** Acrostic — first letter of each Greek-designated peak name  
+**Theme:** Recovering corrupted signal data to read the hidden relay designation
+
+### Full Discovery Path
+
+**Step 1 — Check the COMMS intercept**
+```
+COMMS
+```
+Output shows 6 carrier wave peaks in a "Greek Series." **Peaks 03 and 04 are corrupted:**
+```
+PEAK 01: KAPPA       [4 MHz]
+PEAK 02: RHO         [8 MHz]
+PEAK 03: [CORRUPTED] [-- MHz]
+PEAK 04: [CORRUPTED] [-- MHz]
+PEAK 05: OMICRON    [23 MHz]
+PEAK 06: SIGMA      [42 MHz]
+```
+> *"Type DECRYPT FREQUENCIES to attempt data recovery."*
+
+**Step 2 — Recover the corrupted peaks**
+```
+DECRYPT FREQUENCIES
+```
+Output:
+```
+PEAK 03: OMEGA      [15 MHz]  ← recovered
+PEAK 04: NU         [16 MHz]  ← recovered
+
+FULL GREEK SERIES RESTORED:
+  KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA
+
+STATION RELAY DESIGNATION: K-R-O-N-O-S
+```
+
+**Step 3 — Authenticate**
+```
+AUTHENTICATE KRONOS
+```
+
+### Cross-reference (optional deeper lore)
+```
+DECRYPT VALENZETTI
+```
+Reveals: *"Six core factor values: 4, 8, 15, 16, 23, 42. Their sum: 108."* (lore only — 108 is not the code)
+
+### UI Puzzle cross-reference: Radio Receiver
+The **RadioReceiver** component (L2+) uses the same 6 DHARMA numbers as target frequencies (4.8, 8.0, 15.16, 23.42 MHz). Locking all four and tuning to **108.0 MHz** reveals the Orchid Station transmission naming THANATOS — relevant to L4→L5, not L2→L3.
+
+---
+
+## Level 3 → 4: "Radzinsky's Cipher"
+
+**Answer:** `AUTHENTICATE DARK MATTER`  
+**Cipher:** Caesar cipher, shift +1 (each letter advanced one position forward)  
+**Theme:** Decoding an inscription left by a paranoid operator
+
+### Cipher Key
+
+Radzinsky encoded every personal annotation by shifting each letter **+1 forward** in the alphabet:
 
 ```
-subnet_interface:   "subnet"
-radio_puzzle:       "radio"
-hieroglyph_puzzle:  "hieroglyph"
-coordinates_puzzle: "coordinates"
-black_box:          "blackbox"
-project_candle:     "candle"
-void_directory:     "void"
+A→B  B→C  C→D  D→E  E→F  F→G  G→H  H→I  I→J  J→K  K→L  L→M
+M→N  N→O  O→P  P→Q  Q→R  R→S  S→T  T→U  U→V  V→W  W→X  X→Y  Y→Z  Z→A
 ```
 
-Example: `unlock radio` instantly completes the radio puzzle.
+To **decode**, shift each letter **−1 backward**:
+```
+E→D  B→A  S→R  L→K     N→M  B→A  U→T  U→T  F→E  S→R
+```
+`EBSL NBUUFS` → **DARK MATTER**
+
+### Full Discovery Path
+
+**Step 1 — View the blast door**
+```
+BLAST DOOR
+```
+At L3+ shows additional annotations:
+```
+— "EBSL NBUUFS"    (first hand — lower left)
+— "EBSL NBUUFS"    (second hand — upper margin, different writer)
+
+The same phrase appears twice, written by two different people.
+The text appears shifted. Type RADZINSKY for context on the encoding.
+Type DECRYPT SHIFT for cipher analysis.
+```
+
+**Step 2 — Learn Radzinsky's encoding habit**
+```
+RADZINSKY
+```
+Output at L3+:
+> *"Known notation habit: Radzinsky encrypted personal writings using a simple letter-shift — each letter advanced one position forward in the alphabet. He called it 'staying one step ahead.'"*  
+> *V. Kelvin: "He was paranoid. Even his annotations on the blast door were shifted. I could read them, obviously."*  
+> *Final recovered message: "Find it. Step back. The way home."*
+
+**Step 3 — Get guided decoding help (optional)**
+```
+DECRYPT SHIFT
+```
+Output:
+```
+Pattern identified: Caesar cipher, constant shift.
+Radzinsky's known habit: +1 letter shift (A→B, B→C...)
+To decode blast door text: subtract 1 from each letter.
+Example: E→D, B→A, S→R, L→K   (first four letters of inscription)
+```
+
+**Step 4 — Decode manually**
+
+```
+E B S L   N B U U F S
+↓ ↓ ↓ ↓   ↓ ↓ ↓ ↓ ↓ ↓
+D A R K   M A T T E R
+```
+
+**Step 5 — Authenticate**
+```
+AUTHENTICATE DARK MATTER
+```
+*(Note: the space is required — DARK MATTER as two words)*
+
+### UI Puzzle cross-reference: Blast Door Map
+The **BlastDoorMap** component (L3+, UV-reveal) shows `EBSL NBUUFS` written twice in different handwriting styles — exactly as the terminal `BLAST DOOR` command describes. Players who find the map before using the terminal get the visual before the textual clue.
 
 ---
 
-## Subnet Protocol Interface
+## Level 4 → 5: "The Thanatos Designation"
 
-### Access Method
-1. Reach Security Level 3 through terminal commands (`rank <username> 3`)
-2. Enter `diagnose /net` in terminal
-3. View corrupted file table, noting `/mnt/net_link.sys` and `subnet.daemon`
-4. Run `ls -a /mnt/` to discover hidden `.readme` file
-5. View this file to reveal path to `.dharmanet/`
-6. Run `exec .dharmanet/init_socket.sh` to activate the Subnet Interface
+**Answer:** `AUTHENTICATE THANATOS`  
+**Theme:** Finding DHARMA's classified field designation for the entity
 
-### Solution Path
-1. Switch to the Engineering channel to find clues about Protocol Candle
-2. Read messages from Radzinsky about restricted EM data readings
-3. Switch to the Alvar channel for the private encrypted conversation
-4. Read full exchange between Alvar Hanso and Pierre Chang 
-5. Use `/nick <username>` to set a custom name
-6. Use `/download` to extract and archive the subnet logs
-
-### Critical Information
-- Protocol Candle is described as "a last resort only if the temporal distortion reaches critical levels"
-- The file path `/systems/em_variance/log4815.dat` contains critical EM data
-- Reference to "shifting Valenzetti parameters" links to the Numbers
+There are **two convergent paths** to this answer.
 
 ---
 
-## Numbers Transmission Receiver
+### Path A — Kelvin's Final Log (Shorter)
 
-### Access Method
-1. Discover `transmission.log` file in `/archive/swan/` after visiting 3+ stations
-2. Enter station logs in terminal: `upload_log <station>` for three different stations
-3. Note reference to "Alternate frequency detected" in the log
-4. Observe the new pulsing red dot on the map in the sea
-5. Click it and accept the prompt to "Tune to nearby frequency"
-6. Terminal will unlock: `radio.listen(4.8)` opens the Radio Interface
+**Step 1 — Check the personnel roster**
+```
+WHO
+```
+At L4+ shows:
+```
+KELVIN, V.  ............  RADIO OPERATOR — STATUS: UNKNOWN
+                          FINAL LOG: READ /LOGS/FINAL-TRANSMISSION.TXT
+```
 
-### Special Frequencies
-Each frequency contains a different hidden signal:
+**Step 2 — Read Kelvin's final entry**
+```
+READ /LOGS/FINAL-TRANSMISSION.TXT
+```
+Contains:
+```
+CIPHER TYPE: ROT-13
+ENCODED:     GUNANGBF
+```
 
-1. **4.8 MHz** - Numbers sequence broadcast (clearest at 4.8 exactly)
-   - Contains repeating pattern: "4 8 15 16 23 42"
-   - Recording this sequence unlocks the first part of the puzzle
+**Step 3 — Decode ROT-13**
 
-2. **15.16 MHz** - Morse code transmission (clearest at 15.16 exactly)
-   - Decodes to: "DHARMA WARNS PROTI DANGER"
-   - Partial message referencing "Proximity Timer Incident"
+ROT-13 shifts each letter 13 positions (A↔N, B↔O, C↔P...):
 
-3. **23.42 MHz** - Reversed voice recording (clearest at 23.42 exactly)
-   - When played backward: "Entering 7418880 will trigger emergency reset"
-   - Reference to system reset protocol
+| Encoded | G | U | N | A | N | G | B | F |
+|---------|---|---|---|---|---|---|---|---|
+| Decoded | T | H | A | N | A | T | O | S |
 
-4. **108.0 MHz** - Tones that create a QR-like pattern in spectrogram
-   - Visualizing the audio reveals coordinates: 4°23'S, 108°42'W
-   - Points to the location of the "Black Box"
+Result: **THANATOS**
 
-### Solution Requirements
-1. Record all four frequencies (bookmark each when signal strength > 80%)
-2. Switch to Analysis tab and process each recording
-3. For the Morse recording, select "Decode" option
-4. For the reversed voice, select "Reverse" option
-5. For the tones, select "Spectrogram" option
-6. Combine findings to locate the Black Box Archive
-
----
-
-## The Black Box Archive
-
-### Access Method
-1. Complete the Radio Puzzle to receive coordinates
-2. Enter coordinates in the map terminal: `locate 4°23'S 108°42'W`
-3. Click the new location to trigger "Wreckage discovered. Recover?"
-4. Accept to unlock the video file: `/recovered/flightpath.mp4`
-
-### Solution Path
-1. Open the video in fullscreen mode
-2. Move mouse across timeline to reveal hidden markers at specific timestamps
-3. Click markers in correct order: 8, 15, 16, 23, 42 seconds
-4. Each plays a partial audio clip that together form a message
-5. Note down the full message about "Project Candle"
-6. Run terminal command: `authorize candle <access_phrase>` using words from message
-
-### Critical Information
-- Black box contains final communication from DHARMA supply plane
-- Pilot reports electromagnetic anomaly before crash
-- Message warns about "temporal cascade" requiring Project Candle
-- Access phrase is "amber" (found in combination of audio clips)
+**Step 4 — Authenticate**
+```
+AUTHENTICATE THANATOS
+```
 
 ---
 
-## Project Candle
+### Path B — Subnet / Archive Chain (Longer, Full Lore)
 
-### Access Method
-1. Complete Black Box Archive and obtain Level 4 clearance
-2. Visit and log three specific stations in order: Swan, Flame, Pearl
-3. Run the command: `protocol.candle.activate()`
-4. Must be completed within 4 minutes of visiting all three stations
+**Step 1 — Open the DHARMA subnet**
+```
+SUBNET
+```
+Opens the **SubnetInterface** overlay (requires L3+).
 
-### Multi-Station Challenge
-This is a coordinated challenge requiring quick actions at three stations:
+**Step 2 — Find the archive access code**
 
-1. **Swan Station**
-   - Initiates countdown on monitor
-   - Must keep value above zero by entering Numbers sequence
-   - Time limit: 108 seconds
+In the SubnetInterface, switch to the **ENGINEERING** channel.  
+Look for the system message at the bottom:
+> `NOTE: To access classified archive documents, use access code AH/MDG-932815 on the incident archive terminal.`
 
-2. **Flame Station**
-   - Displays "system sync puzzle" with nodes that must be aligned
-   - Drag moving nodes over stationary nodes using audio log hints
-   - Correct pattern is based on constellation mentioned in audio
+**Step 3 — Open the incident archive**
 
-3. **Pearl Station**
-   - Shows incomplete sentence from subnet chat system
-   - Missing words must be filled in using knowledge from subnet logs
-   - Correct phrase: "Protocol Candle is our failsafe"
+Either:
+- Type `INCIDENT ARCHIVE` in the terminal, OR
+- It will already be accessible from prior navigation
 
-### Solution Requirements
-- Complete all three station challenges within the time limit
-- Each station must be properly synchronized
-- Failure results in 24-hour lockout (can bypass with `dev_override candle`)
-- Success reveals file: `/final/valenzetti.key` containing `LOOP_COUNT: 0`
+In the **IncidentReports** overlay, enter the access code:
+```
+AH/MDG-932815
+```
+This unlocks **"THE INCIDENT — 1977"** (Report 0).
 
----
+**Step 4 — Read The Incident 1977**
 
-## The Void Directory
+At the bottom of the report:
+> `NOTE: Pearl surveillance footage from incident day references code sequence OVERRIDE-D108. Cross-reference System Failure Log.`
 
-### Access Method
-1. Complete Project Candle to reach Level 4 access
-2. New file appears in `/logs/pearl/`: `whisper.backtrace.log`
-3. File contains trace path: `/mnt/███/VOID -> /dev/ethereal.stack`
-4. Enter: `mount /dev/ethereal.stack` to access the Void
+**Step 5 — Download subnet logs**
 
-### Final Interaction
-The Void is an AI-like entity in the terminal:
+Back in SubnetInterface, type `/download` in the chat input.  
+After ~3 seconds:
+> `NOTICE: Critical data recovered. Access code OVERRIDE-D108 extracted from logs.`
 
-1. Terminal visually destabilizes with inverted colors, delayed input
-2. Void entity begins communication with prompt: "Why are you still here?"
-3. Only accepts philosophical or emotional inputs (e.g., "why", "hope", "is anyone alive")
-4. After multiple exchanges, presents final choice: "Would you like to end the loop?"
-   - Answering "yes" = hard reset of all progress
-   - Answering "no" = increments `LOOP_COUNT` and subtly changes some previous content
+**Step 6 — Unlock the System Failure Log**
 
-### Critical Dialogue Paths
-- Ask "who are you" → "I am what remains"
-- Ask "what happened" → "The variables could not be changed"
-- Ask "how many loops" → Reveals current loop count
-- Ask "is it real" → "As real as you need it to be"
+In the IncidentReports overlay, enter:
+```
+OVERRIDE-D108
+```
+Unlocks **"SYSTEM FAILURE LOG — 1984"** (Report 2).
 
----
+**Step 7 — Read the System Failure Log**
 
-## Emergency Reset Procedures
+Under POST-FAILURE PROTOCOL:
+```
+— Fail-safe mechanism installed (AUTHORISED BY: ALVAR HANSO)
+— Fail-safe system designation: CERBERUS (classified — Protocol 7-J)
+```
 
-If a user gets completely stuck or the application enters an unrecoverable state:
+Also in the SECURITY ADDENDUM:
+> `To advance clearance: AUTHENTICATE [entity designation].`
 
-1. Access developer mode: `devmode`
-2. Use `resetall` to clear all state
-3. Or use selective reset: `reset_puzzle <puzzle_id>` 
-4. Exit developer mode: `devmode-exit`
-
-For database issues:
-1. Use `db_repair` in developer mode
-2. Check logs with `show_db_logs`
-3. If needed, rebuild schemas with `rebuild_schema`
-
-### Failsafe Command
-In absolute emergency (user in completely broken state):
-`protocol_dharma_terminate` - This deletes all user data and resets the entire application.
-**Use with extreme caution.**
+**Step 8 — Authenticate**
+```
+AUTHENTICATE THANATOS
+```
 
 ---
 
-© DHARMA Initiative Computer Systems Division
-Version 4.8.15.16.23.42
+### Breadcrumb (planted early, cross-level)
+
+The **PearlStationLog** (paper printout appearing ~5 seconds after countdown failure, even at L1) always includes:
+```
+THANATOS event: entity motion detected at outer perimeter during failure window.
+Observation sealed per Protocol 7-J (Radzinsky).
+```
+This seeds the word `THANATOS` early. Players who reach L4 will recognize it.
+
+### UI Puzzle cross-references: both components
+- **BlastDoorMap** (L3+) includes UV-revealed annotation: `GUNANGBF — V.K. 2001` near the lower-right corner. Players who decode the ROT-13 independently arrive at THANATOS before finding either formal path.
+- **RadioReceiver** (L2+, Orchid transmission at 108.0 MHz) states: *"Entity designation THANATOS confirmed active. The name is the key."*
+
+---
+
+## UI Puzzles (Non-Terminal)
+
+These two components are triggered **outside** the terminal — either through hidden click interactions or via terminal commands that launch them as overlays.
+
+---
+
+### Blast Door Map (`BlastDoorMap.tsx`)
+
+**Access:** L3+ only  
+**Triggers:**
+- Click the DHARMA logo in the header **4 times within 3 seconds**
+- Or type `MAP` in the terminal (L3+)
+
+**What it is:** A full-screen SVG rendering of the blast door. Under normal light nothing is legible. Moving the cursor acts as a UV flashlight — a radial gradient mask reveals hidden annotations only in the cursor's glow radius.
+
+**What it reveals (UV layer):**
+
+| Annotation | Location | Relevance |
+|-----------|----------|-----------|
+| `WJB EPNVT` — first hand | Lower left, rotated −4° | Caesar cipher for VIA DOMUS (L3→L4) |
+| `WJB EPNVT` — second hand | Upper margin, different style | Same cipher, confirms two authors |
+| `PREOREHF — V.K. 2001` | Lower right | ROT-13 for CERBERUS, Kelvin's initials (L4→L5) |
+| `CERBERUS VENT ACCESS [C-23]` | Upper left near vent | Smoke monster designation planted early |
+| `108` circled | Right-center | The sequence sum (L2→L3) |
+| `PROTOCOL 7-J — SEALED` | Bottom center | Connects to PearlStationLog and Incident reports |
+| `R. notation — +1 shift — step back to read` | Top center | Radzinsky cipher hint |
+| `INMAN — dead? — final log sealed` | Lower left | Kelvin lore pointer |
+| `sys designation: archive ref OVERRIDE-D108` | Below SWAN hex | Subnet/archive chain hint |
+
+**Implementation:** SVG `<mask>` with a `<radialGradient>` centered at cursor coordinates. Mouse position is tracked relative to the SVG bounding rect and scaled for viewBox. The UV layer is a `<g mask="url(#uvMask)">` containing all annotation text.
+
+---
+
+### Radio Receiver (`RadioReceiver.tsx`)
+
+**Access:** L2+ only  
+**Triggers:**
+- Click the countdown display **6 times within 4 seconds**
+- Or type `RADIO` in the terminal (L2+)
+
+**What it is:** A retro DHARMA multi-band field receiver. Players drag the tuning knob (or use ◄/► fine-tune buttons) to sweep frequencies. Signal strength bars animate when near a target frequency. A LOCK FREQUENCY button captures a frequency when within ±0.35 MHz.
+
+**Target frequencies and their transmissions:**
+
+| Frequency | Station | Transmission content |
+|-----------|---------|---------------------|
+| 4.8 MHz | Arrow | Archaeological survey data; temporal anomaly readings |
+| 8.0 MHz | Flame | Communications relay offline; manual routing |
+| 15.16 MHz | Pearl | Observation log cycle 108; Swan operator anomalous |
+| 23.42 MHz | Hydra | Zoological specimens stable; perimeter event; "see Protocol 7-J" |
+| **108.0 MHz** | Orchid (unlocks after all 4 locked) | **CERBERUS** named as entity designation; Protocol 7-J activation instructions |
+
+**Unlock sequence:**
+1. Lock all four station frequencies in any order
+2. `108.00 MHz` appears in the locked channels panel as `???`
+3. Tune to 108.0 MHz — transmission auto-displays with CERBERUS named explicitly
+
+**Implementation:** `useRef` for drag state (avoids stale closures in mousemove handler). `useEffect` watches `freq` + `allLocked` to trigger the 108 unlock. Frequency is stored as a `number` rounded to 2 decimal places.
+
+---
+
+## Content Unlocked Per Level
+
+| Feature | L1 | L2 | L3 | L4 | L5 |
+|---------|----|----|----|----|-----|
+| `COMMS` command | — | ✓ | ✓ | ✓ | ✓ |
+| `DECRYPT` command | — | ✓ | ✓ | ✓ | ✓ |
+| `RADIO` command / Receiver UI | — | ✓ | ✓ | ✓ | ✓ |
+| `OVERRIDE` command | — | — | ✓ | ✓ | ✓ |
+| `DIAGNOSE` command | — | — | ✓ | ✓ | ✓ |
+| `SUBNET` command | — | — | ✓ | ✓ | ✓ |
+| `MAP` command / Blast Door UI | — | — | ✓ | ✓ | ✓ |
+| `ACCESS` command | — | — | — | ✓ | ✓ |
+| `VALENZETTI` command | — | — | — | ✓ | ✓ |
+| `OMEGA` command | — | — | — | — | ✓ |
+| `/LOGS/ROUSSEAU-TRANSMISSION.TXT` | — | ✓ | ✓ | ✓ | ✓ |
+| `/LOGS/INCIDENT-CLASSIFIED.TXT` | — | — | ✓ | ✓ | ✓ |
+| `/LOGS/FINAL-TRANSMISSION.TXT` | — | — | — | ✓ | ✓ |
+| `/FILES/VK-108.TXT` | — | — | — | ✓ | ✓ |
+| `/FILES/COORDINATES.TXT` | — | — | — | ✓ | ✓ |
+| `/FILES/PALA-FERRY.TXT` | — | — | — | — | ✓ |
+| BLAST DOOR annotations | basic | basic | **+cipher** | +cipher | +cipher |
+| RADZINSKY file | basic | basic | **+cipher** | +cipher | +cipher |
+| WHO — V. Kelvin entry | — | — | — | ✓ | ✓ |
+| WHO — Hanso/Candidates | — | — | — | — | ✓ |
+| PING — station names | [REDACTED] | [REDACTED] | [REDACTED] | [REDACTED] | **revealed** |
+| IncidentReports report 1 | ✓ | ✓ | ✓ | ✓ | ✓ |
+| IncidentReports report 0 | locked | locked | locked | **code AH/MDG-932815** | ✓ |
+| IncidentReports report 2 | locked | locked | locked | **code OVERRIDE-D108** | ✓ |
+
+---
+
+## Component Triggers & LocalStorage Keys
+
+### SubnetInterface
+- **Trigger:** `SUBNET` terminal command (L3+) sets `dharma_subnet_access = 'true'`
+- **Poll:** Home.tsx polls every 500ms; opens `<SubnetInterface>` and clears the flag
+- **Completion:** `/download` in SubnetInterface fires `onComplete` → sets `dharma_subnet_complete = 'true'`
+
+### IncidentReports
+- **Trigger:** `INCIDENT ARCHIVE` terminal command sets `dharma_incident_archive = 'true'`
+- **Poll:** Home.tsx polls every 500ms; opens `<IncidentReports>` and clears the flag
+- **Access codes:**
+  - `AH/MDG-932815` → unlocks Report 0 (The Incident 1977)
+  - `OVERRIDE-D108` → unlocks Report 2 (System Failure Log 1984)
+- **Persistence:** Unlocked reports saved to `dharma_unlocked_reports` (JSON array of indices)
+
+### BlastDoorMap
+- **Trigger (UI):** Click DHARMA logo in header 4× within 3 seconds (clearance ≥ 3 required)
+- **Trigger (terminal):** `MAP` command (L3+) sets `dharma_map_access = 'true'`
+- **Poll:** Home.tsx polls every 500ms; opens `<BlastDoorMap>` and clears the flag
+- **No completion state** — purely exploratory; annotations are clues only
+
+### RadioReceiver
+- **Trigger (UI):** Click countdown display 6× within 4 seconds (clearance ≥ 2 required)
+- **Trigger (terminal):** `RADIO` command (L2+) sets `dharma_radio_access = 'true'`
+- **Poll:** Home.tsx polls every 500ms; opens `<RadioReceiver>` and clears the flag
+- **Unlock condition:** Lock all 4 frequencies (4.8, 8.0, 15.16, 23.42 MHz), then tune to 108.0 MHz
+- **No localStorage persistence** — receiver state resets on close (by design — players can re-explore)
+
+### PearlStationLog
+- **Trigger:** Countdown reaches zero → `handleCountdownFinish()` in Home.tsx → sets `showPearlLog = true` after 5-second delay
+- **Reset:** Cleared by `handleCorrectSequence()` (numbers entered) or `handleSystemReset()`
+- **No clearance gate** — visible at any level
+
+### SystemFailure
+- **Trigger:** Same as PearlStationLog — countdown hits zero
+- **Reset code:** Type `4 8 15 16 23 42` in the terminal (works even during failure overlay)
+
+### Clearance Event
+```typescript
+// Fired by setClearance() in clearance.ts
+window.dispatchEvent(new CustomEvent('dharma-clearance-change', { detail: { level: n } }));
+```
+Listened to by:
+- `Terminal.tsx` — updates badge, shows upgrade flash
+- `Home.tsx` — updates header SECURITY LEVEL and footer clearance label
+
+### All LocalStorage Keys
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `dharma_clearance_level` | `"1"–"5"` | Current clearance level |
+| `dharma_incident_archive` | `"true"` | Flag to open IncidentReports overlay |
+| `dharma_subnet_access` | `"true"` | Flag to open SubnetInterface overlay |
+| `dharma_subnet_complete` | `"true"` | Subnet `/download` completed |
+| `dharma_map_access` | `"true"` | Flag to open BlastDoorMap overlay |
+| `dharma_radio_access` | `"true"` | Flag to open RadioReceiver overlay |
+| `dharma_unlocked_reports` | JSON array | Indices of unlocked incident reports |
+| `dharma_devmode_active` | `"true"` | Dev mode active |
+| `dharma_pre_devmode_state` | JSON object | State backup for `devmode-exit` |
+| `dharma_surveillance_active` | `"true"` | Pearl surveillance activated |
+| `dharma_lockdown` | `"active"` | Lockdown protocol engaged |
+| `dharma_error_allowed` | `"true"` | Debug interface accessible |
+| `dharma_incident_unlocked` | `"true"` | Set by `DECRYPT INCIDENT` |
+| `dharma_pearl_access` | `"true"` | Set by legacy `LOGIN C22/DSTNGSHD-LBRT` |
+| `dharma_all_stations` | `"true"` | All stations visible |
+| `countdown_start` | timestamp ms | When the countdown began |
+| `countdown_was_set` | `"true"` | Countdown was manually set via devmode |
+
+---
+
+## All Terminal Commands Reference
+
+### HELP (always visible)
+
+| Command | Available | Description |
+|---------|-----------|-------------|
+| `HELP` | L1+ | List commands |
+| `STATUS` | L1+ | System status (content expands per level) |
+| `WHO` | L1+ | Personnel roster (content expands per level) |
+| `FILES` | L1+ | List accessible files |
+| `READ [path]` | L1+ | Read a file |
+| `PING` | L1+ | Test intranet connectivity (stations redacted below L5) |
+| `INCIDENT` | L1+ | Recent incident log |
+| `AUTHENTICATE [word]` | L1+ | Advance clearance level |
+| `CLEAR` | L1+ | Clear terminal |
+| `EXIT` | L1+ | Suspend session |
+| `COMMS` | L2+ | Radio intercept log (peaks 3-4 corrupted) |
+| `DECRYPT [key]` | L2+ | Decrypt data (keys: frequencies, shift, incident, blackrock, valenzetti) |
+| `RADIO` | L2+ | Open RadioReceiver overlay (sets `dharma_radio_access`) |
+| `OVERRIDE [param]` | L3+ | System override protocols |
+| `DIAGNOSE [target]` | L3+ | Network diagnostics |
+| `SUBNET` | L3+ | Open DHARMA subnet interface |
+| `MAP` | L3+ | Open BlastDoorMap UV overlay (sets `dharma_map_access`) |
+| `ACCESS [param]` | L4+ | Special access protocols |
+| `VALENZETTI` | L4+ | Valenzetti Equation summary |
+| `OMEGA` | L5+ | Full classified briefing |
+
+### Hidden Commands (not in HELP, must be discovered)
+
+| Command | Clearance | Notes |
+|---------|-----------|-------|
+| `DESMOND` | L1+ | Desmond Hume personnel file (lore) |
+| `HELLO` | L1+ | Ambient response |
+| `WHY` | L1+ | Ambient response |
+| `NAMASTE` | L1+ | Greeting response |
+| `OUTSIDE` | L1+ | Do not go outside |
+| `QUARANTINE` | L1+ | Quarantine lore |
+| `FAILSAFE` | L1+ | Failsafe key info |
+| `SMOKE` / `SMOKEY` | L1+ | Sonar anomaly log |
+| `JACOB` | L1+ | Flagged for security |
+| `PENNY` | L1+ | "Not Penny's Boat" log |
+| `HURLEY` | L1+ | Candidate event (redacted) |
+| `RADZINSKY` | L1+ (L3+ full) | Cipher explanation unlocks at L3 |
+| `SOS` | L1+ | External comms blocked |
+| `INMAN` | L1+ | J. Inman file |
+| `108` | L1+ | Interval lore |
+| `PUSH THE BUTTON` | L1+ | Yes |
+| `BLAST DOOR` | L1+ (L3+ cipher) | Cipher annotations unlock at L3 |
+| `NUMBERS` | L1+ | The numbers are bad |
+| `OCEANIC815` | L1+ | Observe, do not engage |
+| `THEISLAND` | L1+ | Requires L5 for detail |
+| `DANIELLE` | L1+ | Rousseau reference |
+| `LOCKDOWN` | L1+ | Engages lockdown protocol |
+| `ORIENTATION` | L1+ | Redirects to orientation reel |
+| `HANSO` | L1+ | Hanso Foundation lore |
+| `WHAT IS YOUR NAME` | L1+ | System identifies itself |
+| `MAMA` | L1+ | Not a record player |
+| `WATCH` | L1+ | The island is watching |
+| `RADIO.LISTEN(freq)` | L2+ | Tune to frequency (needs transmission log first) |
+| `4 8 15 16 23 42` | any | Resets countdown if in protocol mode |
+| `INCIDENT ARCHIVE` | any | Opens IncidentReports overlay |
+| `DEVMODE` | any | Developer mode (L5 + all flags) |
+| `DEVMODE-EXIT` | any | Exit dev mode, restore state |
+| `SETCOUNTDOWN m s` | devmode | Set countdown timer |
+
+### Legacy Commands (retained for compatibility)
+
+| Command | Notes |
+|---------|-------|
+| `LOGIN [pass]` | Accepts: `4815162342` (L3), `dharma77` (L2), `C22/DSTNGSHD-LBRT` (L4) |
+| `EXEC [param]` | `subnet.daemon` fails by design; used in old puzzle path |
+| `SCAN` | Returns basic station count |
+| `UPLOAD_LOG [station]` | Upload station log, 3 needed for transmission.log |
+| `PUZZLE [type]` | Direct puzzle launcher |
+| `LS [dir]` | Directory listing; `-a` shows hidden files |
+| `CAT [path]` | Cat a file; triggers puzzle via `/mnt/.dharmanet/init_socket.sh` |
+| `CD [dir]` | Change directory |
+
+---
+
+## Architecture Notes
+
+### File locations
+
+| Concern | File |
+|---------|------|
+| Clearance state | `client/src/lib/clearance.ts` |
+| All terminal commands & puzzle content | `client/src/lib/terminal.ts` |
+| Main page, overlay coordination | `client/src/pages/Home.tsx` |
+| Terminal UI + clearance badge | `client/src/components/Terminal.tsx` |
+| Subnet chat overlay | `client/src/components/SubnetInterface.tsx` |
+| Incident reports overlay | `client/src/components/IncidentReports.tsx` |
+| Pearl paper printout | `client/src/components/PearlStationLog.tsx` |
+| Blast door UV map | `client/src/components/BlastDoorMap.tsx` |
+| Radio frequency receiver | `client/src/components/RadioReceiver.tsx` |
+| 108-minute countdown | `client/src/components/Countdown.tsx` |
+| System failure state | `client/src/components/SystemFailure.tsx` |
+
+### Adding a new puzzle step
+1. Add content to `terminal.ts` — new file path in `read()`, new command in `commands` or `hiddenCommands`
+2. If it needs an overlay: set a localStorage flag in the terminal command, poll for it in `Home.tsx`, render the component
+3. If it gates content by clearance: call `getClearance()` inside the handler, return `deny(n)` if too low
+4. **Do not add hints to `AUTHENTICATE`** — it intentionally gives no guidance; clues belong in lore content only
+5. Update this doc
+
+### Changing puzzle answers
+The answer map is at line ~156 in `terminal.ts`:
+```typescript
+const correct: Record<number, string[]> = {
+  1: ['WICKMUND'],
+  2: ['KRONOS'],
+  3: ['DARK MATTER'],
+  4: ['THANATOS'],
+};
+```
+Multiple answers per level are supported: `1: ['NAMASTE', 'ALTERNATE']`.
+
+---
+
+*DHARMA Initiative Computer Systems Division — Swan Station Node SWN-7*  
+*Protocol 23 active. Do not leave the station.*
