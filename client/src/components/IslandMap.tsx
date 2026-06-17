@@ -124,7 +124,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
   );
 
   const MIN_ZOOM = 1;
-  const MAX_ZOOM = 2.5;
+  const MAX_ZOOM = 5;
 
   // Weather cycle: writes to localStorage every ~90s; storm is rare.
   // The cycle only writes — a separate poll reads the value back into React state

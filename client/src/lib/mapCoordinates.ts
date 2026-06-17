@@ -1,18 +1,21 @@
 // ─── Island Map Coordinates ───────────────────────────────────────────────────
 //
-// All positions are percentages of the image dimensions (top, left as CSS %).
-// Reference image: attached_assets/island_map_satellite.jpg
-// Image dimensions: 6000 × 4890 px
+// All positions are CSS percentages relative to the MAP CONTAINER (not the raw image).
+// Reference image: attached_assets/island_map_satellite.jpg  (6000 × 4890 px)
+// Container aspect ratio: 4:3
 //
-// To update: open the image, note pixel position (x, y), then:
-//   left = (x / 6000) * 100,  top = (y / 4890) * 100
+// Conversion (object-cover crops top/bottom by ~4.3%):
+//   ratio  = (4/3) / (6000/4890) = 1.0867
+//   offset = (ratio - 1) / 2     = 0.0433
+//   left%  = (x / 6000) * 100            (no horizontal crop)
+//   top%   = (y / 4890) * ratio * 100 - offset * 100
 
 export interface StationCoord {
   /** Display name shown on hover */
   name: string;
-  /** CSS top percentage (0–100) */
+  /** CSS top % relative to map container (accounts for object-cover cropping) */
   top: number;
-  /** CSS left percentage (0–100) */
+  /** CSS left % relative to map container */
   left: number;
   /** Source pixel position on the 6000×4890 reference image [x, y] */
   px: [number, number];
@@ -26,7 +29,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   swan: {
     name: 'THE SWAN',
-    top: 75.5,
+    top: 77.7,
     left: 32.2,
     px: [1930, 3692],
     dharmaCoords: '4° 8′ 15″ N, 16° 23′ 42″ W',
@@ -35,7 +38,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   tempest: {
     name: 'THE TEMPEST',
-    top: 66.9,
+    top: 68.3,
     left: 18.6,
     px: [1119, 3269],
     dharmaCoords: '4° 2′ 8″ N, 16° 4′ 15″ W',
@@ -44,7 +47,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   pearl: {
     name: 'THE PEARL',
-    top: 64.5,
+    top: 65.8,
     left: 38.0,
     px: [2282, 3156],
     dharmaCoords: '8° 15′ 16″ N, 23° 42′ 4″ W',
@@ -53,7 +56,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   staff: {
     name: 'THE STAFF',
-    top: 58.4,
+    top: 59.2,
     left: 35.3,
     px: [2119, 2857],
     dharmaCoords: '23° 42′ 4″ N, 8° 15′ 16″ W',
@@ -62,7 +65,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   lookingGlass: {
     name: 'THE LOOKING GLASS',
-    top: 75.9,
+    top: 78.2,
     left: 74.7,
     px: [4481, 3712],
     dharmaCoords: '15° 4′ 23″ N, 42° 8′ 16″ W',
@@ -71,7 +74,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   hydra: {
     name: 'THE HYDRA',
-    top: 46.3,
+    top: 46.0,
     left: 88.3,
     px: [5300, 2263],
     dharmaCoords: '42° 8′ 15″ N, 15° 23′ 42″ W',
@@ -80,7 +83,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   orchid: {
     name: 'THE ORCHID',
-    top: 41.2,
+    top: 40.4,
     left: 28.1,
     px: [1688, 2015],
     dharmaCoords: '42° 4′ 8″ N, 15° 16′ 23″ W',
@@ -89,7 +92,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   barracks: {
     name: 'DHARMA BARRACKS',
-    top: 33.9,
+    top: 32.5,
     left: 41.2,
     px: [2473, 1656],
     dharmaCoords: '23° 16′ 4″ N, 8° 15′ 42″ W',
@@ -98,7 +101,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   flame: {
     name: 'THE FLAME',
-    top: 24.6,
+    top: 22.4,
     left: 44.1,
     px: [2649, 1202],
     dharmaCoords: '15° 16′ 23″ N, 42° 4′ 8″ W',
@@ -107,7 +110,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   arrow: {
     name: 'THE ARROW',
-    top: 19.6,
+    top: 17.0,
     left: 44.4,
     px: [2664, 960],
     dharmaCoords: '16° 23′ 42″ N, 4° 8′ 15″ W',
@@ -116,7 +119,7 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
   blackRock: {
     name: 'BLACK ROCK',
-    top: 28.9,
+    top: 27.1,
     left: 63.9,
     px: [3834, 1414],
     dharmaCoords: '30° 4′ 22″ N, 12° 38′ 17″ W',
@@ -125,34 +128,34 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
 };
 
-// ─── IslandMap signal markers (used by IslandMap.tsx for puzzle overlays) ────
+// ─── IslandMap signal markers (puzzle overlays) ───────────────────────────────
 //
-// Positions are anchored to *visible* landmarks on the satellite image so the
-// dot always sits on something identifiable — players can correlate what they
-// see on screen with the coordinate they enter in the terminal.
+// These are the interactive puzzle dots — distinct from the L5 reference markers.
+// Positions use the same container-relative percentages as MAP_STATIONS above.
 //
-// To move a marker: adjust top/left here; IslandMap.tsx reads these values.
+// To move a marker: edit top/left here; IslandMap.tsx imports these directly.
 
 export const MAP_SIGNAL_MARKERS = {
 
-  // Swan Station hatch entrance. L1→L2 puzzle, always visible.
+  // L1→L2: Swan hatch entrance. Coordinate entry puzzle, always visible at L1+.
   'swan-signal': {
-    top: '75.5%',
+    top: '77.7%',
     left: '32.2%',
-    note: 'L1→L2. Swan Station hatch entrance.',
+    note: 'L1→L2 puzzle. Swan Station hatch entrance.',
   },
 
-  // Black Rock shipwreck — ruins clearly visible in the upper-right jungle. L3→L4 storm puzzle.
+  // L3→L4: Storm-only signal anchored to the Black Rock ruins.
   'storm-cache': {
-    top: '28.9%',
+    top: '27.1%',
     left: '63.9%',
     note: 'L3→L4 storm puzzle. Anchored to the visible Black Rock ruins.',
   },
 
-  // Hatch exterior — just west of Swan, above the underground section. L4→L5 time gate.
+  // L4→L5: Transient signal just west of Swan. Only visible in the first 8 min
+  // of a fresh countdown cycle (6000–6480s remaining). Bypassed at L5.
   'hatch-exterior': {
-    top: '77%',
-    left: '30%',
+    top: '77.7%',
+    left: '30.0%',
     note: 'L4→L5 time gate. Hatch blast door, just west of Swan signal.',
   },
 
