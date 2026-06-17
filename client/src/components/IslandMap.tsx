@@ -64,7 +64,7 @@ const SIGNAL_MARKERS: SignalMarker[] = [
 const STATION_MARKERS = Object.entries(MAP_STATIONS).map(([key, s]) => ({
   id: `station-${key}`,
   position: { top: `${s.top}%`, left: `${s.left}%` },
-  label: key.toUpperCase(),
+  label: s.name,
   dharmaCoords: s.dharmaCoords,
 }));
 
