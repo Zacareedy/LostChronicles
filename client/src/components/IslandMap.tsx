@@ -25,6 +25,7 @@ interface SignalMarker {
 
 // Positions are imported from mapCoordinates.ts — edit there to move markers.
 const SIGNAL_MARKERS: SignalMarker[] = [
+  // L1→L2: Coordinate entry puzzle — always visible
   {
     id: 'swan-signal',
     position: { top: MAP_SIGNAL_MARKERS['swan-signal'].top, left: MAP_SIGNAL_MARKERS['swan-signal'].left },
@@ -32,6 +33,11 @@ const SIGNAL_MARKERS: SignalMarker[] = [
     statusLabel: 'UNVERIFIED NODE — ENTER COORDINATES TO CONFIRM',
     minClearance: 1,
   },
+
+  // L2→L3: Entity tracking — visible when an entity marker is near (handled separately)
+  // placeholder; the moving entity is rendered as its own element
+
+  // L3→L4: Weather event — visible only during storm
   {
     id: 'storm-cache',
     position: { top: MAP_SIGNAL_MARKERS['storm-cache'].top, left: MAP_SIGNAL_MARKERS['storm-cache'].left },
@@ -40,6 +46,8 @@ const SIGNAL_MARKERS: SignalMarker[] = [
     minClearance: 3,
     weather: 'storm',
   },
+
+  // L4→L5: Time gate — visible only when countdown is in first 8 minutes (6000–6480s window)
   {
     id: 'hatch-exterior',
     position: { top: MAP_SIGNAL_MARKERS['hatch-exterior'].top, left: MAP_SIGNAL_MARKERS['hatch-exterior'].left },
