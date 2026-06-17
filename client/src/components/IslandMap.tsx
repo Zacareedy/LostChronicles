@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { playSound } from '@/lib/audio';
-import mapImage from '@assets/island_map_satellite.jpeg';
+import mapImage from '@assets/island_map_satellite.jpg';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
