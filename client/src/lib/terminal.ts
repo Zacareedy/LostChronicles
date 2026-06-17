@@ -1607,6 +1607,23 @@ const hiddenCommands: Record<string, Function> = {
     } catch { return ['> ERROR: Failed to exit developer mode.']; }
   },
 
+  setweather: (args: string) => {
+    if (localStorage.getItem('dharma_devmode_active') !== 'true') return ['> ERROR: Requires developer mode.'];
+    const valid = ['clear', 'fog', 'rain', 'storm'];
+    const w = args.trim().toLowerCase();
+    if (!w) return [
+      '> Usage: SETWEATHER [clear|fog|rain|storm]',
+      `> Current: ${localStorage.getItem('dharma_weather_state') ?? 'clear'}`,
+    ];
+    if (!valid.includes(w)) return [`> ERROR: Unknown weather state "${w}". Valid: ${valid.join(', ')}`];
+    try { localStorage.setItem('dharma_weather_state', w); } catch {}
+    return [
+      `> WEATHER OVERRIDE: ${w.toUpperCase()}`,
+      '> IslandMap will update on next render tick.',
+      w === 'storm' ? '> Storm-cache signal marker now active. PING N 23°42′ W 108°15′ to confirm.' : '',
+    ].filter(Boolean);
+  },
+
   setcountdown: (args: string) => {
     if (localStorage.getItem('dharma_devmode_active') !== 'true') return ['> ERROR: Requires developer mode.'];
     const parts = args.split(' ').filter(Boolean);

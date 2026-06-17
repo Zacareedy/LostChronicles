@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { playSound } from '@/lib/audio';
-import mapImage from '@assets/final_lost_map.jpeg';
+import mapImage from '@assets/island_map_satellite.jpg';
+import { MAP_SIGNAL_MARKERS } from '@/lib/mapCoordinates';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -22,11 +23,12 @@ interface SignalMarker {
 // ─── Signal marker definitions ────────────────────────────────────────────────
 // Each puzzle that uses the map adds its marker here.
 
+// Positions are imported from mapCoordinates.ts — edit there to move markers.
 const SIGNAL_MARKERS: SignalMarker[] = [
   // L1→L2: Coordinate entry puzzle — always visible
   {
     id: 'swan-signal',
-    position: { top: '64%', left: '44%' },
+    position: { top: MAP_SIGNAL_MARKERS['swan-signal'].top, left: MAP_SIGNAL_MARKERS['swan-signal'].left },
     coordinates: 'N 4°815′ W 162°342′',
     statusLabel: 'UNVERIFIED NODE — ENTER COORDINATES TO CONFIRM',
     minClearance: 1,
@@ -38,21 +40,21 @@ const SIGNAL_MARKERS: SignalMarker[] = [
   // L3→L4: Weather event — visible only during storm
   {
     id: 'storm-cache',
-    position: { top: '28%', left: '61%' },
+    position: { top: MAP_SIGNAL_MARKERS['storm-cache'].top, left: MAP_SIGNAL_MARKERS['storm-cache'].left },
     coordinates: 'N 23°42′ W 108°15′',
     statusLabel: 'SIGNAL ANOMALY — METEOROLOGICAL INTERFERENCE',
     minClearance: 3,
     weather: 'storm',
   },
 
-  // L4→L5: Time gate — visible only when countdown is in first 8 minutes (480–6480s window)
+  // L4→L5: Time gate — visible only when countdown is in first 8 minutes (6000–6480s window)
   {
     id: 'hatch-exterior',
-    position: { top: '74%', left: '34%' },
+    position: { top: MAP_SIGNAL_MARKERS['hatch-exterior'].top, left: MAP_SIGNAL_MARKERS['hatch-exterior'].left },
     coordinates: 'N 4°18′ W 16°342′',
     statusLabel: 'TRANSIENT SIGNAL — VERIFY IMMEDIATELY',
     minClearance: 4,
-    timeWindow: { min: 6000, max: 6480 }, // last 8 minutes of 108-min countdown
+    timeWindow: { min: 6000, max: 6480 },
   },
 ];
 
