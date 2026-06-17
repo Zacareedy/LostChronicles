@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { playSound } from '@/lib/audio';
 import mapImage from '@assets/island_map_satellite.jpg';
-import { MAP_SIGNAL_MARKERS } from '@/lib/mapCoordinates';
+import { MAP_SIGNAL_MARKERS, MAP_STATIONS } from '@/lib/mapCoordinates';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,6 +57,16 @@ const SIGNAL_MARKERS: SignalMarker[] = [
     timeWindow: { min: 6000, max: 6480 },
   },
 ];
+
+// ─── Station reference markers (L5 / devmode only) ───────────────────────────
+// All known DHARMA stations from MAP_STATIONS, visible when clearance = 5.
+// Rendered as small amber dots so they're distinct from puzzle-critical green dots.
+const STATION_MARKERS = Object.entries(MAP_STATIONS).map(([key, s]) => ({
+  id: `station-${key}`,
+  position: { top: `${s.top}%`, left: `${s.left}%` },
+  label: key.toUpperCase(),
+  dharmaCoords: s.dharmaCoords,
+}));
 
 // ─── Moving entity (L2→L3 puzzle) ────────────────────────────────────────────
 
@@ -116,19 +126,34 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
   const MIN_ZOOM = 1;
   const MAX_ZOOM = 2.5;
 
-  // Weather cycle: changes every ~90 seconds; storm is rare
+  // Weather cycle: writes to localStorage every ~90s; storm is rare.
+  // The cycle only writes — a separate poll reads the value back into React state
+  // so that the SETWEATHER terminal command also takes effect immediately.
   useEffect(() => {
     const CYCLE: WeatherState[] = ['clear', 'clear', 'fog', 'clear', 'rain', 'clear', 'storm', 'clear'];
     let i = 0;
+    // Write initial state if nothing is already set (preserves SETWEATHER override on hot reload)
+    if (!localStorage.getItem('dharma_weather_state')) {
+      try { localStorage.setItem('dharma_weather_state', 'clear'); } catch {}
+    }
     const id = setInterval(() => {
       i = (i + 1) % CYCLE.length;
-      const next = CYCLE[i];
-      setWeather(next);
-      try { localStorage.setItem('dharma_weather_state', next); } catch {}
+      try { localStorage.setItem('dharma_weather_state', CYCLE[i]); } catch {}
     }, 90000);
-    // Write initial state
-    try { localStorage.setItem('dharma_weather_state', 'clear'); } catch {}
     return () => clearInterval(id);
+  }, []);
+
+  // Poll localStorage every 2s and sync weather state.
+  // This makes SETWEATHER terminal command take effect without waiting for the cycle.
+  useEffect(() => {
+    const VALID: WeatherState[] = ['clear', 'fog', 'rain', 'storm'];
+    const poll = setInterval(() => {
+      const stored = localStorage.getItem('dharma_weather_state') as WeatherState | null;
+      if (stored && VALID.includes(stored)) {
+        setWeather(stored);
+      }
+    }, 2000);
+    return () => clearInterval(poll);
   }, []);
 
   // Entity target zone: top≈38%, left≈55% — L2→L3 clue location
@@ -193,23 +218,26 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
     setMapStatus('SCANNING FOR SIGNALS...');
   };
 
+  // At L5 all puzzle gates are solved — bypass weather and time-window restrictions.
+  const masterAccess = clearance >= 5;
+
   // Which static markers are currently visible
   const visibleMarkers = SIGNAL_MARKERS.filter(m => {
     if (clearance < m.minClearance) return false;
-    if (m.weather && m.weather !== weather) return false;
-    if (m.timeWindow) {
+    if (m.weather && m.weather !== weather && !masterAccess) return false;
+    if (m.timeWindow && !masterAccess) {
       const inWindow = timeRemaining >= m.timeWindow.min && timeRemaining <= m.timeWindow.max;
       if (!inWindow) return false;
     }
     return true;
   });
 
-  // Weather tint overlay
+  // Weather tint overlay — stronger values so the effect is actually perceptible
   const weatherOverlay: Record<WeatherState, string> = {
     clear: 'transparent',
-    fog:   'rgba(180,200,180,0.18)',
-    rain:  'rgba(60,80,120,0.22)',
-    storm: 'rgba(20,20,60,0.38)',
+    fog:   'rgba(160,185,160,0.35)',
+    rain:  'rgba(40,60,110,0.45)',
+    storm: 'rgba(5,5,30,0.65)',
   };
 
   return (
@@ -282,6 +310,25 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
                   boxShadow: '0 0 6px #33ff33, 0 0 14px #33ff3366',
                   cursor: 'crosshair',
                   animation: 'pulse 1.4s ease-in-out infinite',
+                }} />
+              </div>
+            ))}
+
+            {/* Station reference markers (L5 / devmode) — amber dots for all known DHARMA stations */}
+            {masterAccess && STATION_MARKERS.map(s => (
+              <div
+                key={s.id}
+                className="absolute"
+                style={{ top: s.position.top, left: s.position.left, transform: 'translate(-50%,-50%)', zIndex: 8 }}
+                onMouseEnter={() => { setHoveredId(s.id); setCoordinates(s.dharmaCoords); setMapStatus(`STATION: ${s.label}`); }}
+                onMouseLeave={markerLeave}
+              >
+                <div style={{
+                  width: 7, height: 7, borderRadius: '50%',
+                  background: '#ffaa00',
+                  boxShadow: '0 0 4px #ffaa00, 0 0 10px #ffaa0055',
+                  cursor: 'crosshair',
+                  opacity: 0.8,
                 }} />
               </div>
             ))}
