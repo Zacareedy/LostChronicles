@@ -9,14 +9,15 @@
 
 1. [System Overview](#system-overview)
 2. [Dev Mode & Quick Testing](#dev-mode--quick-testing)
-3. [Clearance Level 1 → 2: "The Dead Operator's Note"](#level-1--2-the-dead-operators-note)
-4. [Clearance Level 2 → 3: "The Corrupted Carrier Wave"](#level-2--3-the-corrupted-carrier-wave)
-5. [Clearance Level 3 → 4: "Radzinsky's Cipher"](#level-3--4-radzinskys-cipher)
-6. [Clearance Level 4 → 5: "The Cerberus Designation"](#level-4--5-the-cerberus-designation)
-7. [Content Unlocked Per Level](#content-unlocked-per-level)
-8. [Component Triggers & LocalStorage Keys](#component-triggers--localstorage-keys)
-9. [All Terminal Commands Reference](#all-terminal-commands-reference)
-10. [Architecture Notes](#architecture-notes)
+3. [Level 1 → 2: "The Dead Operator's Note"](#level-1--2-the-dead-operators-note)
+4. [Level 2 → 3: "The Corrupted Carrier Wave"](#level-2--3-the-corrupted-carrier-wave)
+5. [Level 3 → 4: "Radzinsky's Cipher"](#level-3--4-radzinskys-cipher)
+6. [Level 4 → 5: "The Thanatos Designation"](#level-4--5-the-thanatos-designation)
+7. [UI Puzzle Components](#ui-puzzle-components)
+8. [Content Unlocked Per Level](#content-unlocked-per-level)
+9. [All LocalStorage Keys](#all-localstorage-keys)
+10. [All Terminal Commands Reference](#all-terminal-commands-reference)
+11. [Architecture Notes](#architecture-notes)
 
 ---
 
@@ -24,13 +25,13 @@
 
 The ARG uses a **5-level clearance progression** persisted in `localStorage` under the key `dharma_clearance_level`.
 
-| Level | Label       | Advances Via             |
-|-------|-------------|--------------------------|
-| 1     | VISITOR     | *(starting level)*       |
-| 2     | OPERATOR    | `AUTHENTICATE WICKMUND`  |
-| 3     | TECHNICIAN  | `AUTHENTICATE KRONOS`    |
-| 4     | RESEARCHER  | `AUTHENTICATE DARK MATTER` |
-| 5     | OMEGA       | `AUTHENTICATE THANATOS`  |
+| Level | Label      | Answer                     |
+|-------|------------|----------------------------|
+| 1     | VISITOR    | *(starting level)*         |
+| 2     | OPERATOR   | `AUTHENTICATE WICKMUND`    |
+| 3     | TECHNICIAN | `AUTHENTICATE KRONOS`      |
+| 4     | RESEARCHER | `AUTHENTICATE DARK MATTER` |
+| 5     | OMEGA      | `AUTHENTICATE THANATOS`    |
 
 **Architecture:**
 - `client/src/lib/clearance.ts` — single source of truth: `getClearance()`, `setClearance()`, `clearanceLabel()`
@@ -69,7 +70,7 @@ setcountdown 10      → sets timer to 10 seconds
 ```
 
 ### Manual Clearance Jump
-The cleanest way to test a specific level without playing through is to open the browser console and run:
+Open the browser console:
 ```javascript
 localStorage.setItem('dharma_clearance_level', '3');
 window.dispatchEvent(new CustomEvent('dharma-clearance-change', { detail: { level: 3 } }));
@@ -80,7 +81,22 @@ No page reload needed.
 ```javascript
 localStorage.setItem('countdown_start', (Date.now() - 6480000).toString());
 ```
-This backdates the countdown start by 108 minutes, causing immediate system failure on the next tick.
+Backdates the countdown start by 108 minutes — failure occurs on next tick.
+
+### Set Required Flags Without Playing Through
+Useful when testing a specific gate in isolation:
+```javascript
+// L1→L2 gate
+localStorage.setItem('dharma_ping_resolved', 'true');
+// L2→L3 gate
+localStorage.setItem('dharma_waveform_solved', 'true');
+// L3→L4 gate (all three required)
+localStorage.setItem('dharma_map_consulted', 'true');
+localStorage.setItem('dharma_radzinsky_read', 'true');
+localStorage.setItem('dharma_decrypt_shift_used', 'true');
+// L4→L5 gate
+localStorage.setItem('dharma_nodes_activated', 'true');
+```
 
 ---
 
@@ -88,74 +104,70 @@ This backdates the countdown start by 108 minutes, causing immediate system fail
 
 **Answer:** `AUTHENTICATE WICKMUND`  
 **Cipher:** Morse code (ITU-R standard)  
-**Theme:** Finding the cover identity of the previous operator
+**Gate flag:** `dharma_ping_resolved = 'true'` — must be set before authenticate succeeds
 
-### Full Discovery Path
+### Step 1 — Confirm the island signal (gate requirement)
 
-**Step 1 — Find the personal effects**
+The **IslandMap** panel shows a pulsing green marker at the Swan Station position. Hover to reveal coordinates: `N 4°815′ W 162°342′`.
+
+```
+PING 4815 162342
+```
+Response confirms the node, returns Morse code clue, sets `dharma_ping_resolved = 'true'`.
+
+### Step 2 — Find the personal effects
 ```
 INCIDENT
 ```
-Output includes:
 > `CYCLE 10801 — Station handover. Personal effects catalogued.`  
 > `File: READ /FILES/PERSONAL-EFFECTS.TXT`
 
-**Step 2 — Read the effects file**
+### Step 3 — Read the effects file
 ```
 READ /FILES/PERSONAL-EFFECTS.TXT
 ```
-Contains Desmond Hume's belongings:
-- Notebook page signed "D. Hume" with the numbers `4 8 15 16 23 42`
-- Book "Our Mutual Friend" with Penny's inscription
-- Stopped watch showing 8:15
-- V. Kelvin's note: *"His verification word is encoded in the orientation transcript. Standard maritime signalling format."*
+Contains Desmond Hume's belongings. V. Kelvin's note: *"His verification word is encoded in the orientation transcript. Standard maritime signalling format."*
 
-**Step 3 — Read the orientation reel**
+### Step 4 — Read the orientation reel
 ```
 READ /DHARMA/ORIENTATION-REEL-3.TXT
 ```
-Scroll to Desmond's addendum at the end:
-> *"It is the name Kelvin used for himself in the field. His cover name. Encoded in standard maritime dot-dash. Here it is:*  
-> `.-- .. -.-. -.- -- ..- -. -..`"*
+Desmond's addendum at the end:
+> `.-- .. -.-. -.- -- ..- -. -..`
 
-**Step 4 — Decode the Morse**
+### Step 5 — Decode the Morse
 
 | Signal | Letter |
 |--------|--------|
-| `.-- ` | W |
-| `.. ` | I |
-| `-.-. ` | C |
-| `-.- ` | K |
-| `-- ` | M |
-| `..- ` | U |
-| `-. ` | N |
-| `-.. ` | D |
+| `.--`  | W |
+| `..`   | I |
+| `-.-.` | C |
+| `-.-`  | K |
+| `--`   | M |
+| `..-`  | U |
+| `-.`   | N |
+| `-..`  | D |
 
 Result: **WICKMUND**
 
-**Step 5 — Authenticate**
+### Step 6 — Authenticate
 ```
 AUTHENTICATE WICKMUND
 ```
-
-### Bonus: Desmond Lore
-Typing `DESMOND` after finding his effects returns his full personnel file with V. Kelvin's confession about the boat.
 
 ---
 
 ## Level 2 → 3: "The Corrupted Carrier Wave"
 
 **Answer:** `AUTHENTICATE KRONOS`  
-**Cipher:** Acrostic — first letter of each Greek-designated peak name  
-**Theme:** Recovering corrupted signal data to read the hidden relay designation
+**Cipher:** Acrostic — first letter of each Greek-designated carrier peak  
+**Gate flag:** `dharma_waveform_solved = 'true'` — waveform puzzle must be completed first
 
-### Full Discovery Path
-
-**Step 1 — Check the COMMS intercept**
+### Step 1 — Check the COMMS intercept
 ```
 COMMS
 ```
-Output shows 6 carrier wave peaks in a "Greek Series." **Peaks 03 and 04 are corrupted:**
+6 carrier wave peaks, Greek names. Peaks 03 and 04 are corrupted:
 ```
 PEAK 01: KAPPA       [4 MHz]
 PEAK 02: RHO         [8 MHz]
@@ -164,36 +176,40 @@ PEAK 04: [CORRUPTED] [-- MHz]
 PEAK 05: OMICRON    [23 MHz]
 PEAK 06: SIGMA      [42 MHz]
 ```
-> *"Type DECRYPT FREQUENCIES to attempt data recovery."*
 
-**Step 2 — Recover the corrupted peaks**
+### Step 2 — Recover the corrupted peaks
 ```
 DECRYPT FREQUENCIES
 ```
-Output:
+Recovers: `OMEGA (15 MHz)` and `NU (16 MHz)`.  
+Full series: **KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA = K-R-O-N-O-S**
+
+### Step 3 — Complete carrier wave verification (gate requirement)
 ```
-PEAK 03: OMEGA      [15 MHz]  ← recovered
-PEAK 04: NU         [16 MHz]  ← recovered
-
-FULL GREEK SERIES RESTORED:
-  KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA
-
-STATION RELAY DESIGNATION: K-R-O-N-O-S
+COMMS VERIFY
 ```
+Opens the **WaveformPuzzle** overlay. Sets `dharma_waveform_access = 'true'` → Home.tsx polls and renders the puzzle.
 
-**Step 3 — Authenticate**
+The puzzle shows a reference waveform and 6 candidates (A–F). The correct answer **rotates each session** based on `parseInt(localStorage.getItem('countdown_start')) % 6` — this prevents note-taking shortcuts. Selecting the correct candidate sets `dharma_waveform_solved = 'true'`.
+
+### Step 4 — Authenticate
 ```
 AUTHENTICATE KRONOS
 ```
 
-### Cross-reference (optional deeper lore)
-```
-DECRYPT VALENZETTI
-```
-Reveals: *"Six core factor values: 4, 8, 15, 16, 23, 42. Their sum: 108."* (lore only — 108 is not the code)
+### Supporting discovery paths (not gated, but contain clues)
 
-### UI Puzzle cross-reference: Radio Receiver
-The **RadioReceiver** component (L2+) uses the same 6 DHARMA numbers as target frequencies (4.8, 8.0, 15.16, 23.42 MHz). Locking all four and tuning to **108.0 MHz** reveals the Orchid Station transmission naming THANATOS — relevant to L4→L5, not L2→L3.
+**Entity tracking (IslandMap):**  
+A red dot moves across the island map when clearance ≥ 2. When it enters the target zone (~x:50–62%, y:32–44%), `dharma_entity_tracked = 'true'` is set. `TRACK` command then returns a log entry cross-referencing KAPPA·RHO peaks.
+
+**Radio fragment assembly (RadioReceiver):**  
+Lock all 4 target frequencies (4.8, 8.0, 15.16, 23.42 MHz) → 108.0 MHz unlocks and the assembled data tags spell KRONOS. Sets `dharma_radio_fragments_complete = 'true'`.
+
+**Subnet channel sequence (SubnetInterface):**  
+Visit all three channels in order — general (tag: OS), engineering (tag: ON), alvar (tag: KR). Oldest-first concatenation: KR+ON+OS = KRONOS. Sets `dharma_subnet_sequence_read = 'true'`.
+
+**Pearl log cycle markers (PearlStationLog):**  
+Specific log lines have DHARMA numbers [4], [8], [15], [16], [23], [42] in the left margin. Footer note: *"Cycle markers correspond to active intranet grid coordinates. Verify via PING [coordinates] at terminal."*
 
 ---
 
@@ -201,263 +217,278 @@ The **RadioReceiver** component (L2+) uses the same 6 DHARMA numbers as target f
 
 **Answer:** `AUTHENTICATE DARK MATTER`  
 **Cipher:** Caesar cipher, shift +1 (each letter advanced one position forward)  
-**Theme:** Decoding an inscription left by a paranoid operator
+**Gate flags:** All three of the following must be set:
+- `dharma_map_consulted = 'true'` (opened blast door map)
+- `dharma_radzinsky_read = 'true'` (read Radzinsky's file at L3+)
+- `dharma_decrypt_shift_used = 'true'` (ran `DECRYPT SHIFT`)
 
 ### Cipher Key
 
-Radzinsky encoded every personal annotation by shifting each letter **+1 forward** in the alphabet:
+Radzinsky encoded every personal annotation by shifting each letter **+1 forward**:
 
 ```
-A→B  B→C  C→D  D→E  E→F  F→G  G→H  H→I  I→J  J→K  K→L  L→M
-M→N  N→O  O→P  P→Q  Q→R  R→S  S→T  T→U  U→V  V→W  W→X  X→Y  Y→Z  Z→A
+A→B  B→C  C→D  D→E  E→F  F→G  G→H  H→I  I→J  ...  Y→Z  Z→A
 ```
 
-To **decode**, shift each letter **−1 backward**:
+To **decode**, shift **−1 backward**:
 ```
 E→D  B→A  S→R  L→K     N→M  B→A  U→T  U→T  F→E  S→R
-```
-`EBSL NBUUFS` → **DARK MATTER**
-
-### Full Discovery Path
-
-**Step 1 — View the blast door**
-```
-BLAST DOOR
-```
-At L3+ shows additional annotations:
-```
-— "EBSL NBUUFS"    (first hand — lower left)
-— "EBSL NBUUFS"    (second hand — upper margin, different writer)
-
-The same phrase appears twice, written by two different people.
-The text appears shifted. Type RADZINSKY for context on the encoding.
-Type DECRYPT SHIFT for cipher analysis.
+EBSL NBUUFS  →  DARK MATTER
 ```
 
-**Step 2 — Learn Radzinsky's encoding habit**
+### Step 1 — Open the blast door map (sets `dharma_map_consulted`)
+```
+MAP
+```
+Opens the **BlastDoorMap** UV overlay. Moving the cursor reveals annotations.
+
+### Step 2 — Read Radzinsky's file (sets `dharma_radzinsky_read`)
 ```
 RADZINSKY
 ```
-Output at L3+:
-> *"Known notation habit: Radzinsky encrypted personal writings using a simple letter-shift — each letter advanced one position forward in the alphabet. He called it 'staying one step ahead.'"*  
-> *V. Kelvin: "He was paranoid. Even his annotations on the blast door were shifted. I could read them, obviously."*  
-> *Final recovered message: "Find it. Step back. The way home."*
+Output at L3+: explains the +1 shift habit and V. Kelvin's note about it.
 
-**Step 3 — Get guided decoding help (optional)**
+### Step 3 — Run cipher analysis (sets `dharma_decrypt_shift_used`)
 ```
 DECRYPT SHIFT
 ```
-Output:
-```
-Pattern identified: Caesar cipher, constant shift.
-Radzinsky's known habit: +1 letter shift (A→B, B→C...)
-To decode blast door text: subtract 1 from each letter.
-Example: E→D, B→A, S→R, L→K   (first four letters of inscription)
-```
+Confirms Caesar+1, shows decode example: E→D, B→A, S→R, L→K.
 
-**Step 4 — Decode manually**
-
+### Step 4 — Decode the blast door inscription
 ```
 E B S L   N B U U F S
 ↓ ↓ ↓ ↓   ↓ ↓ ↓ ↓ ↓ ↓
 D A R K   M A T T E R
 ```
 
-**Step 5 — Authenticate**
+### Step 5 — Authenticate
 ```
 AUTHENTICATE DARK MATTER
 ```
-*(Note: the space is required — DARK MATTER as two words)*
+*(Space required — two words)*
 
-### UI Puzzle cross-reference: Blast Door Map
-The **BlastDoorMap** component (L3+, UV-reveal) shows `EBSL NBUUFS` written twice in different handwriting styles — exactly as the terminal `BLAST DOOR` command describes. Players who find the map before using the terminal get the visual before the textual clue.
+### Supporting puzzles (additional clue paths)
+
+**OVERRIDE-D108 (hidden command — found on blast door UV map):**  
+The UV layer contains: `sys designation: archive ref OVERRIDE-D108`. Typing `OVERRIDE-D108` in the terminal returns a Caesar+1 encoded archive fragment. Sets `dharma_override_used = 'true'`.
+
+**Storm cache ping:**  
+IslandMap shows the storm-cache marker only during storm weather. `PING 2342 10815` while weather = storm returns a clue about Radzinsky's encoding. Sets `dharma_storm_cache_pinged = 'true'`. The weather state cycles every 90 seconds; storm appears once per cycle.
+
+**Subnet node maze (hidden command — L3+):**  
+```
+NODE A1  →  NODE A4  →  NODE B3 TOKEN-BRAVO-7  →  NODE B7 CIPHER-DELTA-9  →  NODE C2 PASSAGE-ECHO-4
+```
+Completion sets `dharma_node_maze_complete = 'true'`. Node C2 cross-references OVERRIDE-D108 and the DARK MATTER research subject.
 
 ---
 
 ## Level 4 → 5: "The Thanatos Designation"
 
 **Answer:** `AUTHENTICATE THANATOS`  
-**Theme:** Finding DHARMA's classified field designation for the entity
+**Gate flag:** `dharma_nodes_activated = 'true'` — distributed node activation must be completed first
 
-There are **two convergent paths** to this answer.
+### Gate — Distributed Node Activation (ACTIVATE sequence)
 
----
+The six DHARMA numbers must be activated in order using the hidden `ACTIVATE` command (L4+):
 
-### Path A — Kelvin's Final Log (Shorter)
+```
+ACTIVATE 4
+ACTIVATE 8
+ACTIVATE 15
+ACTIVATE 16
+ACTIVATE 23
+ACTIVATE 42
+```
 
-**Step 1 — Check the personnel roster**
+Wrong order resets the sequence. Progress is tracked in `dharma_activation_progress` (JSON array). Completion sets `dharma_nodes_activated = 'true'`.
+
+**Where to find the sequence:** VALENZETTI command, `READ /FILES/VK-108.TXT`, Desmond's personal effects notebook page, Pearl log cycle markers.
+
+### Two-Layer Cipher
+
+**Encoding path (how it was made):**
+```
+THANATOS  →  Atbash  →  GSZMZGLH  →  ROT-13  →  TFMZMTYU
+```
+
+**Decoding path (what the player does):**
+```
+TFMZMTYU  →  ROT-13  →  GSZMZGLH  →  Atbash  →  THANATOS
+```
+
+**Atbash** maps A↔Z, B↔Y, C↔X, D↔W, etc. (alphabet fully reversed).
+
+### Hints for each layer
+
+**Layer 1 — ROT-13:** Kelvin's final log (`READ /LOGS/FINAL-TRANSMISSION.TXT`) says: *"First: the standard rotation used in all field comms."*
+
+**Layer 2 — Atbash:** The Alvar channel in the **SubnetInterface** contains a message from Alvar.H: *"The mirror cipher is the oldest method. The alphabet runs in reverse — A becomes Z, B becomes Y."* Kelvin's file also says: *"I mirrored it — the way Hanso's encrypted channel worked."*
+
+### Step 1 — Complete node activation (gate requirement)
+```
+ACTIVATE 4  →  ACTIVATE 8  →  ACTIVATE 15  →  ACTIVATE 16  →  ACTIVATE 23  →  ACTIVATE 42
+```
+
+### Step 2 — Find Kelvin's log
 ```
 WHO
 ```
-At L4+ shows:
-```
-KELVIN, V.  ............  RADIO OPERATOR — STATUS: UNKNOWN
-                          FINAL LOG: READ /LOGS/FINAL-TRANSMISSION.TXT
-```
+At L4+: `KELVIN, V. ... FINAL LOG: READ /LOGS/FINAL-TRANSMISSION.TXT`
 
-**Step 2 — Read Kelvin's final entry**
+### Step 3 — Read the log
 ```
 READ /LOGS/FINAL-TRANSMISSION.TXT
 ```
-Contains:
-```
-CIPHER TYPE: ROT-13
-ENCODED:     GUNANGBF
-```
+Contains: `ENCODED: TFMZMTYU` with notes that it was encoded in two layers.
 
-**Step 3 — Decode ROT-13**
-
-ROT-13 shifts each letter 13 positions (A↔N, B↔O, C↔P...):
-
-| Encoded | G | U | N | A | N | G | B | F |
-|---------|---|---|---|---|---|---|---|---|
-| Decoded | T | H | A | N | A | T | O | S |
-
-Result: **THANATOS**
-
-**Step 4 — Authenticate**
-```
-AUTHENTICATE THANATOS
-```
-
----
-
-### Path B — Subnet / Archive Chain (Longer, Full Lore)
-
-**Step 1 — Open the DHARMA subnet**
+### Step 4 — Get the Atbash hint
 ```
 SUBNET
 ```
-Opens the **SubnetInterface** overlay (requires L3+).
+Open the **SubnetInterface**, switch to the **ALVAR.H [DIRECT]** channel. Read Alvar.H's message about the "mirror cipher."
 
-**Step 2 — Find the archive access code**
+### Step 5 — Decode
+1. ROT-13: `TFMZMTYU` → `GSZMZGLH`
+2. Atbash: `GSZMZGLH` → `THANATOS`
 
-In the SubnetInterface, switch to the **ENGINEERING** channel.  
-Look for the system message at the bottom:
-> `NOTE: To access classified archive documents, use access code AH/MDG-932815 on the incident archive terminal.`
-
-**Step 3 — Open the incident archive**
-
-Either:
-- Type `INCIDENT ARCHIVE` in the terminal, OR
-- It will already be accessible from prior navigation
-
-In the **IncidentReports** overlay, enter the access code:
-```
-AH/MDG-932815
-```
-This unlocks **"THE INCIDENT — 1977"** (Report 0).
-
-**Step 4 — Read The Incident 1977**
-
-At the bottom of the report:
-> `NOTE: Pearl surveillance footage from incident day references code sequence OVERRIDE-D108. Cross-reference System Failure Log.`
-
-**Step 5 — Download subnet logs**
-
-Back in SubnetInterface, type `/download` in the chat input.  
-After ~3 seconds:
-> `NOTICE: Critical data recovered. Access code OVERRIDE-D108 extracted from logs.`
-
-**Step 6 — Unlock the System Failure Log**
-
-In the IncidentReports overlay, enter:
-```
-OVERRIDE-D108
-```
-Unlocks **"SYSTEM FAILURE LOG — 1984"** (Report 2).
-
-**Step 7 — Read the System Failure Log**
-
-Under POST-FAILURE PROTOCOL:
-```
-— Fail-safe mechanism installed (AUTHORISED BY: ALVAR HANSO)
-— Fail-safe system designation: CERBERUS (classified — Protocol 7-J)
-```
-
-Also in the SECURITY ADDENDUM:
-> `To advance clearance: AUTHENTICATE [entity designation].`
-
-**Step 8 — Authenticate**
+### Step 6 — Authenticate
 ```
 AUTHENTICATE THANATOS
 ```
 
----
+### Supporting discovery path
 
-### Breadcrumb (planted early, cross-level)
+**Hatch exterior time gate (IslandMap):**  
+IslandMap shows the hatch-exterior marker only when countdown seconds remaining is 6000–6480 (the first 8 minutes of a fresh 108-minute cycle). `PING 418 16342` during this window returns `GUNANGBF — source: V.K. annotation, 2001` with `[ROT-13 cipher]` — this surfaces the ROT-13 layer separately. Sets `dharma_hatch_exterior_pinged = 'true'`.
 
-The **PearlStationLog** (paper printout appearing ~5 seconds after countdown failure, even at L1) always includes:
-```
-THANATOS event: entity motion detected at outer perimeter during failure window.
-Observation sealed per Protocol 7-J (Radzinsky).
-```
-This seeds the word `THANATOS` early. Players who reach L4 will recognize it.
+**BlastDoorMap UV annotation:**  
+`GUNANGBF — V.K. 2001` with `[ROT-13 encoded — see final log]` is visible on the UV map (lower right). ROT-13(GUNANGBF) = THANATOS. This is the ROT-13 layer only — the Atbash layer still needs to be discovered from the Alvar channel.
 
-### UI Puzzle cross-references: both components
-- **BlastDoorMap** (L3+) includes UV-revealed annotation: `GUNANGBF — V.K. 2001` near the lower-right corner. Players who decode the ROT-13 independently arrive at THANATOS before finding either formal path.
-- **RadioReceiver** (L2+, Orchid transmission at 108.0 MHz) states: *"Entity designation THANATOS confirmed active. The name is the key."*
+**Breadcrumb (planted early):**  
+`THANATOS VENT ACCESS [C-23]` is visible on the UV blast door map. The PearlStationLog (appears after countdown failure at any level) mentions: *"THANATOS event: entity motion detected at outer perimeter."* Seeds the word before players reach L4.
 
 ---
 
-## UI Puzzles (Non-Terminal)
+## UI Puzzle Components
 
-These two components are triggered **outside** the terminal — either through hidden click interactions or via terminal commands that launch them as overlays.
+### IslandMap (`IslandMap.tsx`)
+
+**Access:** Visible at L1+, content expands with clearance  
+**Props:** `clearance: number`, `timeRemaining?: number`  
+**Location:** Right column of the Home.tsx grid (lg:col-span-1)
+
+**Signal markers:**
+
+| Marker ID | Clearance | Visibility condition | Coordinates |
+|-----------|-----------|---------------------|-------------|
+| `swan-signal` | L1+ | Always | N 4°815′ W 162°342′ |
+| `storm-cache` | L3+ | Weather = storm only | N 23°42′ W 108°15′ |
+| `hatch-exterior` | L4+ | Countdown 6000–6480s | N 4°18′ W 16°342′ |
+
+**Moving entity (L2+):**  
+A red dot bounces across the map using a 200ms interval. When it enters zone (x:50–62%, y:32–44%), sets `dharma_entity_tracked = 'true'` and fires a sound. `TRACK` command in terminal then shows the grid fix log.
+
+**Weather system:**  
+Cycles every 90s through `['clear','clear','fog','clear','rain','clear','storm','clear']`. Writes current state to `dharma_weather_state`. Terminal `PING` reads this key to decide whether storm coordinates respond.
 
 ---
 
-### Blast Door Map (`BlastDoorMap.tsx`)
+### WaveformPuzzle (`WaveformPuzzle.tsx`)
+
+**Trigger:** `COMMS VERIFY` → sets `dharma_waveform_access = 'true'` → Home.tsx opens overlay  
+**What it does:** Displays a reference waveform and 6 candidates (A–F). Player clicks the matching one.  
+**Session rotation:** `getCorrectIndex() = parseInt(localStorage.getItem('countdown_start') || '0') % 6` — correct answer changes each time the countdown resets, preventing note-taking shortcuts.  
+**On correct selection:** 1.8-second confirmation delay, then sets `dharma_waveform_solved = 'true'`, fires `onSolve` callback in Home.tsx.
+
+---
+
+### BlastDoorMap (`BlastDoorMap.tsx`)
 
 **Access:** L3+ only  
 **Triggers:**
 - Click the DHARMA logo in the header **4 times within 3 seconds**
-- Or type `MAP` in the terminal (L3+)
+- Or type `MAP` in the terminal (L3+, sets `dharma_map_access = 'true'`)
 
-**What it is:** A full-screen SVG rendering of the blast door. Under normal light nothing is legible. Moving the cursor acts as a UV flashlight — a radial gradient mask reveals hidden annotations only in the cursor's glow radius.
+**What it is:** Full-screen SVG rendering of the blast door UV map. Cursor acts as a UV flashlight — a radial gradient mask reveals annotations only in the cursor's glow radius.
 
-**What it reveals (UV layer):**
+**UV-revealed annotations:**
 
 | Annotation | Location | Relevance |
 |-----------|----------|-----------|
-| `WJB EPNVT` — first hand | Lower left, rotated −4° | Caesar cipher for VIA DOMUS (L3→L4) |
-| `WJB EPNVT` — second hand | Upper margin, different style | Same cipher, confirms two authors |
-| `PREOREHF — V.K. 2001` | Lower right | ROT-13 for CERBERUS, Kelvin's initials (L4→L5) |
-| `CERBERUS VENT ACCESS [C-23]` | Upper left near vent | Smoke monster designation planted early |
-| `108` circled | Right-center | The sequence sum (L2→L3) |
-| `PROTOCOL 7-J — SEALED` | Bottom center | Connects to PearlStationLog and Incident reports |
+| `EBSL NBUUFS` — first hand | Lower left, rotated −4° | Caesar+1 for DARK MATTER (L3→L4) |
+| `EBSL NBUUFS` — second hand | Upper margin, different style | Same cipher, confirms two authors |
+| `GUNANGBF — V.K. 2001` | Lower right | ROT-13 for THANATOS; first decode layer hint (L4→L5) |
+| `THANATOS VENT ACCESS [C-23]` | Upper left near vent | Entity designation planted early |
+| `108` circled | Right-center | Sum of the six values (L2→L3 lore) |
+| `PROTOCOL 7-J — SEALED` | Bottom center | Connects to PearlStationLog |
 | `R. notation — +1 shift — step back to read` | Top center | Radzinsky cipher hint |
 | `INMAN — dead? — final log sealed` | Lower left | Kelvin lore pointer |
-| `sys designation: archive ref OVERRIDE-D108` | Below SWAN hex | Subnet/archive chain hint |
+| `sys designation: archive ref OVERRIDE-D108` | Center | Hidden command hint |
+| `FAILSAFE KEY — MAGNETITE CHAMBER B` | Upper center | Failsafe lore |
+| Station coordinate note `N 4°815' W 162°342'` | Center | Swan PING coordinates |
 
-**Implementation:** SVG `<mask>` with a `<radialGradient>` centered at cursor coordinates. Mouse position is tracked relative to the SVG bounding rect and scaled for viewBox. The UV layer is a `<g mask="url(#uvMask)">` containing all annotation text.
+**Implementation:** SVG `<mask>` with `<radialGradient>` centered at cursor coordinates. Mouse position tracked relative to SVG bounding rect and scaled for viewBox. UV layer is `<g mask="url(#uvMask)">`.
 
 ---
 
-### Radio Receiver (`RadioReceiver.tsx`)
+### RadioReceiver (`RadioReceiver.tsx`)
 
 **Access:** L2+ only  
 **Triggers:**
 - Click the countdown display **6 times within 4 seconds**
-- Or type `RADIO` in the terminal (L2+)
+- Or type `RADIO` in the terminal (L2+, sets `dharma_radio_access = 'true'`)
 
-**What it is:** A retro DHARMA multi-band field receiver. Players drag the tuning knob (or use ◄/► fine-tune buttons) to sweep frequencies. Signal strength bars animate when near a target frequency. A LOCK FREQUENCY button captures a frequency when within ±0.35 MHz.
+**Target frequencies:**
 
-**Target frequencies and their transmissions:**
+| Frequency | Fragment tag | Transmission content |
+|-----------|-------------|---------------------|
+| 4.8 MHz   | `[KR]` | Arrow station data |
+| 8.0 MHz   | `[ON]` | Flame relay offline |
+| 15.16 MHz | `[OS]` | Pearl observation log |
+| 23.42 MHz | — | Hydra zoological/perimeter |
+| **108.0 MHz** | *(unlocks after all 4 locked)* | Assembles fragment tags → KRONOS |
 
-| Frequency | Station | Transmission content |
-|-----------|---------|---------------------|
-| 4.8 MHz | Arrow | Archaeological survey data; temporal anomaly readings |
-| 8.0 MHz | Flame | Communications relay offline; manual routing |
-| 15.16 MHz | Pearl | Observation log cycle 108; Swan operator anomalous |
-| 23.42 MHz | Hydra | Zoological specimens stable; perimeter event; "see Protocol 7-J" |
-| **108.0 MHz** | Orchid (unlocks after all 4 locked) | **CERBERUS** named as entity designation; Protocol 7-J activation instructions |
+Lock all 4 → `dharma_radio_fragments_complete = 'true'`. Tune to 108.0 MHz to see the assembled codes.
 
-**Unlock sequence:**
-1. Lock all four station frequencies in any order
-2. `108.00 MHz` appears in the locked channels panel as `???`
-3. Tune to 108.0 MHz — transmission auto-displays with CERBERUS named explicitly
+---
 
-**Implementation:** `useRef` for drag state (avoids stale closures in mousemove handler). `useEffect` watches `freq` + `allLocked` to trigger the 108 unlock. Frequency is stored as a `number` rounded to 2 decimal places.
+### SubnetInterface (`SubnetInterface.tsx`)
+
+**Access:** L3+  
+**Trigger:** `SUBNET` command sets `dharma_subnet_access = 'true'` → Home.tsx opens overlay
+
+**Channels with puzzle relevance:**
+
+| Channel | Key content |
+|---------|-------------|
+| GENERAL | Fragment tag `[OS]` at bottom |
+| ENGINEERING | Fragment tag `[ON]` at bottom; archive code `AH/MDG-932815` |
+| ALVAR.H [DIRECT] | Fragment tag `[KR]`; **Alvar.H explains the mirror cipher (Atbash hint for L4→L5)** |
+
+Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.  
+`/download` command in the interface: sets `dharma_subnet_complete = 'true'`, surfaces `OVERRIDE-D108` code.
+
+---
+
+### PearlStationLog (`PearlStationLog.tsx`)
+
+**Trigger:** Countdown reaches zero → Home.tsx shows printout after 5-second delay  
+**No clearance gate** — visible at any level  
+**Puzzle relevance:** DHARMA numbers appear as `[4]`, `[8]`, `[15]`, `[16]`, `[23]`, `[42]` in the left margin of specific log lines. Footer note cross-references PING coordinates.
+
+---
+
+### SystemFailure / Implosion (`Terminal.tsx`)
+
+**Trigger:** Countdown reaches zero  
+**Reset code:** `4 8 15 16 23 42` entered in the terminal  
+**Failsafe:** During the full-screen pixel-noise implosion, type `FAILSAFE` anywhere on the page (global `keydown` listener active while imploded). Sets `dharma_failsafe_activated = 'true'`.  
+**Effect levels:**
+- Intensity 1+: full-screen scanline overlay (position: fixed, z-index: 9000)
+- Intensity 2+: full-screen jitter animation (z-index: 9001)
+- Intensity 3: full-screen chromatic aberration SVG filter (z-index: 9002)
+- Imploded: full-screen canvas pixel noise (z-index: 9999) with FAILSAFE prompt bar
 
 ---
 
@@ -468,12 +499,16 @@ These two components are triggered **outside** the terminal — either through h
 | `COMMS` command | — | ✓ | ✓ | ✓ | ✓ |
 | `DECRYPT` command | — | ✓ | ✓ | ✓ | ✓ |
 | `RADIO` command / Receiver UI | — | ✓ | ✓ | ✓ | ✓ |
+| `TRACK` command | — | ✓ | ✓ | ✓ | ✓ |
 | `OVERRIDE` command | — | — | ✓ | ✓ | ✓ |
 | `DIAGNOSE` command | — | — | ✓ | ✓ | ✓ |
 | `SUBNET` command | — | — | ✓ | ✓ | ✓ |
 | `MAP` command / Blast Door UI | — | — | ✓ | ✓ | ✓ |
+| `NODE` command (hidden) | — | — | ✓ | ✓ | ✓ |
+| `OVERRIDE-D108` (hidden) | — | — | ✓ | ✓ | ✓ |
 | `ACCESS` command | — | — | — | ✓ | ✓ |
 | `VALENZETTI` command | — | — | — | ✓ | ✓ |
+| `ACTIVATE` command (hidden) | — | — | — | ✓ | ✓ |
 | `OMEGA` command | — | — | — | — | ✓ |
 | `/LOGS/ROUSSEAU-TRANSMISSION.TXT` | — | ✓ | ✓ | ✓ | ✓ |
 | `/LOGS/INCIDENT-CLASSIFIED.TXT` | — | — | ✓ | ✓ | ✓ |
@@ -481,90 +516,83 @@ These two components are triggered **outside** the terminal — either through h
 | `/FILES/VK-108.TXT` | — | — | — | ✓ | ✓ |
 | `/FILES/COORDINATES.TXT` | — | — | — | ✓ | ✓ |
 | `/FILES/PALA-FERRY.TXT` | — | — | — | — | ✓ |
-| BLAST DOOR annotations | basic | basic | **+cipher** | +cipher | +cipher |
-| RADZINSKY file | basic | basic | **+cipher** | +cipher | +cipher |
+| BLAST DOOR UV annotations | — | — | ✓ | ✓ | ✓ |
+| RADZINSKY cipher details | — | — | ✓ | ✓ | ✓ |
 | WHO — V. Kelvin entry | — | — | — | ✓ | ✓ |
 | WHO — Hanso/Candidates | — | — | — | — | ✓ |
-| PING — station names | [REDACTED] | [REDACTED] | [REDACTED] | [REDACTED] | **revealed** |
-| IncidentReports report 1 | ✓ | ✓ | ✓ | ✓ | ✓ |
-| IncidentReports report 0 | locked | locked | locked | **code AH/MDG-932815** | ✓ |
-| IncidentReports report 2 | locked | locked | locked | **code OVERRIDE-D108** | ✓ |
+| IslandMap swan-signal | ✓ | ✓ | ✓ | ✓ | ✓ |
+| IslandMap storm-cache | — | — | ✓ | ✓ | ✓ |
+| IslandMap hatch-exterior | — | — | — | ✓ | ✓ |
+| IslandMap moving entity | — | ✓ | ✓ | ✓ | ✓ |
 
 ---
 
-## Component Triggers & LocalStorage Keys
+## All LocalStorage Keys
 
-### SubnetInterface
-- **Trigger:** `SUBNET` terminal command (L3+) sets `dharma_subnet_access = 'true'`
-- **Poll:** Home.tsx polls every 500ms; opens `<SubnetInterface>` and clears the flag
-- **Completion:** `/download` in SubnetInterface fires `onComplete` → sets `dharma_subnet_complete = 'true'`
-
-### IncidentReports
-- **Trigger:** `INCIDENT ARCHIVE` terminal command sets `dharma_incident_archive = 'true'`
-- **Poll:** Home.tsx polls every 500ms; opens `<IncidentReports>` and clears the flag
-- **Access codes:**
-  - `AH/MDG-932815` → unlocks Report 0 (The Incident 1977)
-  - `OVERRIDE-D108` → unlocks Report 2 (System Failure Log 1984)
-- **Persistence:** Unlocked reports saved to `dharma_unlocked_reports` (JSON array of indices)
-
-### BlastDoorMap
-- **Trigger (UI):** Click DHARMA logo in header 4× within 3 seconds (clearance ≥ 3 required)
-- **Trigger (terminal):** `MAP` command (L3+) sets `dharma_map_access = 'true'`
-- **Poll:** Home.tsx polls every 500ms; opens `<BlastDoorMap>` and clears the flag
-- **No completion state** — purely exploratory; annotations are clues only
-
-### RadioReceiver
-- **Trigger (UI):** Click countdown display 6× within 4 seconds (clearance ≥ 2 required)
-- **Trigger (terminal):** `RADIO` command (L2+) sets `dharma_radio_access = 'true'`
-- **Poll:** Home.tsx polls every 500ms; opens `<RadioReceiver>` and clears the flag
-- **Unlock condition:** Lock all 4 frequencies (4.8, 8.0, 15.16, 23.42 MHz), then tune to 108.0 MHz
-- **No localStorage persistence** — receiver state resets on close (by design — players can re-explore)
-
-### PearlStationLog
-- **Trigger:** Countdown reaches zero → `handleCountdownFinish()` in Home.tsx → sets `showPearlLog = true` after 5-second delay
-- **Reset:** Cleared by `handleCorrectSequence()` (numbers entered) or `handleSystemReset()`
-- **No clearance gate** — visible at any level
-
-### SystemFailure
-- **Trigger:** Same as PearlStationLog — countdown hits zero
-- **Reset code:** Type `4 8 15 16 23 42` in the terminal (works even during failure overlay)
-
-### Clearance Event
-```typescript
-// Fired by setClearance() in clearance.ts
-window.dispatchEvent(new CustomEvent('dharma-clearance-change', { detail: { level: n } }));
-```
-Listened to by:
-- `Terminal.tsx` — updates badge, shows upgrade flash
-- `Home.tsx` — updates header SECURITY LEVEL and footer clearance label
-
-### All LocalStorage Keys
+### Clearance & progression
 
 | Key | Type | Purpose |
 |-----|------|---------|
-| `dharma_clearance_level` | `"1"–"5"` | Current clearance level |
-| `dharma_incident_archive` | `"true"` | Flag to open IncidentReports overlay |
-| `dharma_subnet_access` | `"true"` | Flag to open SubnetInterface overlay |
-| `dharma_subnet_complete` | `"true"` | Subnet `/download` completed |
-| `dharma_map_access` | `"true"` | Flag to open BlastDoorMap overlay |
-| `dharma_radio_access` | `"true"` | Flag to open RadioReceiver overlay |
-| `dharma_unlocked_reports` | JSON array | Indices of unlocked incident reports |
-| `dharma_devmode_active` | `"true"` | Dev mode active |
-| `dharma_pre_devmode_state` | JSON object | State backup for `devmode-exit` |
-| `dharma_surveillance_active` | `"true"` | Pearl surveillance activated |
-| `dharma_lockdown` | `"active"` | Lockdown protocol engaged |
-| `dharma_error_allowed` | `"true"` | Debug interface accessible |
-| `dharma_incident_unlocked` | `"true"` | Set by `DECRYPT INCIDENT` |
-| `dharma_pearl_access` | `"true"` | Set by legacy `LOGIN C22/DSTNGSHD-LBRT` |
-| `dharma_all_stations` | `"true"` | All stations visible |
+| `dharma_clearance_level` | `"1"`–`"5"` | Current clearance level |
 | `countdown_start` | timestamp ms | When the countdown began |
 | `countdown_was_set` | `"true"` | Countdown was manually set via devmode |
+
+### Puzzle gate flags (must be set before AUTHENTICATE succeeds)
+
+| Key | Set by | Gates |
+|-----|--------|-------|
+| `dharma_ping_resolved` | `PING 4815 162342` | L1→L2 |
+| `dharma_waveform_solved` | WaveformPuzzle correct answer | L2→L3 |
+| `dharma_map_consulted` | `MAP` command (L3+) | Part of L3→L4 |
+| `dharma_radzinsky_read` | `RADZINSKY` command (L3+) | Part of L3→L4 |
+| `dharma_decrypt_shift_used` | `DECRYPT SHIFT` command | Part of L3→L4 |
+| `dharma_nodes_activated` | `ACTIVATE 4-8-15-16-23-42` | L4→L5 |
+
+### Overlay trigger flags (polled by Home.tsx every 500ms; cleared after opening)
+
+| Key | Set by | Opens |
+|-----|--------|-------|
+| `dharma_subnet_access` | `SUBNET` command | SubnetInterface overlay |
+| `dharma_map_access` | `MAP` command | BlastDoorMap overlay |
+| `dharma_radio_access` | `RADIO` command | RadioReceiver overlay |
+| `dharma_waveform_access` | `COMMS VERIFY` command | WaveformPuzzle overlay |
+| `dharma_incident_archive` | `INCIDENT ARCHIVE` command | IncidentReports overlay |
+
+### Puzzle progress & lore flags
+
+| Key | Set by | Purpose |
+|-----|--------|---------|
+| `dharma_entity_tracked` | Entity enters target zone on map | Enables full TRACK log |
+| `dharma_weather_state` | IslandMap weather cycle | Read by terminal PING storm check |
+| `dharma_storm_cache_pinged` | PING storm coords during storm | Lore |
+| `dharma_hatch_exterior_pinged` | PING hatch coords in time window | Lore |
+| `dharma_node_maze_complete` | NODE C2 reached | Lore |
+| `dharma_activation_progress` | ACTIVATE (JSON number array) | Tracks sequence position |
+| `dharma_override_used` | OVERRIDE-D108 command | Lore |
+| `dharma_subnet_complete` | SubnetInterface `/download` | Lore |
+| `dharma_subnet_sequence_read` | All three subnet channels visited | Lore |
+| `dharma_radio_fragments_complete` | All 4 radio freqs locked | Lore |
+| `dharma_failsafe_activated` | FAILSAFE typed during implosion | Resets app |
+| `dharma_incident_unlocked` | `DECRYPT INCIDENT` command | Lore |
+| `dharma_pearl_access` | Legacy `LOGIN C22/DSTNGSHD-LBRT` | Legacy |
+| `dharma_surveillance_active` | `ACCESS pearl-surveillance` | Lore |
+| `dharma_lockdown` | `LOCKDOWN` command | Lore |
+| `dharma_error_allowed` | `OVERRIDE system-error` | Debug page |
+
+### Dev mode
+
+| Key | Type | Purpose |
+|-----|------|---------|
+| `dharma_devmode_active` | `"true"` | Dev mode active |
+| `dharma_pre_devmode_state` | JSON object | State backup for `devmode-exit` |
+| `dharma_unlocked_reports` | JSON number array | Indices of unlocked incident reports |
+| `dharma_all_stations` | `"true"` | All stations visible |
 
 ---
 
 ## All Terminal Commands Reference
 
-### HELP (always visible)
+### Documented (appear in HELP)
 
 | Command | Available | Description |
 |---------|-----------|-------------|
@@ -573,43 +601,46 @@ Listened to by:
 | `WHO` | L1+ | Personnel roster (content expands per level) |
 | `FILES` | L1+ | List accessible files |
 | `READ [path]` | L1+ | Read a file |
-| `PING` | L1+ | Test intranet connectivity (stations redacted below L5) |
+| `PING [coords]` | L1+ | No args = connectivity test; with coords = coordinate lookup |
 | `INCIDENT` | L1+ | Recent incident log |
 | `AUTHENTICATE [word]` | L1+ | Advance clearance level |
 | `CLEAR` | L1+ | Clear terminal |
 | `EXIT` | L1+ | Suspend session |
-| `COMMS` | L2+ | Radio intercept log (peaks 3-4 corrupted) |
-| `DECRYPT [key]` | L2+ | Decrypt data (keys: frequencies, shift, incident, blackrock, valenzetti) |
-| `RADIO` | L2+ | Open RadioReceiver overlay (sets `dharma_radio_access`) |
+| `COMMS [verify]` | L2+ | Radio intercept log; `COMMS VERIFY` opens waveform puzzle |
+| `DECRYPT [key]` | L2+ | Keys: `frequencies`, `shift`, `incident`, `blackrock`, `valenzetti` |
+| `RADIO` | L2+ | Open RadioReceiver overlay |
+| `TRACK` | L2+ | Entity sonar log (requires `dharma_entity_tracked`) |
 | `OVERRIDE [param]` | L3+ | System override protocols |
 | `DIAGNOSE [target]` | L3+ | Network diagnostics |
-| `SUBNET` | L3+ | Open DHARMA subnet interface |
-| `MAP` | L3+ | Open BlastDoorMap UV overlay (sets `dharma_map_access`) |
+| `SUBNET` | L3+ | Open SubnetInterface overlay |
+| `MAP` | L3+ | Open BlastDoorMap UV overlay |
 | `ACCESS [param]` | L4+ | Special access protocols |
 | `VALENZETTI` | L4+ | Valenzetti Equation summary |
 | `OMEGA` | L5+ | Full classified briefing |
 
-### Hidden Commands (not in HELP, must be discovered)
+### Hidden commands (not in HELP, must be discovered)
 
 | Command | Clearance | Notes |
 |---------|-----------|-------|
+| `NODE [id] [key]` | L3+ | Subnet node maze: A1→A4→B3→B7→C2 |
+| `ACTIVATE [n]` | L4+ | Node activation: sequence 4-8-15-16-23-42 |
+| `OVERRIDE-D108` | L3+ | Found on blast door UV map; returns Caesar+1 archive fragment |
+| `RADZINSKY` | L1+ (L3+ full) | Cipher explanation and `dharma_radzinsky_read` flag at L3 |
+| `BLAST DOOR` | L1+ (L3+ cipher) | Cipher annotations only at L3+ |
 | `DESMOND` | L1+ | Desmond Hume personnel file (lore) |
-| `HELLO` | L1+ | Ambient response |
-| `WHY` | L1+ | Ambient response |
-| `NAMASTE` | L1+ | Greeting response |
-| `OUTSIDE` | L1+ | Do not go outside |
-| `QUARANTINE` | L1+ | Quarantine lore |
-| `FAILSAFE` | L1+ | Failsafe key info |
+| `FAILSAFE` | L1+ | Failsafe key lore |
 | `SMOKE` / `SMOKEY` | L1+ | Sonar anomaly log |
-| `JACOB` | L1+ | Flagged for security |
-| `PENNY` | L1+ | "Not Penny's Boat" log |
+| `JACOB` | L1+ | Flagged for security review |
+| `PENNY` | L1+ | "Not Penny's Boat" |
 | `HURLEY` | L1+ | Candidate event (redacted) |
-| `RADZINSKY` | L1+ (L3+ full) | Cipher explanation unlocks at L3 |
+| `HELLO` | L1+ | Ambient |
+| `WHY` | L1+ | Ambient |
+| `NAMASTE` | L1+ | Greeting |
+| `OUTSIDE` / `QUARANTINE` | L1+ | Do not go outside |
 | `SOS` | L1+ | External comms blocked |
 | `INMAN` | L1+ | J. Inman file |
 | `108` | L1+ | Interval lore |
 | `PUSH THE BUTTON` | L1+ | Yes |
-| `BLAST DOOR` | L1+ (L3+ cipher) | Cipher annotations unlock at L3 |
 | `NUMBERS` | L1+ | The numbers are bad |
 | `OCEANIC815` | L1+ | Observe, do not engage |
 | `THEISLAND` | L1+ | Requires L5 for detail |
@@ -618,57 +649,59 @@ Listened to by:
 | `ORIENTATION` | L1+ | Redirects to orientation reel |
 | `HANSO` | L1+ | Hanso Foundation lore |
 | `WHAT IS YOUR NAME` | L1+ | System identifies itself |
-| `MAMA` | L1+ | Not a record player |
-| `WATCH` | L1+ | The island is watching |
-| `RADIO.LISTEN(freq)` | L2+ | Tune to frequency (needs transmission log first) |
-| `4 8 15 16 23 42` | any | Resets countdown if in protocol mode |
+| `MAMA` / `WATCH` | L1+ | Flavor responses |
+| `RADIO.LISTEN(freq)` | L2+ | Tune to frequency (needs transmission log) |
+| `4 8 15 16 23 42` | any | Resets countdown (only works in alarm/protocol state) |
 | `INCIDENT ARCHIVE` | any | Opens IncidentReports overlay |
-| `DEVMODE` | any | Developer mode (L5 + all flags) |
-| `DEVMODE-EXIT` | any | Exit dev mode, restore state |
-| `SETCOUNTDOWN m s` | devmode | Set countdown timer |
+| `DEVMODE` | any | Developer mode |
+| `DEVMODE-EXIT` | any | Exit dev mode |
+| `SETCOUNTDOWN m s` | devmode only | Set countdown timer |
+| `RESETALL` | devmode only | Wipe all localStorage |
 
-### Legacy Commands (retained for compatibility)
+### Legacy commands (retained for compatibility)
 
 | Command | Notes |
 |---------|-------|
-| `LOGIN [pass]` | Accepts: `4815162342` (L3), `dharma77` (L2), `C22/DSTNGSHD-LBRT` (L4) |
-| `EXEC [param]` | `subnet.daemon` fails by design; used in old puzzle path |
+| `LOGIN [pass]` | `4815162342` (L3), `dharma77` (L2), `C22/DSTNGSHD-LBRT` (L4) |
+| `EXEC` | `subnet.daemon` fails by design |
 | `SCAN` | Returns basic station count |
-| `UPLOAD_LOG [station]` | Upload station log, 3 needed for transmission.log |
+| `UPLOAD_LOG [station]` | Upload log; 3 needed for transmission.log |
 | `PUZZLE [type]` | Direct puzzle launcher |
 | `LS [dir]` | Directory listing; `-a` shows hidden files |
-| `CAT [path]` | Cat a file; triggers puzzle via `/mnt/.dharmanet/init_socket.sh` |
+| `CAT [path]` | Cat a file |
 | `CD [dir]` | Change directory |
 
 ---
 
 ## Architecture Notes
 
-### File locations
+### Key files
 
 | Concern | File |
 |---------|------|
 | Clearance state | `client/src/lib/clearance.ts` |
 | All terminal commands & puzzle content | `client/src/lib/terminal.ts` |
-| Main page, overlay coordination | `client/src/pages/Home.tsx` |
-| Terminal UI + clearance badge | `client/src/components/Terminal.tsx` |
+| Main page, overlay coordination, polling | `client/src/pages/Home.tsx` |
+| Terminal UI + clearance badge + glitch effects | `client/src/components/Terminal.tsx` |
+| Island map + signal markers + entity | `client/src/components/IslandMap.tsx` |
+| Carrier wave matching puzzle | `client/src/components/WaveformPuzzle.tsx` |
 | Subnet chat overlay | `client/src/components/SubnetInterface.tsx` |
 | Incident reports overlay | `client/src/components/IncidentReports.tsx` |
-| Pearl paper printout | `client/src/components/PearlStationLog.tsx` |
+| Pearl paper printout (post-failure) | `client/src/components/PearlStationLog.tsx` |
 | Blast door UV map | `client/src/components/BlastDoorMap.tsx` |
 | Radio frequency receiver | `client/src/components/RadioReceiver.tsx` |
 | 108-minute countdown | `client/src/components/Countdown.tsx` |
-| System failure state | `client/src/components/SystemFailure.tsx` |
+| System failure overlay | `client/src/components/SystemFailureScreen.tsx` |
 
 ### Adding a new puzzle step
 1. Add content to `terminal.ts` — new file path in `read()`, new command in `commands` or `hiddenCommands`
 2. If it needs an overlay: set a localStorage flag in the terminal command, poll for it in `Home.tsx`, render the component
-3. If it gates content by clearance: call `getClearance()` inside the handler, return `deny(n)` if too low
+3. If it gates clearance: check the required localStorage flag inside `authenticate` in `terminal.ts` before calling `setClearance`
 4. **Do not add hints to `AUTHENTICATE`** — it intentionally gives no guidance; clues belong in lore content only
 5. Update this doc
 
 ### Changing puzzle answers
-The answer map is at line ~156 in `terminal.ts`:
+The answer map is at line ~164 in `terminal.ts`:
 ```typescript
 const correct: Record<number, string[]> = {
   1: ['WICKMUND'],
@@ -677,7 +710,13 @@ const correct: Record<number, string[]> = {
   4: ['THANATOS'],
 };
 ```
-Multiple answers per level are supported: `1: ['NAMASTE', 'ALTERNATE']`.
+Multiple answers per level are supported: `1: ['WICKMUND', 'ALTERNATE']`.
+
+### Cross-component state flow
+- **Terminal → Home:** Sets a localStorage flag; Home.tsx polls every 500ms and opens the relevant overlay
+- **IslandMap → Terminal:** Writes `dharma_weather_state` to localStorage; PING reads it; writes `dharma_entity_tracked`; TRACK reads it
+- **Countdown → Home → IslandMap:** Countdown fires `onTick(secondsRemaining)`; Home stores `timeRemaining` state; passes it to IslandMap as prop
+- **WaveformPuzzle → authenticate gate:** `dharma_waveform_solved` set by puzzle; checked by AUTHENTICATE at L2
 
 ---
 
