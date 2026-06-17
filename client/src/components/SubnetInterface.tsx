@@ -266,7 +266,9 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
         setHasDownloadedLogs(true);
         if (!isCompleted) {
           setTimeout(() => {
-            addSystemMsg('NOTICE: Critical data recovered. Access code OVERRIDE-D108 extracted from logs.');
+            addSystemMsg('NOTICE: Archive data recovered. Relay frequency designations extracted:');
+            addSystemMsg('  Peak 03 = OMEGA [15 MHz]  ·  Peak 04 = NU [16 MHz]');
+            addSystemMsg('Cross-reference: COMMS carrier wave log. Run DECRYPT FREQUENCIES.');
             setIsCompleted(true);
             setTimeout(onComplete, 2000);
           }, 1500);

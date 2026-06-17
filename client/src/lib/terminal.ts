@@ -112,14 +112,15 @@ const commands: Record<string, Function> = {
       '>  EXIT          — end terminal session',
     ];
     if (cl >= 2) base.push(
-      '>  COMMS         — radio intercept log [L2]',
+      '>  COMMS         — carrier wave intercept log [L2]',
       '>  DECRYPT [key] — decrypt archived files [L2]',
-      '>  RADIO         — multi-band field receiver [L2]',
+      '>  TRACK         — entity sonar log [L2]',
+      '>  PEARL         — Pearl station observation log [L2]',
+      '>  SUBNET        — access DHARMA subnet archive [L2]',
     );
     if (cl >= 3) base.push(
       '>  OVERRIDE [p]  — system override protocols [L3]',
       '>  DIAGNOSE [t]  — network diagnostics [L3]',
-      '>  SUBNET        — access DHARMA subnet communications [L3]',
       '>  MAP           — blast door UV analysis [L3]',
     );
     if (cl >= 4) base.push(
@@ -167,19 +168,20 @@ const commands: Record<string, Function> = {
     const expected = correct[cl];
 
     if (expected?.includes(answer)) {
-      // L1→L2 requires the island map coordinate ping first
-      if (cl === 1 && localStorage.getItem('dharma_ping_resolved') !== 'true') {
+      // L1→L2 requires reading the orientation tape
+      if (cl === 1 && localStorage.getItem('dharma_orientation_read') !== 'true') {
         return [
-          '> AUTHENTICATION REQUIRES ACTIVE SYSTEM VERIFICATION.',
-          '> Node confirmation pending — survey station transmissions.',
-          '> Identify and verify the signal on the island survey panel.',
+          '> AUTHENTICATION REQUIRES STATION ORIENTATION REVIEW.',
+          '> Review all available station materials before attempting authentication.',
+          '> Start with: READ /FILES/PERSONAL-EFFECTS.TXT',
         ];
       }
-      // L2→L3 requires carrier wave verification first
-      if (cl === 2 && localStorage.getItem('dharma_waveform_solved') !== 'true') {
+      // L2→L3 requires carrier wave analysis from all four sources
+      if (cl === 2 && localStorage.getItem('dharma_freq_decrypted') !== 'true') {
         return [
-          '> AUTHENTICATION REQUIRES CARRIER UPLINK VERIFICATION.',
-          '> Run COMMS VERIFY to complete carrier wave analysis.',
+          '> AUTHENTICATION REQUIRES CARRIER WAVE ANALYSIS.',
+          '> Collect signal data from four sources, then run DECRYPT FREQUENCIES.',
+          '> Required: COMMS · entity tracking (TRACK) · subnet archive (SUBNET) · Pearl log (PEARL)',
         ];
       }
       // L4→L5 requires distributed node activation
@@ -399,7 +401,15 @@ const commands: Record<string, Function> = {
       '> ─────────────────────────────────────────',
     ];
 
-    if (p === 'DHARMA/ORIENTATION-REEL-3.TXT') return [
+    if (p === 'DHARMA/ORIENTATION-REEL-3.TXT') {
+      if (localStorage.getItem('dharma_personal_effects_read') !== 'true') {
+        return [
+          '> ACCESS RESTRICTED.',
+          '> Review /FILES/PERSONAL-EFFECTS.TXT before accessing orientation materials.',
+        ];
+      }
+      try { localStorage.setItem('dharma_orientation_read', 'true'); } catch {}
+      return [
       '> FILE: /DHARMA/ORIENTATION-REEL-3.TXT',
       '> ─────────────────────────────────────────',
       '> ORIENTATION FILM — STATION 3: THE SWAN',
@@ -433,9 +443,12 @@ const commands: Record<string, Function> = {
       '>  If you\'re reading this, the station still needs you.',
       '>  Do not leave. I wish I had not left."',
       '> ─────────────────────────────────────────',
-    ];
+      ];
+    }
 
-    if (p === 'FILES/PERSONAL-EFFECTS.TXT' || p === 'PERSONAL-EFFECTS.TXT') return [
+    if (p === 'FILES/PERSONAL-EFFECTS.TXT' || p === 'PERSONAL-EFFECTS.TXT') {
+      try { localStorage.setItem('dharma_personal_effects_read', 'true'); } catch {}
+      return [
       '> FILE: /FILES/PERSONAL-EFFECTS.TXT',
       '> ─────────────────────────────────────────',
       '> PERSONAL EFFECTS — OPERATOR A (DEPARTED — CYCLE 10801)',
@@ -467,7 +480,8 @@ const commands: Record<string, Function> = {
       '>  is encoded in the station orientation transcript.',
       '>  Standard maritime signalling format. He was proud of that."',
       '> ─────────────────────────────────────────',
-    ];
+      ];
+    }
 
     // L2 files
     if (p === 'LOGS/ROUSSEAU-TRANSMISSION.TXT' || p === 'ROUSSEAU-TRANSMISSION.TXT') {
@@ -664,11 +678,10 @@ const commands: Record<string, Function> = {
           '> NODE IDENTIFIED — SWN-7 INNER PERIMETER',
           '>',
           '> Signal origin verified. Station designation: SWAN — CV III',
-          '> Operator verification flag: ACTIVE',
+          '> Operator verification: PENDING.',
           '>',
-          '> Archived handover note attached to node:',
-          '> .-- .. -.-. -.- -- ..- -. -..',
-          '> [MORSE — decode for operator authentication]',
+          '> Archived handover note present — access via station materials.',
+          '> Review all files before attempting authentication.',
         ];
       }
 
@@ -830,21 +843,15 @@ const commands: Record<string, Function> = {
       '> Entity classification: UNKNOWN — see Protocol 7-J',
       '>',
       '> Coordinate cross-reference: KAPPA(4) · RHO(8) values',
-      '> confirm secondary grid alignment.',
-      '> Remaining peaks recoverable via DECRYPT FREQUENCIES.',
+      '> confirm secondary grid alignment — peaks 01 and 02 of carrier wave.',
+      '> Cross-reference: COMMS for wave structure, SUBNET and PEARL for remaining peaks.',
       '> ─────────────────────────────────────────',
     ];
   },
 
-  comms: (args: string) => {
+  comms: () => {
     if (getClearance() < 2) return deny(2);
-    if (args.trim().toLowerCase() === 'verify') {
-      try { localStorage.setItem('dharma_waveform_access', 'true'); } catch {}
-      return [
-        '> LAUNCHING CARRIER WAVE ANALYSIS INTERFACE...',
-        '> Match the approved signature to restore operator uplink.',
-      ];
-    }
+    try { localStorage.setItem('dharma_comms_read', 'true'); } catch {}
     return [
       '> FLAME STATION — COMMS INTERCEPT LOG',
       '> ─────────────────────────────────────────',
@@ -856,18 +863,19 @@ const commands: Record<string, Function> = {
       '> "...the numbers are bad..."',
       '> "...the numbers are bad..."',
       '>',
-      '> CARRIER WAVE — FREQUENCY PEAKS (GREEK SERIES):',
+      '> CARRIER WAVE — FREQUENCY PEAKS:',
       '>',
-      '>   PEAK 01: KAPPA       [4 MHz]',
-      '>   PEAK 02: RHO         [8 MHz]',
-      '>   PEAK 03: [CORRUPTED] [-- MHz]  ← capture interference',
-      '>   PEAK 04: [CORRUPTED] [-- MHz]  ← capture interference',
-      '>   PEAK 05: OMICRON    [23 MHz]',
-      '>   PEAK 06: SIGMA      [42 MHz]',
+      '>   PEAK 01: [DESIGNATION CORRUPTED]  [4 MHz]',
+      '>   PEAK 02: [DESIGNATION CORRUPTED]  [8 MHz]',
+      '>   PEAK 03: [DESIGNATION CORRUPTED] [15 MHz]',
+      '>   PEAK 04: [DESIGNATION CORRUPTED] [16 MHz]',
+      '>   PEAK 05: [DESIGNATION CORRUPTED] [23 MHz]',
+      '>   PEAK 06: [DESIGNATION CORRUPTED] [42 MHz]',
       '>',
-      '> NOTE: Peaks 03 and 04 lost during signal capture.',
-      '> Type DECRYPT FREQUENCIES to attempt data recovery.',
-      '> Type COMMS VERIFY to run carrier signature analysis.',
+      '> NOTE: All Greek series designations lost during signal capture.',
+      '> Cross-reference field telemetry to recover peak designations.',
+      '> Sources: entity tracking (TRACK), subnet archive (SUBNET),',
+      '> Pearl observation log (PEARL). Then run DECRYPT FREQUENCIES.',
       '> ─────────────────────────────────────────',
     ];
   },
@@ -899,21 +907,64 @@ const commands: Record<string, Function> = {
       '> DHARMA primary goal: change one value.',
       '> Current status: UNRESOLVED.',
     ];
-    if (key === 'frequencies') return [
-      '> DECRYPTING CARRIER WAVE — CORRUPTED PEAKS...',
-      '> Accessing backup signal buffer...',
-      '>',
-      '> RECOVERY SUCCESSFUL:',
-      '>   PEAK 03: OMEGA      [15 MHz]  ← recovered',
-      '>   PEAK 04: NU         [16 MHz]  ← recovered',
-      '>',
-      '> FULL GREEK SERIES RESTORED:',
-      '>   KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA',
-      '>   [4 MHz]  [8 MHz]  [15 MHz]  [16 MHz]  [23 MHz]  [42 MHz]',
-      '>',
-      '> STATION RELAY DESIGNATION: K-R-O-N-O-S',
-      '> Cross-reference: VALENZETTI EQUATION.',
-    ];
+    if (key === 'frequencies') {
+      const commsDone = localStorage.getItem('dharma_comms_read') === 'true';
+      const entityDone = localStorage.getItem('dharma_entity_tracked') === 'true';
+      const subnetDone = localStorage.getItem('dharma_subnet_complete') === 'true';
+      const pearlDone = localStorage.getItem('dharma_pearl_log_cycled') === 'true';
+      const allDone = commsDone && entityDone && subnetDone && pearlDone;
+      const lines: string[] = [
+        '> DECRYPTING CARRIER WAVE — CORRUPTED DESIGNATIONS...',
+        '> Cross-referencing field telemetry sources...',
+        '>',
+      ];
+      if (commsDone) {
+        lines.push('> [COMMS] Carrier structure confirmed — 6 peaks at 4·8·15·16·23·42 MHz.');
+      } else {
+        lines.push('> Carrier wave structure unknown — run COMMS first.');
+      }
+      if (entityDone) {
+        lines.push('> [ENTITY TELEMETRY] Peak 01 = KAPPA (4 MHz) · Peak 02 = RHO (8 MHz)');
+      } else {
+        lines.push('> Peaks 01–02: entity telemetry required — monitor map then run TRACK.');
+      }
+      if (subnetDone) {
+        lines.push('> [SUBNET ARCHIVE]   Peak 03 = OMEGA (15 MHz) · Peak 04 = NU (16 MHz)');
+      } else {
+        lines.push('> Peaks 03–04: subnet archive required — complete node sequence (SUBNET).');
+      }
+      if (pearlDone) {
+        lines.push('> [PEARL LOG]        Peak 05 = OMICRON (23 MHz) · Peak 06 = SIGMA (42 MHz)');
+      } else {
+        lines.push('> Peaks 05–06: Pearl log confirmation required — run PEARL command.');
+      }
+      lines.push('>');
+      if (allDone) {
+        try { localStorage.setItem('dharma_freq_decrypted', 'true'); } catch {}
+        lines.push(
+          '> FULL GREEK SERIES RESTORED:',
+          '>   KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA',
+          '>   [4 MHz]  [8 MHz]  [15 MHz]  [16 MHz]  [23 MHz]  [42 MHz]',
+          '>',
+          '> STATION RELAY DESIGNATION: K-R-O-N-O-S',
+          '> Cross-reference: VALENZETTI EQUATION.',
+        );
+      } else {
+        const done = ([commsDone && 'comms', entityDone && 'entity', subnetDone && 'subnet', pearlDone && 'pearl'] as Array<string | false>).filter(Boolean) as string[];
+        const missing = ([
+          !commsDone && 'carrier wave log (COMMS)',
+          !entityDone && 'entity tracking (TRACK)',
+          !subnetDone && 'subnet archive (SUBNET)',
+          !pearlDone && 'Pearl log (PEARL)',
+        ] as Array<string | false>).filter(Boolean) as string[];
+        lines.push(
+          '> RECOVERY INCOMPLETE.',
+          `> Sources confirmed: ${done.length ? done.join(', ') : 'none'}`,
+          `> Outstanding: ${missing.join(', ')}`,
+        );
+      }
+      return lines;
+    }
     if (key === 'shift') {
       try { localStorage.setItem('dharma_decrypt_shift_used', 'true'); } catch {}
       return [
@@ -968,7 +1019,7 @@ const commands: Record<string, Function> = {
   },
 
   subnet: () => {
-    if (getClearance() < 3) return deny(3);
+    if (getClearance() < 2) return deny(2);
     try { localStorage.setItem('dharma_subnet_access', 'true'); } catch {}
     return [
       '> DHARMA INITIATIVE — SUBNET PROTOCOL v2.3.4',
@@ -982,19 +1033,31 @@ const commands: Record<string, Function> = {
     ];
   },
 
-  radio: () => {
+  pearl: () => {
     if (getClearance() < 2) return deny(2);
-    try { localStorage.setItem('dharma_radio_access', 'true'); } catch {}
+    try { localStorage.setItem('dharma_pearl_log_cycled', 'true'); } catch {}
     return [
-      '> DHARMA INITIATIVE — FIELD RECEIVER DI-77',
-      '> Powering on...',
+      '> PEARL STATION — OBSERVATION LOG UPLINK',
       '> ─────────────────────────────────────────',
-      '> Multi-band receiver online. Launching interface.',
+      '> Connection: SPORADIC — partial archive only',
+      '>',
+      '> CYCLE 10882 — 04:18 UTC',
+      '> Field event: Entity movement, Sector 7. Duration 11 minutes.',
+      '> Carrier scan triggered. No designations recoverable from this sector.',
+      '>',
+      '> CYCLE 10891 — 16:23 UTC',
+      '> Standard button procedure observed — Operator B.',
+      '> Carrier spectrum scan: peaks at 23 MHz and 42 MHz cross-referenced',
+      '> against relay archive. Designations confirmed: OMICRON · SIGMA.',
+      '> Relay log suffix: O-S.',
+      '>',
+      '> CYCLE 10893 — 09:42 UTC',
+      '> Operator A not visible on feed. Unscheduled absence.',
+      '> Note: O-S suffix logged for six-frequency carrier series.',
+      '> Cross-reference: COMMS for full frequency structure.',
+      '>',
+      '> [End of available log segments]',
       '> ─────────────────────────────────────────',
-      '> NOTE: DHARMA station beacons are broadcast on',
-      '> specific assigned frequencies. All six stations',
-      '> transmit on separate bands. Cross-reference',
-      '> station assignments for full spectrum coverage.',
     ];
   },
 
@@ -1545,25 +1608,6 @@ const hiddenCommands: Record<string, Function> = {
   'what is your name': () => [
     '> I am DHARMA INITIATIVE COMPUTER INTERFACE VERSION 4.07.',
   ],
-
-  'radio.listen': (args: string, onRevealPuzzle?: () => void) => {
-    if (!args) return ['> ERROR: Frequency required.', '> Usage: radio.listen(frequency)'];
-    const m = args.match(/\(?([\d.]+)\)?/);
-    const freq = m ? parseFloat(m[1]) : NaN;
-    if (isNaN(freq)) return ['> ERROR: Invalid frequency format.'];
-    if (localStorage.getItem('dharma_transmission_found') !== 'true') {
-      return ['> ERROR: Radio receiver not calibrated.', '> Check transmission logs first.'];
-    }
-    if ([4.8, 15.16, 23.42].includes(freq)) {
-      try {
-        localStorage.setItem('dharma_launch_puzzle', 'radio');
-        localStorage.setItem('dharma_radio_frequency', freq.toString());
-        if (onRevealPuzzle) setTimeout(onRevealPuzzle, 500);
-      } catch {}
-      return [`> TUNING TO: ${freq} MHz`, '> Signal detected...'];
-    }
-    return [`> TUNING TO: ${freq} MHz`, '> No significant signal.'];
-  },
 
   devmode: (_a: string, onRevealPuzzle?: () => void) => {
     setClearance(5);
