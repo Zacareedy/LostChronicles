@@ -10,6 +10,14 @@ const FREQ_MAX = 120;
 const SNAP_RANGE = 0.35;
 const TARGET_FREQS = [4.8, 8.0, 15.16, 23.42];
 
+// Signal fragments embedded in each transmission — spell KRONOS when concatenated
+const FREQ_FRAGMENTS: Record<number, string> = {
+  4.8:   'K',
+  8.0:   'R',
+  15.16: 'ON',
+  23.42: 'OS',
+};
+
 const TRANSMISSIONS: Record<number, string> = {
   4.8: [
     'DHARMA BEACON — 4.8 MHz — STATION ARROW',
@@ -18,6 +26,9 @@ const TRANSMISSIONS: Record<number, string> = {
     'Temporal anomaly readings logged — Sector 4.',
     'Awaiting collection team confirmation.',
     '',
+    '────────────────',
+    `SECTOR TAG: ${FREQ_FRAGMENTS[4.8]}`,
+    '────────────────',
     '... static ...',
   ].join('\n'),
   8.0: [
@@ -27,6 +38,9 @@ const TRANSMISSIONS: Record<number, string> = {
     'Manual routing protocol engaged.',
     'All stations: verify intranet connectivity.',
     '',
+    '────────────────',
+    `ROUTING CODE: ${FREQ_FRAGMENTS[8.0]}`,
+    '────────────────',
     '... static ...',
   ].join('\n'),
   15.16: [
@@ -36,6 +50,9 @@ const TRANSMISSIONS: Record<number, string> = {
     'Swan operator behavioural patterns — anomalous.',
     'Recommend psychiatric review.',
     '',
+    '────────────────',
+    `CYCLE MARKER: ${FREQ_FRAGMENTS[15.16]}`,
+    '────────────────',
     '... static ...',
   ].join('\n'),
   23.42: [
@@ -45,6 +62,9 @@ const TRANSMISSIONS: Record<number, string> = {
     'Incident report filed: perimeter event.',
     'Entity designation on file — see Protocol 7-J.',
     '',
+    '────────────────',
+    `DESIGNATION SUFFIX: ${FREQ_FRAGMENTS[23.42]}`,
+    '────────────────',
     '... static ...',
   ].join('\n'),
 };
@@ -109,9 +129,23 @@ export default function RadioReceiver({ isVisible, onClose }: RadioReceiverProps
   })();
 
   useEffect(() => {
+    if (allLocked) {
+      // All four frequencies tuned in this session — set fragment completion flag
+      try { localStorage.setItem('dharma_radio_fragments_complete', 'true'); } catch {}
+    }
+  }, [allLocked]);
+
+  useEffect(() => {
     if (allLocked && Math.abs(freq - 108.0) < SNAP_RANGE && !finalUnlocked) {
       setFinalUnlocked(true);
-      setTransmission(ORCHID_TRANSMISSION);
+      const combined = TARGET_FREQS.map(f => FREQ_FRAGMENTS[f]).join('');
+      setTransmission(
+        ORCHID_TRANSMISSION + '\n\n────────────────\n' +
+        'SECTOR CODES ASSEMBLED: ' +
+        TARGET_FREQS.map(f => FREQ_FRAGMENTS[f]).join(' · ') +
+        '\nCOMPLETE DESIGNATION: ' + combined +
+        '\n────────────────'
+      );
     }
   }, [freq, allLocked, finalUnlocked]);
 

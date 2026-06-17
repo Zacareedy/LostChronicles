@@ -19,8 +19,10 @@ import { getClearance, setClearance, clearanceLabel } from './clearance';
 //    Decode: EBSL NBUUFS → DARK MATTER
 //
 //  L4 RESEARCHER → L5 OMEGA : AUTHENTICATE THANATOS
-//    Clue: READ /LOGS/FINAL-TRANSMISSION.TXT (L4) — ROT-13 cipher
-//    Encoded: GUNANGBF → decoded: THANATOS
+//    Gate: ACTIVATE nodes in DHARMA sequence (4-8-15-16-23-42) to unlock
+//    Clue: READ /LOGS/FINAL-TRANSMISSION.TXT (L4) — two-layer cipher
+//    Layer 1: ROT-13, Layer 2: Atbash (alphabet mirrored — hinted in Alvar subnet channel)
+//    Encoded: TFMZMTYU → ROT-13 → GSZMZGLH → Atbash → THANATOS
 
 let isExecutingProtocol = false;
 let pendingAction: string | null = null;
@@ -165,6 +167,48 @@ const commands: Record<string, Function> = {
     const expected = correct[cl];
 
     if (expected?.includes(answer)) {
+      // L1→L2 requires the island map coordinate ping first
+      if (cl === 1 && localStorage.getItem('dharma_ping_resolved') !== 'true') {
+        return [
+          '> AUTHENTICATION REQUIRES ACTIVE SYSTEM VERIFICATION.',
+          '> Node confirmation pending — survey station transmissions.',
+          '> Identify and verify the signal on the island survey panel.',
+        ];
+      }
+      // L2→L3 requires carrier wave verification first
+      if (cl === 2 && localStorage.getItem('dharma_waveform_solved') !== 'true') {
+        return [
+          '> AUTHENTICATION REQUIRES CARRIER UPLINK VERIFICATION.',
+          '> Run COMMS VERIFY to complete carrier wave analysis.',
+        ];
+      }
+      // L4→L5 requires distributed node activation
+      if (cl === 4 && localStorage.getItem('dharma_nodes_activated') !== 'true') {
+        return [
+          '> AUTHENTICATION INCOMPLETE.',
+          '> Distributed node authorization required before upgrade.',
+          '> Six nodes must be activated in the correct sequence.',
+          '> Type ACTIVATE for the node activation protocol.',
+        ];
+      }
+      // L3→L4 requires consulting all three cipher sources
+      if (cl === 3) {
+        const mapOk = localStorage.getItem('dharma_map_consulted') === 'true';
+        const radzOk = localStorage.getItem('dharma_radzinsky_read') === 'true';
+        const shiftOk = localStorage.getItem('dharma_decrypt_shift_used') === 'true';
+        if (!mapOk || !radzOk || !shiftOk) {
+          const missing = [
+            !mapOk  && 'blast door map (MAP command)',
+            !radzOk && 'personnel file (RADZINSKY command)',
+            !shiftOk && 'cipher analysis (DECRYPT SHIFT command)',
+          ].filter(Boolean).join(', ');
+          return [
+            '> AUTHENTICATION INCOMPLETE.',
+            '> Source verification required before upgrade.',
+            `> Outstanding: ${missing}`,
+          ];
+        }
+      }
       playSound('success');
       setClearance(cl + 1);
       return grantMessage(cl + 1);
@@ -505,13 +549,16 @@ const commands: Record<string, Function> = {
         '>',
         '> "The entity in the jungle — DHARMA gave it a designation.',
         '> I found it in the old field reports.',
-        '> It is written below. I encoded it because I was afraid',
-        '> someone would see it and panic.',
+        '> I encoded it. Twice. I was afraid. I was careful.',
         '>',
-        '> CIPHER TYPE: ROT-13',
-        '> ENCODED:     GUNANGBF',
+        '> "First: the standard rotation used in all field comms.',
+        '> Second: I mirrored it — the way Hanso\'s encrypted channel worked.',
+        '> The alphabet runs backwards on that channel.',
+        '> Both keys are things you have already encountered.',
         '>',
-        '> "Type AUTHENTICATE [decoded word] if you understand.',
+        '> ENCODED:     TFMZMTYU',
+        '>',
+        '> "Decode it. Type AUTHENTICATE [decoded word] if you understand.',
         '>',
         '> "I do not think I am coming back."',
         '>',
@@ -600,8 +647,95 @@ const commands: Record<string, Function> = {
     ];
   },
 
-  ping: () => {
+  ping: (args: string) => {
     const cl = getClearance();
+
+    // Coordinate lookup — triggered when player enters map coordinates
+    if (args.trim()) {
+      // Normalise: strip non-digit chars, collapse spaces
+      const digits = args.replace(/[^\d]/g, '');
+
+      // Swan Station — L1→L2 coordinate puzzle
+      const hasSwan = digits.includes('4815') && digits.includes('162342');
+      if (hasSwan) {
+        try { localStorage.setItem('dharma_ping_resolved', 'true'); } catch {}
+        return [
+          '> PING N 4°815′ W 162°342′',
+          '> NODE IDENTIFIED — SWN-7 INNER PERIMETER',
+          '>',
+          '> Signal origin verified. Station designation: SWAN — CV III',
+          '> Operator verification flag: ACTIVE',
+          '>',
+          '> Archived handover note attached to node:',
+          '> .-- .. -.-. -.- -- ..- -. -..',
+          '> [MORSE — decode for operator authentication]',
+        ];
+      }
+
+      // Storm cache — L3→L4 weather puzzle (only responds during storm)
+      const hasStorm = digits.includes('2342') && digits.includes('10815');
+      if (hasStorm) {
+        const weather = localStorage.getItem('dharma_weather_state') ?? 'clear';
+        if (weather !== 'storm') {
+          return [
+            '> PING N 23°42′ W 108°15′',
+            '> SIGNAL PRESENT BUT UNREADABLE — ATMOSPHERIC INTERFERENCE',
+            '> Meteorological conditions insufficient. Retry during storm event.',
+          ];
+        }
+        try { localStorage.setItem('dharma_storm_cache_pinged', 'true'); } catch {}
+        return [
+          '> PING N 23°42′ W 108°15′',
+          '> NODE ACTIVE — STORM WINDOW CONFIRMED',
+          '>',
+          '> Encrypted data fragment recovered:',
+          '> SUBJECT: RADZINSKY — SUBLEVEL C — RESEARCH MATERIAL',
+          '> "The subject of our work is what the others called EBSL NBUUFS.',
+          '> I renamed it. Radzinsky shifted everything by one.',
+          '> Subtract one step to find the truth."',
+          '>',
+          '> [Node closes when weather clears]',
+        ];
+      }
+
+      // Hatch exterior — L4→L5 time gate (only in first 8 mins of countdown)
+      const hasHatch = digits.includes('418') && digits.includes('16342');
+      if (hasHatch) {
+        const timeRemaining = (() => {
+          try {
+            const start = parseInt(localStorage.getItem('countdown_start') || '0');
+            const elapsed = Math.floor((Date.now() - start) / 1000);
+            return Math.max(0, 108 * 60 - elapsed);
+          } catch { return 0; }
+        })();
+        const inWindow = timeRemaining >= 6000 && timeRemaining <= 6480;
+        if (!inWindow) {
+          return [
+            '> PING N 4°18′ W 16°342′',
+            '> SIGNAL NOT DETECTED — NODE INACTIVE',
+            '> This coordinate only broadcasts during a narrow window.',
+            '> Monitor the island survey panel when the countdown resets.',
+          ];
+        }
+        try { localStorage.setItem('dharma_hatch_exterior_pinged', 'true'); } catch {}
+        return [
+          '> PING N 4°18′ W 16°342′',
+          '> TRANSIENT NODE ACTIVE — WINDOW CLOSING',
+          '>',
+          '> Node designation: HATCH EXTERIOR — SWN-7 SUBLEVEL ACCESS',
+          '> Encoded marker recovered:',
+          '> GUNANGBF — source: V.K. annotation, 2001',
+          '> [ROT-13 cipher — decode to authenticate]',
+        ];
+      }
+
+      return [
+        `> PING ${args.trim().toUpperCase()}`,
+        '> NO SIGNAL AT SPECIFIED COORDINATES — NODE UNRESPONSIVE',
+        '> Verify coordinates via island survey panel.',
+      ];
+    }
+
     if (cl >= 5) return [
       '> TESTING INTRANET NODE CONNECTIVITY...',
       '>',
@@ -675,8 +809,42 @@ const commands: Record<string, Function> = {
     ];
   },
 
-  comms: () => {
+  track: () => {
     if (getClearance() < 2) return deny(2);
+    const logged = localStorage.getItem('dharma_entity_tracked') === 'true';
+    if (!logged) {
+      return [
+        '> SONAR TRACK — ACTIVE ENTITIES',
+        '> ─────────────────────────────────────────',
+        '> Signal detected — moving. No grid fix established.',
+        '> Monitor island survey panel. Entity must reach a stable',
+        '> reference coordinate before a log entry can be generated.',
+        '> Watch for the red indicator on sector 7 survey.',
+      ];
+    }
+    return [
+      '> SONAR TRACK — ENTITY LOG ENTRY',
+      '> ─────────────────────────────────────────',
+      '> Grid fix confirmed: N 15°16′ W 23°42′',
+      '> Duration at reference: approx. 11 minutes',
+      '> Entity classification: UNKNOWN — see Protocol 7-J',
+      '>',
+      '> Coordinate cross-reference: KAPPA(4) · RHO(8) values',
+      '> confirm secondary grid alignment.',
+      '> Remaining peaks recoverable via DECRYPT FREQUENCIES.',
+      '> ─────────────────────────────────────────',
+    ];
+  },
+
+  comms: (args: string) => {
+    if (getClearance() < 2) return deny(2);
+    if (args.trim().toLowerCase() === 'verify') {
+      try { localStorage.setItem('dharma_waveform_access', 'true'); } catch {}
+      return [
+        '> LAUNCHING CARRIER WAVE ANALYSIS INTERFACE...',
+        '> Match the approved signature to restore operator uplink.',
+      ];
+    }
     return [
       '> FLAME STATION — COMMS INTERCEPT LOG',
       '> ─────────────────────────────────────────',
@@ -699,6 +867,7 @@ const commands: Record<string, Function> = {
       '>',
       '> NOTE: Peaks 03 and 04 lost during signal capture.',
       '> Type DECRYPT FREQUENCIES to attempt data recovery.',
+      '> Type COMMS VERIFY to run carrier signature analysis.',
       '> ─────────────────────────────────────────',
     ];
   },
@@ -745,19 +914,22 @@ const commands: Record<string, Function> = {
       '> STATION RELAY DESIGNATION: K-R-O-N-O-S',
       '> Cross-reference: VALENZETTI EQUATION.',
     ];
-    if (key === 'shift') return [
-      '> CIPHER ANALYSIS — RADZINSKY NOTATION SYSTEM:',
-      '>',
-      '> Pattern identified: Caesar cipher, constant shift.',
-      '> Radzinsky\'s known habit: +1 letter shift (A→B, B→C...).',
-      '> His phrase for it: "Always one step ahead of myself."',
-      '>',
-      '> To decode blast door text: subtract 1 from each letter.',
-      '> Example: E→D, B→A, S→R, L→K   (first four letters of inscription)',
-      '>',
-      '> Apply to the full blast door inscription.',
-      '> Type BLAST DOOR to view the encoded text.',
-    ];
+    if (key === 'shift') {
+      try { localStorage.setItem('dharma_decrypt_shift_used', 'true'); } catch {}
+      return [
+        '> CIPHER ANALYSIS — RADZINSKY NOTATION SYSTEM:',
+        '>',
+        '> Pattern identified: Caesar cipher, constant shift.',
+        '> Radzinsky\'s known habit: +1 letter shift (A→B, B→C...).',
+        '> His phrase for it: "Always one step ahead of myself."',
+        '>',
+        '> To decode blast door text: subtract 1 from each letter.',
+        '> Example: E→D, B→A, S→R, L→K   (first four letters of inscription)',
+        '>',
+        '> Apply to the full blast door inscription.',
+        '> Type BLAST DOOR to view the encoded text.',
+      ];
+    }
     return [
       '> ERROR: Key not found.',
       '> Available: DECRYPT INCIDENT · DECRYPT FREQUENCIES · DECRYPT SHIFT',
@@ -1045,6 +1217,140 @@ const hiddenCommands: Record<string, Function> = {
 
   hello: () => ['> Hello, Operator. Don\'t forget the protocol.'],
 
+  // Subnet node maze (L3→L4): player navigates locked subnet nodes to find cipher key
+  node: (args: string) => {
+    if (getClearance() < 3) return deny(3);
+    const arg = args.trim().toUpperCase();
+
+    const NODES: Record<string, { locked: boolean; key?: string; content: string[] }> = {
+      'A1': { locked: false, content: [
+        '> NODE A1 — ACCESSIBLE',
+        '> Subnet routing table fragment.',
+        '> Gateway key for B3 stored at: NODE A4 (request access token first)',
+        '> Sub-path: A1 → A4 → B3 → B7 → C2',
+      ]},
+      'A4': { locked: false, content: [
+        '> NODE A4 — ACCESSIBLE',
+        '> Access token recovered: TOKEN-BRAVO-7',
+        '> This token unlocks NODE B3.',
+        '> Continue: NODE B3 TOKEN-BRAVO-7',
+      ]},
+      'B3': { locked: true, key: 'TOKEN-BRAVO-7', content: [
+        '> NODE B3 — UNLOCKED',
+        '> Routing data intact. Secondary key found: CIPHER-DELTA-9',
+        '> Required for NODE B7.',
+        '> Continue: NODE B7 CIPHER-DELTA-9',
+      ]},
+      'B7': { locked: true, key: 'CIPHER-DELTA-9', content: [
+        '> NODE B7 — UNLOCKED',
+        '> Archive fragment retrieved.',
+        '> Final key: PASSAGE-ECHO-4',
+        '> Continue: NODE C2 PASSAGE-ECHO-4',
+      ]},
+      'C2': { locked: true, key: 'PASSAGE-ECHO-4', content: [
+        '> NODE C2 — UNLOCKED — END OF PATH',
+        '>',
+        '> RECOVERED: Sub-level C research designation.',
+        '> Cross-reference: OVERRIDE-D108 in terminal.',
+        '> Subject of research: EBSL NBUUFS (apply Radzinsky decode).',
+        '>',
+        '> Node maze complete. Cipher path confirmed.',
+      ]},
+    };
+
+    if (!arg) return [
+      '> SUBNET NODE INTERFACE',
+      '> Usage: NODE [id]  or  NODE [id] [access-key]',
+      '> Start at NODE A1',
+    ];
+
+    const [nodeId, providedKey] = arg.split(/\s+/);
+    const node = NODES[nodeId];
+    if (!node) return [`> NODE ${nodeId} — NOT FOUND`, '> Known nodes: A1, A4, B3, B7, C2'];
+
+    if (node.locked) {
+      if (!providedKey || providedKey !== node.key) return [
+        `> NODE ${nodeId} — ACCESS DENIED`,
+        '> This node requires an access key.',
+        '> Retrace your path from NODE A1.',
+      ];
+    }
+
+    if (nodeId === 'C2') {
+      try { localStorage.setItem('dharma_node_maze_complete', 'true'); } catch {}
+    }
+
+    return node.content;
+  },
+
+  // L4→L5: Distributed node activation (6 nodes in DHARMA numbers order)
+  activate: (args: string) => {
+    if (getClearance() < 4) return deny(4);
+    const SEQUENCE = [4, 8, 15, 16, 23, 42];
+    const nodeNum = parseInt(args.trim());
+    if (isNaN(nodeNum)) return [
+      '> DISTRIBUTED NODE ACTIVATION SYSTEM',
+      '> Usage: ACTIVATE [node-number]',
+      '> Six nodes must be activated in the correct sequence.',
+      '> Sequence reference: island survey, 108 annotation.',
+    ];
+
+    try {
+      const progress = JSON.parse(localStorage.getItem('dharma_activation_progress') || '[]') as number[];
+      const expected = SEQUENCE[progress.length];
+
+      if (nodeNum !== expected) {
+        localStorage.setItem('dharma_activation_progress', '[]');
+        return [
+          `> ACTIVATE NODE-${nodeNum} — SEQUENCE ERROR`,
+          '> Incorrect order. Node activation sequence reset.',
+          `> Restart from node ${SEQUENCE[0]}.`,
+        ];
+      }
+
+      const next = [...progress, nodeNum];
+      localStorage.setItem('dharma_activation_progress', JSON.stringify(next));
+
+      if (next.length === SEQUENCE.length) {
+        localStorage.setItem('dharma_nodes_activated', 'true');
+        return [
+          `> ACTIVATE NODE-${nodeNum} — CONFIRMED`,
+          '> ─────────────────────────────────────',
+          '> ALL SIX NODES ACTIVATED IN SEQUENCE.',
+          '> Distributed system authentication: COMPLETE.',
+          '> THANATOS designation unlocked in system archive.',
+          '> Cross-reference: READ /LOGS/FINAL-TRANSMISSION.TXT',
+        ];
+      }
+
+      return [
+        `> ACTIVATE NODE-${nodeNum} — CONFIRMED`,
+        `> Progress: ${next.length} / ${SEQUENCE.length}`,
+        `> Next node: ${SEQUENCE[next.length]}`,
+      ];
+    } catch {
+      return ['> ACTIVATION SYSTEM ERROR — retry'];
+    }
+  },
+
+  // Blast door two-step (L3→L4): player finds OVERRIDE-D108 on the UV map, types it here
+  'override-d108': () => {
+    if (getClearance() < 3) return deny(3);
+    try { localStorage.setItem('dharma_override_used', 'true'); } catch {}
+    return [
+      '> OVERRIDE-D108 — ARCHIVE REFERENCE — SUBLEVEL C',
+      '>',
+      '> Recovered text fragment (cipher active):',
+      '>',
+      '> EBSL NBUUFS SFTFBSDI — TUBUJPO 3 BSDIJWF',
+      '> SBEJOTLZ OPUBUJPO: TIJGU CBDL POF TUFQ',
+      '> XIBU SFNBJOT JT UIF TVCKFDU PG UIF XPSL',
+      '>',
+      '> [Caesar cipher — apply known decoding method]',
+      '> Cipher key documented in RADZINSKY personnel file.',
+    ];
+  },
+
   desmond: () => [
     '> PERSONNEL: D. HUME — FORMER OPERATOR A',
     '> Status: DEPARTED — Cycle 10801',
@@ -1118,6 +1424,9 @@ const hiddenCommands: Record<string, Function> = {
 
   radzinsky: () => {
     const cl = getClearance();
+    if (cl >= 3) {
+      try { localStorage.setItem('dharma_radzinsky_read', 'true'); } catch {}
+    }
     const base = [
       '> PERSONNEL FILE: S. RADZINSKY',
       '> Operator A (former). Status: CLASSIFIED — ORDER V.K.',
