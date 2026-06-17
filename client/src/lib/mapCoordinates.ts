@@ -110,23 +110,37 @@ export const MAP_STATIONS: Record<string, StationCoord> = {
 
 // ─── IslandMap signal markers (used by IslandMap.tsx for puzzle overlays) ────
 //
-// These are the ARG puzzle markers — separate from the station map above.
-// Positions reference the same satellite image.
+// Positions are anchored to *visible* landmarks on the satellite image so the
+// dot always sits on something identifiable — players can correlate what they
+// see on screen with the coordinate they enter in the terminal.
+//
+// To move a marker: adjust top/left here; IslandMap.tsx reads these values.
 
 export const MAP_SIGNAL_MARKERS = {
+
+  // Swan Station hatch entrance — central-west interior jungle.
+  // No surface structure visible, but the terrain depression at this location
+  // is the reference point. L1→L2 puzzle, always visible.
   'swan-signal': {
     top: '54%',
     left: '39.5%',
-    note: 'L1→L2 coordinate puzzle. Always visible L1+.',
+    note: 'L1→L2. At Swan Station hatch entrance, central-west interior.',
   },
+
+  // Black Rock shipwreck — the orange/red ruins clearly visible in the
+  // upper-right jungle interior. L3→L4 storm puzzle.
   'storm-cache': {
-    top: '32%',
-    left: '58%',
-    note: 'L3→L4 weather puzzle. Visible only during storm weather state.',
+    top: '28.9%',
+    left: '63.9%',
+    note: 'L3→L4 storm puzzle. Anchored to the visible Black Rock ruins (upper-right interior).',
   },
+
+  // Hatch exterior — just west of Swan signal, representing the blast
+  // door surface above the Swan underground section. L4→L5 time gate.
   'hatch-exterior': {
     top: '56%',
     left: '36%',
-    note: 'L4→L5 time gate. Visible only in 6000–6480s countdown window.',
+    note: 'L4→L5 time gate. Hatch blast door, just west of Swan signal.',
   },
+
 } as const;
