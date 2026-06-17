@@ -34,7 +34,21 @@ const LOG_LINES = [
   'Observation sealed per Protocol 7-J (Radzinsky).',
   '————————————————————————————',
   'P_LOG.23.42 — RECORDING COMPLETE',
+  '————————————————————————————',
+  'CROSS-REF: SECTOR 7 NODE SURVEY — cycle markers',
+  'correspond to active intranet grid coordinates.',
+  'Verify via PING [coordinates] at terminal.',
 ];
+
+// Cycle markers printed in the left margin on specific lines (index → cycle number)
+const CYCLE_MARKERS: Record<number, number> = {
+  2:  4,
+  5:  8,
+  7:  15,
+  12: 16,
+  21: 23,
+  26: 42,
+};
 
 export default function PearlStationLog({ isVisible, timestamp, onClose }: PearlStationLogProps) {
   const [visibleLines, setVisibleLines] = useState<string[]>([]);
@@ -138,15 +152,32 @@ export default function PearlStationLog({ isVisible, timestamp, onClose }: Pearl
           background: '#ffffff',
         }}
       >
-        {visibleLines.map((line, i) => (
-          <div key={i} style={{
-            color: lineColor(line),
-            fontWeight: lineFontWeight(line),
-            letterSpacing: 0.5,
-          }}>
-            {line}
-          </div>
-        ))}
+        {visibleLines.map((line, i) => {
+          // i=0 is the timestamp line; actual LOG_LINES start at i=1
+          const logIdx = i - 1;
+          const cycleNum = CYCLE_MARKERS[logIdx];
+          return (
+            <div key={i} style={{
+              display: 'flex',
+              gap: 6,
+              color: lineColor(line),
+              fontWeight: lineFontWeight(line),
+              letterSpacing: 0.5,
+            }}>
+              <span style={{
+                minWidth: 26,
+                color: cycleNum ? '#888' : 'transparent',
+                fontSize: 10,
+                paddingTop: 1,
+                userSelect: 'none',
+                fontWeight: 'normal',
+              }}>
+                {cycleNum ? `[${cycleNum}]` : '   '}
+              </span>
+              <span>{line}</span>
+            </div>
+          );
+        })}
         {isPrinting && (
           <span className="animate-terminal-blink" style={{ color: '#666' }}>_</span>
         )}

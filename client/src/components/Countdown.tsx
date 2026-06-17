@@ -13,6 +13,7 @@ interface CountdownProps {
   onCountdownFinish: () => void;
   isReset: boolean;
   setIsReset: (value: boolean) => void;
+  onTick?: (secondsRemaining: number) => void;
 }
 
 const HIEROGLYPHS: Hieroglyph[] = [
@@ -50,7 +51,7 @@ function calcRemaining(): number {
   return Math.max(0, (COUNTDOWN_MINUTES * 60 + COUNTDOWN_SECONDS) - elapsed);
 }
 
-const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIsReset }) => {
+const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIsReset, onTick }) => {
   const [timeRemaining, setTimeRemaining] = useState(calcRemaining);
   const [alarmStage, setAlarmStage] = useState<AlarmStage>(() => stageFor(calcRemaining()));
   const [isDevMode, setIsDevMode] = useState(false);
@@ -187,6 +188,7 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
 
       if (remaining > 0) {
         setTimeRemaining(remaining);
+        onTick?.(remaining);
         setAlarmStage(prev => {
           const next = stageFor(remaining);
           return (next > prev ? next : prev) as AlarmStage;
@@ -194,7 +196,7 @@ const Countdown: React.FC<CountdownProps> = ({ onCountdownFinish, isReset, setIs
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [isDevMode]);
+  }, [isDevMode, onTick]);
 
   const handleDevTimeSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -10,6 +10,8 @@ import PearlStationLog from '@/components/PearlStationLog';
 import IncidentReports from '@/components/IncidentReports';
 import SubnetInterface from '@/components/SubnetInterface';
 import BlastDoorMap from '@/components/BlastDoorMap';
+import IslandMap from '@/components/IslandMap';
+import WaveformPuzzle from '@/components/WaveformPuzzle';
 import RadioReceiver from '@/components/RadioReceiver';
 import PuzzleController, { PuzzleControllerRef } from '@/components/PuzzleController';
 import PuzzleLauncher from '@/components/PuzzleLauncher';
@@ -39,6 +41,12 @@ const Home: React.FC = () => {
 
   // Subnet interface state
   const [isSubnetOpen, setIsSubnetOpen] = useState(false);
+
+  // Waveform puzzle state
+  const [isWaveformOpen, setIsWaveformOpen] = useState(false);
+
+  // Countdown time remaining — passed to IslandMap for time-gated signals
+  const [timeRemaining, setTimeRemaining] = useState(9999);
 
   // Blast door map state + logo click counter
   const [isMapOpen, setIsMapOpen] = useState(false);
@@ -128,6 +136,15 @@ const Home: React.FC = () => {
         if (mapFlag === 'true') {
           localStorage.removeItem('dharma_map_access');
           setIsMapOpen(true);
+          // Mark map as consulted for L3→L4 multi-source puzzle
+          if (getClearance() >= 3) {
+            try { localStorage.setItem('dharma_map_consulted', 'true'); } catch {}
+          }
+        }
+        const waveformFlag = localStorage.getItem('dharma_waveform_access');
+        if (waveformFlag === 'true') {
+          localStorage.removeItem('dharma_waveform_access');
+          setIsWaveformOpen(true);
         }
         const radioFlag = localStorage.getItem('dharma_radio_access');
         if (radioFlag === 'true') {
@@ -267,18 +284,24 @@ const Home: React.FC = () => {
             onCountdownFinish={handleCountdownFinish}
             isReset={isCountdownReset}
             setIsReset={setIsCountdownReset}
+            onTick={setTimeRemaining}
           />
         </div>
       </header>
 
-      <main className="container mx-auto p-4">
-        <Terminal
-          onRevealPuzzle={handleRevealPuzzle}
-          onRevealStation={handleRevealStation}
-          onCorrectSequence={handleCorrectSequence}
-          onCommand={handleTerminalCommand}
-          isSystemFailure={isSystemFailure}
-        />
+      <main className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <Terminal
+            onRevealPuzzle={handleRevealPuzzle}
+            onRevealStation={handleRevealStation}
+            onCorrectSequence={handleCorrectSequence}
+            onCommand={handleTerminalCommand}
+            isSystemFailure={isSystemFailure}
+          />
+        </div>
+        <div className="lg:col-span-1">
+          <IslandMap clearance={currentClearance} timeRemaining={timeRemaining} />
+        </div>
       </main>
 
       <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-xs" style={{ color: 'var(--ph-mid)' }}>
@@ -326,6 +349,16 @@ const Home: React.FC = () => {
         onClose={() => setIsSubnetOpen(false)}
         onComplete={() => {
           try { localStorage.setItem('dharma_subnet_complete', 'true'); } catch {}
+        }}
+      />
+
+      {/* Waveform puzzle — COMMS VERIFY terminal command (L2+) */}
+      <WaveformPuzzle
+        isVisible={isWaveformOpen}
+        onClose={() => setIsWaveformOpen(false)}
+        onSolve={() => {
+          setIsWaveformOpen(false);
+          triggerSystemStatus('CARRIER SIGNATURE VERIFIED — UPLINK RESTORED', 4000);
         }}
       />
 

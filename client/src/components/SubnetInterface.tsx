@@ -74,6 +74,11 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
         id: '9', sender: 'PIERRE.C', timestamp: '1980-02-07 11:30:21',
         content: 'Has anyone confirmed Protocol Candle is ready for implementation? All stations must receive the signal simultaneously.',
       },
+      {
+        id: '10', sender: 'SYSTEM', timestamp: '1980-02-07 11:30:22',
+        content: '[DATA FRAGMENT — CHANNEL INIT TAG: OS] — Sequence complete. Concatenate all tags oldest-first.',
+        isCorrupted: true
+      },
     ],
     engineering: [
       {
@@ -124,6 +129,11 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
         content: 'NOTE: To access classified archive documents, use access code AH/MDG-932815 on the incident archive terminal.',
         isSystem: true
       },
+      {
+        id: 'e12', sender: 'SYSTEM', timestamp: '1980-02-06 16:43:03',
+        content: '[DATA FRAGMENT — CHANNEL INIT TAG: ON] — Reconstruct chronology of channel tags to authenticate.',
+        isCorrupted: true
+      },
     ],
     alvar: [
       {
@@ -168,12 +178,41 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
         content: 'Protocol Candle is our failsafe. Last resort only if temporal distortion reaches critical levels. For now: maintain the button protocol at all costs.',
       },
       {
-        id: 'a11', sender: 'SYSTEM', timestamp: '1980-02-06 00:20:00',
+        id: 'a11', sender: 'PIERRE.C', timestamp: '1980-02-06 00:19:12',
+        content: 'One more thing — the channel encryption protocol. You asked why we use the mirror cipher here rather than the standard rotation.',
+      },
+      {
+        id: 'a11b', sender: 'ALVAR.H', timestamp: '1980-02-06 00:19:55',
+        content: 'The mirror cipher is the oldest method. The alphabet runs in reverse — A becomes Z, B becomes Y. What was last becomes first. It is harder to crack than rotation because most people do not think backwards.',
+      },
+      {
+        id: 'a11c', sender: 'SYSTEM', timestamp: '1980-02-06 00:20:00',
         content: 'WARNING: Connection terminated unexpectedly. Remaining logs corrupted.',
         isSystem: true
       },
+      {
+        id: 'a12', sender: 'SYSTEM', timestamp: '1980-02-06 00:20:01',
+        content: '[DATA FRAGMENT — CHANNEL INIT TAG: KR]',
+        isCorrupted: true
+      },
     ],
   };
+
+  // Track which channels the player has visited (for subnet sequence puzzle)
+  const [visitedChannels, setVisitedChannels] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!isVisible) return;
+    setVisitedChannels(prev => {
+      const next = new Set(prev);
+      next.add(activeChannel);
+      // When all three fragment channels visited, set the completion flag
+      if (next.has('general') && next.has('engineering') && next.has('alvar')) {
+        try { localStorage.setItem('dharma_subnet_sequence_read', 'true'); } catch {}
+      }
+      return next;
+    });
+  }, [activeChannel, isVisible]);
 
   useEffect(() => {
     if (!isVisible) return;
