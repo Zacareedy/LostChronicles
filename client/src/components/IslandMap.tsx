@@ -299,7 +299,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
       setEntityVisited(true);
       setMapStatus('ENTITY AT GRID REF — N 15°16′ W 23°42′ — LOG ENTRY GENERATED');
       playSound('beep', 'short');
-      setTimeout(() => setMapStatus('SCANNING FOR SIGNALS...'), 8000);
+      setTimeout(() => setMapStatus('SCANNING FOR SIGNALS...'), 45000);
     }
   }, [entityPos, clearance, entityVisited]);
 
