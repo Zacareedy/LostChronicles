@@ -466,6 +466,35 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
               </div>
             ))}
 
+            {/* Entity target zone — visible at L2+ until tracked */}
+            {clearance >= 2 && !entityVisited && (
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: '50%',
+                  top: '32%',
+                  width: '12%',
+                  height: '12%',
+                  zIndex: 8,
+                  border: '1px dashed rgba(255, 68, 68, 0.45)',
+                  boxShadow: 'inset 0 0 12px rgba(255,68,68,0.08)',
+                }}
+              >
+                <span style={{
+                  position: 'absolute',
+                  top: '-14px',
+                  left: '0',
+                  fontSize: '7px',
+                  color: 'rgba(255,68,68,0.55)',
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.05em',
+                  whiteSpace: 'nowrap',
+                }}>
+                  GRID REF
+                </span>
+              </div>
+            )}
+
             {/* Moving entity (clearance 2+) — z-index 9, always visible above fog */}
             {clearance >= 2 && (
               <div
