@@ -477,8 +477,7 @@ const commands: Record<string, Function> = {
       '> "He left in a hurry. Took nothing. Said he could see the ocean',
       '>  from the hill above the station. I do not know if he made it.',
       '>  His verification word for the system — the greeting he used —',
-      '>  is encoded in the station orientation transcript.',
-      '>  Standard maritime signalling format. He was proud of that."',
+      '>  is encoded in the station orientation transcript."',
       '> ─────────────────────────────────────────',
       ];
     }
