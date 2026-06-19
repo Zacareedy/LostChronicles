@@ -10,19 +10,19 @@ import { getClearance, setClearance, clearanceLabel } from './clearance';
 //
 //  L2 OPERATOR → L3 TECHNICIAN : AUTHENTICATE KRONOS
 //    Clue: COMMS shows 6 carrier-wave peaks with [DESIGNATION CORRUPTED]
-//    Encoded hex fragments recoverable from TRACK (4B·52), SUBNET (4F·4E), PEARL (4F·53)
+//    Each puzzle reveals one piece: COMMS→4B·52 (KR), TRACK→4F·4E (ON), SUBNET→4F (O), PEARL→53 (S)
 //    Player translates ASCII hex manually: 4B 52 4F 4E 4F 53 = K R O N O S = KRONOS
 //
 //  L3 TECHNICIAN → L4 RESEARCHER : AUTHENTICATE DARK MATTER
-//    Clue: BLAST DOOR (L3) shows inscription "EBSL NBUUFS" (Caesar +1)
-//    RADZINSKY (L3) explains the +1 shift encoding habit
-//    Decode: EBSL NBUUFS → DARK MATTER
+//    Gate: OVERRIDE-D108 + PING storm cache + NODE maze A1→C2
+//    Cipher EBSL NBUUFS split across puzzles: OVERRIDE→"EBSL " (1/3), STORM→"NBU" (2/3), NODE→"UFS" (3/3)
+//    RADZINSKY explains the -1 decode; player combines + decodes: EBSL NBUUFS → DARK MATTER
 //
 //  L4 RESEARCHER → L5 OMEGA : AUTHENTICATE THANATOS
-//    Gate: ACTIVATE nodes in DHARMA sequence (4-8-15-16-23-42) to unlock
-//    Clue: READ /LOGS/FINAL-TRANSMISSION.TXT (L4) — two-layer cipher
-//    Layer 1: ROT-13, Layer 2: Atbash (alphabet mirrored — hinted in Alvar subnet channel)
-//    Encoded: TFMZMTYU → ROT-13 → GSZMZGLH → Atbash → THANATOS
+//    Gate: ACTIVATE all 6 nodes (4-8-15-16-23-42) + READ /LOGS/FINAL-TRANSMISSION.TXT
+//    Cipher TFMZMTYU split: ACTIVATE→"TFMZ" (1/2), FINAL-TRANSMISSION→"MTYU" (2/2)
+//    FINAL-TRANSMISSION gives cipher method: ROT-13 then Atbash (mirrored alphabet)
+//    Player combines + decodes: TFMZMTYU → ROT-13 → GSZMZGLH → Atbash → THANATOS
 
 let isExecutingProtocol = false;
 let pendingAction: string | null = null;
@@ -119,11 +119,13 @@ const commands: Record<string, Function> = {
       '>  SUBNET        — access DHARMA subnet archive [L2]',
     );
     if (cl >= 3) base.push(
+      '>  NODE [id]     — subnet node maze [L3]',
       '>  OVERRIDE [p]  — system override protocols [L3]',
       '>  DIAGNOSE [t]  — network diagnostics [L3]',
       '>  MAP           — blast door UV analysis [L3]',
     );
     if (cl >= 4) base.push(
+      '>  ACTIVATE [n]  — distributed node activation [L4]',
       '>  ACCESS [p]    — special access protocols [L4]',
       '>  VALENZETTI    — Valenzetti Equation summary [L4]',
     );
@@ -196,29 +198,35 @@ const commands: Record<string, Function> = {
           ];
         }
       }
-      // L4→L5 requires distributed node activation
-      if (cl === 4 && localStorage.getItem('dharma_nodes_activated') !== 'true') {
-        return [
-          '> AUTHENTICATION INCOMPLETE.',
-          '> Distributed node authorization required before upgrade.',
-          '> Six nodes must be activated in the correct sequence.',
-          '> Type ACTIVATE for the node activation protocol.',
-        ];
-      }
-      // L3→L4 requires consulting all three cipher sources
+      // L3→L4 requires all three cipher sources
       if (cl === 3) {
-        const mapOk = localStorage.getItem('dharma_map_consulted') === 'true';
-        const radzOk = localStorage.getItem('dharma_radzinsky_read') === 'true';
-        const shiftOk = localStorage.getItem('dharma_decrypt_shift_used') === 'true';
-        if (!mapOk || !radzOk || !shiftOk) {
+        const overrideOk = localStorage.getItem('dharma_override_used') === 'true';
+        const stormOk    = localStorage.getItem('dharma_storm_cache_pinged') === 'true';
+        const mazeOk     = localStorage.getItem('dharma_node_maze_complete') === 'true';
+        if (!overrideOk || !stormOk || !mazeOk) {
           const missing = [
-            !mapOk  && 'blast door map (MAP command)',
-            !radzOk && 'personnel file (RADZINSKY command)',
-            !shiftOk && 'cipher analysis (DECRYPT SHIFT command)',
+            !overrideOk && 'archive override (OVERRIDE-D108)',
+            !stormOk    && 'storm cache signal (PING during storm event)',
+            !mazeOk     && 'subnet node maze (NODE A1 → C2)',
           ].filter(Boolean).join(', ');
           return [
             '> AUTHENTICATION INCOMPLETE.',
-            '> Source verification required before upgrade.',
+            '> Cipher source verification required before upgrade.',
+            `> Outstanding: ${missing}`,
+          ];
+        }
+      }
+      // L4→L5 requires node activation + final transmission log
+      if (cl === 4) {
+        const nodesOk  = localStorage.getItem('dharma_nodes_activated') === 'true';
+        const transOk  = localStorage.getItem('dharma_final_transmission_read') === 'true';
+        if (!nodesOk || !transOk) {
+          const missing = [
+            !nodesOk && 'distributed node activation (ACTIVATE sequence)',
+            !transOk && 'final transmission log (READ /LOGS/FINAL-TRANSMISSION.TXT)',
+          ].filter(Boolean).join(', ');
+          return [
+            '> AUTHENTICATION INCOMPLETE.',
             `> Outstanding: ${missing}`,
           ];
         }
@@ -547,15 +555,10 @@ const commands: Record<string, Function> = {
         '> SUBNET NODE — FREQUENCY ARCHIVE EXTRACT',
         '> SESSION: auto-saved on /DOWNLOAD completion',
         '>',
-        '> Carrier wave — encoded fragments extracted:',
+        '> Encoded signal fragment extracted from subnet frequency scan:',
+        '>   Peak 05 ......... [23 MHz]  enc: 4F   ← extracted this session',
         '>',
-        '>   Peak 01 ......... [4 MHz]   enc: 4B   (see: TRACK grid fix)',
-        '>   Peak 02 ......... [8 MHz]   enc: 52   (see: TRACK grid fix)',
-        '>   Peak 03 ......... [15 MHz]  enc: 4F   ← extracted this session',
-        '>   Peak 04 ......... [16 MHz]  enc: 4E   ← extracted this session',
-        '>',
-        '> Cross-reference: COMMS carrier wave log for full waveform.',
-        '> Cross-reference: PEARL station log for remaining fragments.',
+        '> Cross-reference: COMMS (peaks 01–02), TRACK (peaks 03–04), PEARL (peak 06).',
         '> Translate all collected fragments to find the station relay designation.',
         '> ─────────────────────────────────────────',
       ];
@@ -594,6 +597,7 @@ const commands: Record<string, Function> = {
     // L4 files
     if (p === 'LOGS/FINAL-TRANSMISSION.TXT' || p === 'FINAL-TRANSMISSION.TXT') {
       if (cl < 4) return deny(4);
+      try { localStorage.setItem('dharma_final_transmission_read', 'true'); } catch {}
       return [
         '> FILE: /LOGS/FINAL-TRANSMISSION.TXT',
         '> ─────────────────────────────────────────',
@@ -617,7 +621,8 @@ const commands: Record<string, Function> = {
         '> The alphabet runs backwards on that channel.',
         '> Both keys are things you have already encountered.',
         '>',
-        '> ENCODED:     TFMZMTYU',
+        '> ENCODED (fragment 2/2):  MTYU',
+        '> Combine with node activation fragment to form the complete cipher.',
         '>',
         '> "Decode it. Type AUTHENTICATE [decoded word] if you understand.',
         '>',
@@ -748,12 +753,13 @@ const commands: Record<string, Function> = {
           '> PING N 23°42′ W 108°15′',
           '> NODE ACTIVE — STORM WINDOW CONFIRMED',
           '>',
-          '> Encrypted data fragment recovered:',
+          '> Encrypted data fragment recovered (2/3):',
           '> SUBJECT: RADZINSKY — SUBLEVEL C — RESEARCH MATERIAL',
-          '> "The subject of our work is what the others called EBSL NBUUFS.',
-          '> I renamed it. Radzinsky shifted everything by one.',
-          '> Subtract one step to find the truth."',
           '>',
+          '>   NBU',
+          '>',
+          '> Encoding: one step forward per letter (apply -1 to decode).',
+          '> Cross-reference: OVERRIDE-D108 for first fragment, NODE maze for last.',
           '> [Node closes when weather clears]',
         ];
       }
@@ -890,8 +896,8 @@ const commands: Record<string, Function> = {
       '> Entity classification: UNKNOWN — see Protocol 7-J',
       '>',
       '> Encoded signal fragment extracted from coordinate fix:',
-      '>   Peaks 01–02 →  4B · 52  [4 MHz · 8 MHz]',
-      '> Cross-reference: COMMS for wave structure, SUBNET and PEARL for remaining fragments.',
+      '>   Peaks 03–04 →  4F · 4E  [15 MHz · 16 MHz]',
+      '> Cross-reference: COMMS for first fragment, SUBNET and PEARL for remaining.',
       '> ─────────────────────────────────────────',
     ];
   },
@@ -920,9 +926,11 @@ const commands: Record<string, Function> = {
       '>   PEAK 06: [DESIGNATION CORRUPTED] [42 MHz]',
       '>',
       '> NOTE: All carrier designations lost during signal capture.',
-      '> Encoded fragments recoverable from field telemetry.',
-      '> Sources: entity tracking (TRACK), subnet archive (SUBNET),',
-      '> Pearl observation log (PEARL). Translate fragments to authenticate.',
+      '>',
+      '> Encoded signal fragment extracted from carrier analysis:',
+      '>   Peaks 01–02 →  4B · 52  [4 MHz · 8 MHz]',
+      '> Remaining fragments: entity tracking (TRACK), subnet archive (SUBNET),',
+      '> Pearl observation log (PEARL). Translate all fragments to authenticate.',
       '> ─────────────────────────────────────────',
     ];
   },
@@ -954,25 +962,9 @@ const commands: Record<string, Function> = {
       '> DHARMA primary goal: change one value.',
       '> Current status: UNRESOLVED.',
     ];
-    if (key === 'shift') {
-      try { localStorage.setItem('dharma_decrypt_shift_used', 'true'); } catch {}
-      return [
-        '> CIPHER ANALYSIS — RADZINSKY NOTATION SYSTEM:',
-        '>',
-        '> Pattern identified: Caesar cipher, constant shift.',
-        '> Radzinsky\'s known habit: +1 letter shift (A→B, B→C...).',
-        '> His phrase for it: "Always one step ahead of myself."',
-        '>',
-        '> To decode blast door text: subtract 1 from each letter.',
-        '> Example: E→D, B→A, S→R, L→K   (first four letters of inscription)',
-        '>',
-        '> Apply to the full blast door inscription.',
-        '> Type BLAST DOOR to view the encoded text.',
-      ];
-    }
     return [
       '> ERROR: Key not found.',
-      '> Available: DECRYPT INCIDENT · DECRYPT SHIFT',
+      '> Available: DECRYPT INCIDENT',
       '> Also: DECRYPT BLACKROCK · DECRYPT VALENZETTI',
     ];
   },
@@ -1036,14 +1028,14 @@ const commands: Record<string, Function> = {
       '>',
       '> CYCLE 10891 — 16:23 UTC',
       '> Standard button procedure observed — Operator B.',
-      '> Carrier spectrum scan: peaks at 23 MHz and 42 MHz logged.',
+      '> Carrier spectrum scan: peak at 42 MHz logged.',
       '> Encoded signal fragment extracted from relay archive:',
-      '>   Peaks 05–06 →  4F · 53  [23 MHz · 42 MHz]',
+      '>   Peak 06 →  53  [42 MHz]',
       '>',
       '> CYCLE 10893 — 09:42 UTC',
       '> Operator A not visible on feed. Unscheduled absence.',
-      '> Note: encoded suffix fragment logged for six-frequency carrier series.',
-      '> Cross-reference: COMMS for full frequency structure.',
+      '> Note: encoded final fragment logged for six-frequency carrier series.',
+      '> Cross-reference: COMMS (1/4), TRACK (2/4), SUBNET (3/4) for prior fragments.',
       '>',
       '> [End of available log segments]',
       '> ─────────────────────────────────────────',
@@ -1302,11 +1294,13 @@ const hiddenCommands: Record<string, Function> = {
       'C2': { locked: true, key: 'PASSAGE-ECHO-4', content: [
         '> NODE C2 — UNLOCKED — END OF PATH',
         '>',
-        '> RECOVERED: Sub-level C research designation.',
-        '> Cross-reference: OVERRIDE-D108 in terminal.',
-        '> Subject of research: EBSL NBUUFS (apply Radzinsky decode).',
+        '> RECOVERED: Sub-level C research designation — final cipher fragment (3/3):',
         '>',
-        '> Node maze complete. Cipher path confirmed.',
+        '>   UFS',
+        '>',
+        '> Combine with OVERRIDE-D108 (1/3) and storm cache (2/3).',
+        '> Apply Radzinsky decode (-1 per letter) to the full cipher string.',
+        '> Node maze complete.',
       ]},
     };
 
@@ -1369,9 +1363,13 @@ const hiddenCommands: Record<string, Function> = {
           `> ACTIVATE NODE-${nodeNum} — CONFIRMED`,
           '> ─────────────────────────────────────',
           '> ALL SIX NODES ACTIVATED IN SEQUENCE.',
-          '> Distributed system authentication: COMPLETE.',
-          '> THANATOS designation unlocked in system archive.',
-          '> Cross-reference: READ /LOGS/FINAL-TRANSMISSION.TXT',
+          '> Distributed authentication: COMPLETE.',
+          '>',
+          '> Archive fragment recovered from Sub-level E (1/2):',
+          '>   TFMZ',
+          '>',
+          '> Encoding method unknown. (Fragment 1/2)',
+          '> Cross-reference: READ /LOGS/FINAL-TRANSMISSION.TXT for second fragment.',
         ];
       }
 
@@ -1385,21 +1383,19 @@ const hiddenCommands: Record<string, Function> = {
     }
   },
 
-  // Blast door two-step (L3→L4): player finds OVERRIDE-D108 on the UV map, types it here
+  // L3→L4: player finds OVERRIDE-D108 code in incident reports / blast door visual, types it here
   'override-d108': () => {
     if (getClearance() < 3) return deny(3);
     try { localStorage.setItem('dharma_override_used', 'true'); } catch {}
     return [
       '> OVERRIDE-D108 — ARCHIVE REFERENCE — SUBLEVEL C',
       '>',
-      '> Recovered text fragment (cipher active):',
+      '> Recovered cipher fragment (1/3) from Sublevel C archive:',
       '>',
-      '> EBSL NBUUFS SFTFBSDI — TUBUJPO 3 BSDIJWF',
-      '> SBEJOTLZ OPUBUJPO: TIJGU CBDL POF TUFQ',
-      '> XIBU SFNBJOT JT UIF TVCKFDU PG UIF XPSL',
+      '>   EBSL ',
       '>',
-      '> [Caesar cipher — apply known decoding method]',
-      '> Cipher key documented in RADZINSKY personnel file.',
+      '> [Caesar cipher — apply Radzinsky decode method]',
+      '> Cross-reference: PING storm cache + NODE maze for remaining fragments.',
     ];
   },
 
@@ -1485,20 +1481,15 @@ const hiddenCommands: Record<string, Function> = {
     ];
     if (cl >= 3) base.push(
       '>',
-      '> Co-authored blast door map (Sublevel A) with V. Kelvin.',
-      '>',
       '> Known notation habit: Radzinsky encrypted personal writings',
       '> using a simple letter-shift — each letter advanced one position',
       '> forward in the alphabet. He called it "staying one step ahead."',
       '>',
-      '> V. Kelvin noted: "He was paranoid. Even his annotations on the',
-      '> blast door were shifted. I could read them, obviously."',
+      '> V. Kelvin noted: "He was paranoid. Even his annotations were',
+      '> shifted. I could read them, obviously."',
       '>',
       '> Final recovered message fragment (Sub-level C terminal):',
       '>   "Step back once from every letter. What remains is the truth."',
-      '>',
-      '> Type BLAST DOOR to view the blast door inscriptions.',
-      '> Type DECRYPT SHIFT for cipher decoding guidance.',
     );
     return base;
   },
@@ -1530,28 +1521,6 @@ const hiddenCommands: Record<string, Function> = {
 
   'push the button': () => ['> Yes. That is exactly what you are here for.'],
 
-  'blast door': () => {
-    const cl = getClearance();
-    const base = [
-      '> BLAST DOOR MAP — SUBLEVEL A',
-      '> Compiled across many years by two operators.',
-      '> One annotation reads: \'I AM HERE.\'',
-      '> We do not know who wrote it or if they still are.',
-    ];
-    if (cl >= 3) base.push(
-      '>',
-      '> [TECHNICIAN ACCESS — ADDITIONAL ANNOTATIONS]',
-      '>   — "CLAIMED TERRITORY — DO NOT ENTER"',
-      '>   — "EBSL NBUUFS"    (first hand — lower left)',
-      '>   — "EBSL NBUUFS"    (second hand — upper margin, different writer)',
-      '>',
-      '> The same phrase appears twice, written by two different people.',
-      '> The text appears shifted. Type RADZINSKY for context on the encoding.',
-      '> Type DECRYPT SHIFT for cipher analysis.',
-      '> Type AUTHENTICATE [decoded phrase] to proceed.',
-    );
-    return base;
-  },
 
   numbers: () => [
     '> THE NUMBERS ARE BAD.',
@@ -1713,7 +1682,7 @@ const processCommand = (
   // Number sequence already handled above (alarm-gated)
 
   // Multi-word exact matches (checked before splitting)
-  const multiWord = ['push the button', 'blast door', 'what is your name', 'incident archive'];
+  const multiWord = ['push the button', 'what is your name', 'incident archive'];
   for (const mw of multiWord) {
     if (normalised === mw) {
       const handler = hiddenCommands[mw] || commands[mw];

@@ -126,7 +126,6 @@ const Home: React.FC = () => {
         if (mapFlag === 'true') {
           localStorage.removeItem('dharma_map_access');
           setIsMapOpen(true);
-          // Mark map as consulted for L3→L4 multi-source puzzle
           if (getClearance() >= 3) {
             try { localStorage.setItem('dharma_map_consulted', 'true'); } catch {}
           }
@@ -236,7 +235,7 @@ const Home: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden flex flex-col">
       <div className="absolute inset-0 crt pointer-events-none z-50"></div>
 
       <header className="pt-6 pb-2 px-6 flex justify-between items-center border-b border-[hsla(var(--dharma-gray),0.3)]">
@@ -257,8 +256,7 @@ const Home: React.FC = () => {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
+      <main className="flex-1 min-h-0 container mx-auto p-4 flex flex-col lg:flex-row gap-4 lg:items-stretch">
           <Terminal
             onRevealPuzzle={handleRevealPuzzle}
             onRevealStation={handleRevealStation}
@@ -266,10 +264,9 @@ const Home: React.FC = () => {
             onCommand={handleTerminalCommand}
             isSystemFailure={isSystemFailure}
           />
-        </div>
-        <div className="lg:col-span-1">
-          <IslandMap clearance={currentClearance} timeRemaining={timeRemaining} />
-        </div>
+          <div className="lg:flex-1 self-stretch min-h-64 lg:min-h-0 min-w-0">
+            <IslandMap clearance={currentClearance} timeRemaining={timeRemaining} />
+          </div>
       </main>
 
       <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-xs" style={{ color: 'var(--ph-mid)' }}>

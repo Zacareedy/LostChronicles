@@ -266,10 +266,9 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
         setHasDownloadedLogs(true);
         if (!isCompleted) {
           setTimeout(() => {
-            addSystemMsg('NOTICE: Archive data recovered. Encoded frequency fragments extracted:');
-            addSystemMsg('  Peak 03 [15 MHz]  enc: 4F');
-            addSystemMsg('  Peak 04 [16 MHz]  enc: 4E');
-            addSystemMsg('Cross-reference: COMMS · TRACK · PEARL. Translate all fragments to authenticate.');
+            addSystemMsg('NOTICE: Archive data recovered. Encoded frequency fragment extracted:');
+            addSystemMsg('  Peak 05 [23 MHz]  enc: 4F');
+            addSystemMsg('Cross-reference: COMMS (1/4) · TRACK (2/4) · PEARL (4/4). Translate all fragments to authenticate.');
             setIsCompleted(true);
             setTimeout(onComplete, 2000);
           }, 1500);

@@ -375,7 +375,8 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="dharma-panel"
+      className="dharma-panel h-full"
+      style={{ display: 'flex', flexDirection: 'column' }}
     >
       <div className="dharma-panel-header border-b border-[hsla(var(--dharma-gray),0.5)] flex justify-between items-center">
         <h2 className="dharma-panel-title tracking-[0.5em] text-sm">
@@ -392,8 +393,8 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
         </div>
       </div>
 
-      {/* Map viewport */}
-      <div className="relative" style={{ aspectRatio: '4/3' }}>
+      {/* Map viewport — fills remaining panel height */}
+      <div className="relative" style={{ flex: 1, minHeight: 0 }}>
         <div
           ref={mapContainerRef}
           className="absolute inset-2 overflow-hidden border border-[hsla(var(--dharma-gray),0.3)] bg-black"
