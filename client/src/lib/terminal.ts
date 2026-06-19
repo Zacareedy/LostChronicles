@@ -316,6 +316,9 @@ const commands: Record<string, Function> = {
     if (cl >= 2) list.push(
       '>  /LOGS/ROUSSEAU-TRANSMISSION.TXT ....... [L2]',
       '>  /LOGS/COMMS-INTERCEPT.TXT ............. [L2]',
+      ...(localStorage.getItem('dharma_subnet_complete') === 'true'
+        ? ['>  /LOGS/SUBNET-ARCHIVE.TXT ............. [L2 — DOWNLOADED]']
+        : []),
     );
     if (cl >= 3) list.push(
       '>  /LOGS/INCIDENT-CLASSIFIED.TXT ......... [L3 — UNREDACTED]',
@@ -511,6 +514,39 @@ const commands: Record<string, Function> = {
     if (p === 'LOGS/COMMS-INTERCEPT.TXT' || p === 'COMMS-INTERCEPT.TXT') {
       if (cl < 2) return deny(2);
       return ['> See COMMS command for interactive intercept log.'];
+    }
+
+    if (
+      p === 'LOGS/SUBNET-ARCHIVE.TXT' ||
+      p === 'SUBNET-ARCHIVE.TXT' ||
+      p === 'LOGS/SUBNET/' ||
+      p === 'LOGS/SUBNET'
+    ) {
+      if (cl < 2) return deny(2);
+      if (localStorage.getItem('dharma_subnet_complete') !== 'true') {
+        return [
+          '> ERROR: /LOGS/SUBNET-ARCHIVE.TXT — FILE NOT FOUND',
+          '> Run SUBNET and complete /DOWNLOAD to generate this log.',
+        ];
+      }
+      return [
+        '> FILE: /LOGS/SUBNET-ARCHIVE.TXT',
+        '> ─────────────────────────────────────────',
+        '> SUBNET NODE — FREQUENCY ARCHIVE EXTRACT',
+        '> SESSION: auto-saved on /DOWNLOAD completion',
+        '>',
+        '> Carrier wave spectral analysis — peak designations:',
+        '>',
+        '>   Peak 01 ......... KAPPA  [4 MHz]   (see: TRACK grid fix)',
+        '>   Peak 02 ......... RHO    [8 MHz]   (see: TRACK grid fix)',
+        '>   Peak 03 ......... OMEGA  [15 MHz]  ← extracted this session',
+        '>   Peak 04 ......... NU     [16 MHz]  ← extracted this session',
+        '>',
+        '> Cross-reference: COMMS carrier wave log for full waveform.',
+        '> Cross-reference: PEARL station log for remaining confirmation.',
+        '> Run DECRYPT FREQUENCIES when all sources confirmed.',
+        '> ─────────────────────────────────────────',
+      ];
     }
 
     // L3 files
