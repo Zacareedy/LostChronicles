@@ -266,9 +266,10 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
         setHasDownloadedLogs(true);
         if (!isCompleted) {
           setTimeout(() => {
-            addSystemMsg('NOTICE: Archive data recovered. Relay frequency designations extracted:');
-            addSystemMsg('  Peak 03 = OMEGA [15 MHz]  ·  Peak 04 = NU [16 MHz]');
-            addSystemMsg('Cross-reference: COMMS carrier wave log. Run DECRYPT FREQUENCIES.');
+            addSystemMsg('NOTICE: Archive data recovered. Encoded frequency fragments extracted:');
+            addSystemMsg('  Peak 03 [15 MHz]  enc: 4F');
+            addSystemMsg('  Peak 04 [16 MHz]  enc: 4E');
+            addSystemMsg('Cross-reference: COMMS · TRACK · PEARL. Translate all fragments to authenticate.');
             setIsCompleted(true);
             setTimeout(onComplete, 2000);
           }, 1500);

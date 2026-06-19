@@ -9,9 +9,9 @@ import { getClearance, setClearance, clearanceLabel } from './clearance';
 //    Morse: .-- .. -.-. -.- -- ..- -. -..  = WICKMUND
 //
 //  L2 OPERATOR → L3 TECHNICIAN : AUTHENTICATE KRONOS
-//    Clue: COMMS shows 6 carrier-wave peaks named after Greek designations
-//    DECRYPT FREQUENCIES recovers the two corrupted peaks
-//    First letter of each peak name: K-R-O-N-O-S = KRONOS
+//    Clue: COMMS shows 6 carrier-wave peaks with [DESIGNATION CORRUPTED]
+//    Encoded hex fragments recoverable from TRACK (4B·52), SUBNET (4F·4E), PEARL (4F·53)
+//    Player translates ASCII hex manually: 4B 52 4F 4E 4F 53 = K R O N O S = KRONOS
 //
 //  L3 TECHNICIAN → L4 RESEARCHER : AUTHENTICATE DARK MATTER
 //    Clue: BLAST DOOR (L3) shows inscription "EBSL NBUUFS" (Caesar +1)
@@ -176,13 +176,25 @@ const commands: Record<string, Function> = {
           '> Start with: READ /FILES/PERSONAL-EFFECTS.TXT',
         ];
       }
-      // L2→L3 requires carrier wave analysis from all four sources
-      if (cl === 2 && localStorage.getItem('dharma_freq_decrypted') !== 'true') {
-        return [
-          '> AUTHENTICATION REQUIRES CARRIER WAVE ANALYSIS.',
-          '> Collect signal data from four sources, then run DECRYPT FREQUENCIES.',
-          '> Required: COMMS · entity tracking (TRACK) · subnet archive (SUBNET) · Pearl log (PEARL)',
-        ];
+      // L2→L3 requires collecting encoded fragments from all four sources
+      if (cl === 2) {
+        const commsDone = localStorage.getItem('dharma_comms_read') === 'true';
+        const entityDone = localStorage.getItem('dharma_entity_tracked') === 'true';
+        const subnetDone = localStorage.getItem('dharma_subnet_complete') === 'true';
+        const pearlDone = localStorage.getItem('dharma_pearl_log_cycled') === 'true';
+        if (!commsDone || !entityDone || !subnetDone || !pearlDone) {
+          const missing = [
+            !commsDone  && 'carrier wave log (COMMS)',
+            !entityDone && 'entity telemetry (TRACK)',
+            !subnetDone && 'subnet archive (SUBNET → /download)',
+            !pearlDone  && 'Pearl observation log (PEARL)',
+          ].filter(Boolean).join(', ');
+          return [
+            '> AUTHENTICATION REQUIRES CARRIER WAVE ANALYSIS.',
+            '> Collect encoded signal fragments from all four sources first.',
+            `> Outstanding: ${missing}`,
+          ];
+        }
       }
       // L4→L5 requires distributed node activation
       if (cl === 4 && localStorage.getItem('dharma_nodes_activated') !== 'true') {
@@ -535,16 +547,16 @@ const commands: Record<string, Function> = {
         '> SUBNET NODE — FREQUENCY ARCHIVE EXTRACT',
         '> SESSION: auto-saved on /DOWNLOAD completion',
         '>',
-        '> Carrier wave spectral analysis — peak designations:',
+        '> Carrier wave — encoded fragments extracted:',
         '>',
-        '>   Peak 01 ......... KAPPA  [4 MHz]   (see: TRACK grid fix)',
-        '>   Peak 02 ......... RHO    [8 MHz]   (see: TRACK grid fix)',
-        '>   Peak 03 ......... OMEGA  [15 MHz]  ← extracted this session',
-        '>   Peak 04 ......... NU     [16 MHz]  ← extracted this session',
+        '>   Peak 01 ......... [4 MHz]   enc: 4B   (see: TRACK grid fix)',
+        '>   Peak 02 ......... [8 MHz]   enc: 52   (see: TRACK grid fix)',
+        '>   Peak 03 ......... [15 MHz]  enc: 4F   ← extracted this session',
+        '>   Peak 04 ......... [16 MHz]  enc: 4E   ← extracted this session',
         '>',
         '> Cross-reference: COMMS carrier wave log for full waveform.',
-        '> Cross-reference: PEARL station log for remaining confirmation.',
-        '> Run DECRYPT FREQUENCIES when all sources confirmed.',
+        '> Cross-reference: PEARL station log for remaining fragments.',
+        '> Translate all collected fragments to find the station relay designation.',
         '> ─────────────────────────────────────────',
       ];
     }
@@ -877,9 +889,9 @@ const commands: Record<string, Function> = {
       '> Duration at reference: approx. 11 minutes',
       '> Entity classification: UNKNOWN — see Protocol 7-J',
       '>',
-      '> Coordinate cross-reference: KAPPA(4) · RHO(8) values',
-      '> confirm secondary grid alignment — peaks 01 and 02 of carrier wave.',
-      '> Cross-reference: COMMS for wave structure, SUBNET and PEARL for remaining peaks.',
+      '> Encoded signal fragment extracted from coordinate fix:',
+      '>   Peaks 01–02 →  4B · 52  [4 MHz · 8 MHz]',
+      '> Cross-reference: COMMS for wave structure, SUBNET and PEARL for remaining fragments.',
       '> ─────────────────────────────────────────',
     ];
   },
@@ -907,10 +919,10 @@ const commands: Record<string, Function> = {
       '>   PEAK 05: [DESIGNATION CORRUPTED] [23 MHz]',
       '>   PEAK 06: [DESIGNATION CORRUPTED] [42 MHz]',
       '>',
-      '> NOTE: All Greek series designations lost during signal capture.',
-      '> Cross-reference field telemetry to recover peak designations.',
+      '> NOTE: All carrier designations lost during signal capture.',
+      '> Encoded fragments recoverable from field telemetry.',
       '> Sources: entity tracking (TRACK), subnet archive (SUBNET),',
-      '> Pearl observation log (PEARL). Then run DECRYPT FREQUENCIES.',
+      '> Pearl observation log (PEARL). Translate fragments to authenticate.',
       '> ─────────────────────────────────────────',
     ];
   },
@@ -942,64 +954,6 @@ const commands: Record<string, Function> = {
       '> DHARMA primary goal: change one value.',
       '> Current status: UNRESOLVED.',
     ];
-    if (key === 'frequencies') {
-      const commsDone = localStorage.getItem('dharma_comms_read') === 'true';
-      const entityDone = localStorage.getItem('dharma_entity_tracked') === 'true';
-      const subnetDone = localStorage.getItem('dharma_subnet_complete') === 'true';
-      const pearlDone = localStorage.getItem('dharma_pearl_log_cycled') === 'true';
-      const allDone = commsDone && entityDone && subnetDone && pearlDone;
-      const lines: string[] = [
-        '> DECRYPTING CARRIER WAVE — CORRUPTED DESIGNATIONS...',
-        '> Cross-referencing field telemetry sources...',
-        '>',
-      ];
-      if (commsDone) {
-        lines.push('> [COMMS] Carrier structure confirmed — 6 peaks at 4·8·15·16·23·42 MHz.');
-      } else {
-        lines.push('> Carrier wave structure unknown — run COMMS first.');
-      }
-      if (entityDone) {
-        lines.push('> [ENTITY TELEMETRY] Peak 01 = KAPPA (4 MHz) · Peak 02 = RHO (8 MHz)');
-      } else {
-        lines.push('> Peaks 01–02: entity telemetry required — monitor map then run TRACK.');
-      }
-      if (subnetDone) {
-        lines.push('> [SUBNET ARCHIVE]   Peak 03 = OMEGA (15 MHz) · Peak 04 = NU (16 MHz)');
-      } else {
-        lines.push('> Peaks 03–04: subnet archive required — complete node sequence (SUBNET).');
-      }
-      if (pearlDone) {
-        lines.push('> [PEARL LOG]        Peak 05 = OMICRON (23 MHz) · Peak 06 = SIGMA (42 MHz)');
-      } else {
-        lines.push('> Peaks 05–06: Pearl log confirmation required — run PEARL command.');
-      }
-      lines.push('>');
-      if (allDone) {
-        try { localStorage.setItem('dharma_freq_decrypted', 'true'); } catch {}
-        lines.push(
-          '> FULL GREEK SERIES RESTORED:',
-          '>   KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA',
-          '>   [4 MHz]  [8 MHz]  [15 MHz]  [16 MHz]  [23 MHz]  [42 MHz]',
-          '>',
-          '> STATION RELAY DESIGNATION: K-R-O-N-O-S',
-          '> Cross-reference: VALENZETTI EQUATION.',
-        );
-      } else {
-        const done = ([commsDone && 'comms', entityDone && 'entity', subnetDone && 'subnet', pearlDone && 'pearl'] as Array<string | false>).filter(Boolean) as string[];
-        const missing = ([
-          !commsDone && 'carrier wave log (COMMS)',
-          !entityDone && 'entity tracking (TRACK)',
-          !subnetDone && 'subnet archive (SUBNET)',
-          !pearlDone && 'Pearl log (PEARL)',
-        ] as Array<string | false>).filter(Boolean) as string[];
-        lines.push(
-          '> RECOVERY INCOMPLETE.',
-          `> Sources confirmed: ${done.length ? done.join(', ') : 'none'}`,
-          `> Outstanding: ${missing.join(', ')}`,
-        );
-      }
-      return lines;
-    }
     if (key === 'shift') {
       try { localStorage.setItem('dharma_decrypt_shift_used', 'true'); } catch {}
       return [
@@ -1018,7 +972,7 @@ const commands: Record<string, Function> = {
     }
     return [
       '> ERROR: Key not found.',
-      '> Available: DECRYPT INCIDENT · DECRYPT FREQUENCIES · DECRYPT SHIFT',
+      '> Available: DECRYPT INCIDENT · DECRYPT SHIFT',
       '> Also: DECRYPT BLACKROCK · DECRYPT VALENZETTI',
     ];
   },
@@ -1082,13 +1036,13 @@ const commands: Record<string, Function> = {
       '>',
       '> CYCLE 10891 — 16:23 UTC',
       '> Standard button procedure observed — Operator B.',
-      '> Carrier spectrum scan: peaks at 23 MHz and 42 MHz cross-referenced',
-      '> against relay archive. Designations confirmed: OMICRON · SIGMA.',
-      '> Relay log suffix: O-S.',
+      '> Carrier spectrum scan: peaks at 23 MHz and 42 MHz logged.',
+      '> Encoded signal fragment extracted from relay archive:',
+      '>   Peaks 05–06 →  4F · 53  [23 MHz · 42 MHz]',
       '>',
       '> CYCLE 10893 — 09:42 UTC',
       '> Operator A not visible on feed. Unscheduled absence.',
-      '> Note: O-S suffix logged for six-frequency carrier series.',
+      '> Note: encoded suffix fragment logged for six-frequency carrier series.',
       '> Cross-reference: COMMS for full frequency structure.',
       '>',
       '> [End of available log segments]',
