@@ -266,7 +266,9 @@ const SubnetInterface: React.FC<SubnetInterfaceProps> = ({ isVisible, onClose, o
         setHasDownloadedLogs(true);
         if (!isCompleted) {
           setTimeout(() => {
-            addSystemMsg('NOTICE: Critical data recovered. Access code OVERRIDE-D108 extracted from logs.');
+            addSystemMsg('NOTICE: Archive data recovered. Encoded frequency fragment extracted:');
+            addSystemMsg('  Peak 05 [23 MHz]  enc: 4F');
+            addSystemMsg('Cross-reference: COMMS (1/4) · TRACK (2/4) · PEARL (4/4). Translate all fragments to authenticate.');
             setIsCompleted(true);
             setTimeout(onComplete, 2000);
           }, 1500);

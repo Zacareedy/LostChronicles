@@ -334,6 +334,17 @@
   opacity: 0.3;
 }
 
+/* CRT screen scrollbar — thin phosphor sliver, nearly invisible */
+.crt-screen::-webkit-scrollbar {
+  width: 3px;
+}
+.crt-screen::-webkit-scrollbar-track {
+  background: transparent;
+}
+.crt-screen::-webkit-scrollbar-thumb {
+  background: rgba(77, 255, 50, 0.12);
+}
+
 /* DHARMA UI Component Styles - Standardized */
 .dharma-panel {
   @apply bg-[hsl(var(--dharma-black))] border-2 border-[hsla(var(--dharma-gray),0.3)] overflow-hidden shadow-inner;

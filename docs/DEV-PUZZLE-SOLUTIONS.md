@@ -1,7 +1,7 @@
 # LOSTCHRONICLES — DEVELOPER PUZZLE & CLEARANCE GUIDE
 
 > **DEV REFERENCE ONLY** — Contains all puzzle answers, discovery paths, unlock codes, and internal architecture.  
-> Last updated: June 2026 — reflects current codebase.
+> Last updated: June 2026 — reflects current codebase (post-session: L2→L3 redesign, radio/waveform removed, PEARL added, fog-of-war added).
 
 ---
 
@@ -86,10 +86,16 @@ Backdates the countdown start by 108 minutes — failure occurs on next tick.
 ### Set Required Flags Without Playing Through
 Useful when testing a specific gate in isolation:
 ```javascript
-// L1→L2 gate
+// L1→L2 gate (must read personal effects AND orientation reel)
 localStorage.setItem('dharma_ping_resolved', 'true');
-// L2→L3 gate
-localStorage.setItem('dharma_waveform_solved', 'true');
+localStorage.setItem('dharma_personal_effects_read', 'true');
+localStorage.setItem('dharma_orientation_read', 'true');
+// L2→L3 gate (all four sources required)
+localStorage.setItem('dharma_comms_read', 'true');
+localStorage.setItem('dharma_entity_tracked', 'true');
+localStorage.setItem('dharma_subnet_complete', 'true');
+localStorage.setItem('dharma_pearl_log_cycled', 'true');
+localStorage.setItem('dharma_freq_decrypted', 'true');
 // L3→L4 gate (all three required)
 localStorage.setItem('dharma_map_consulted', 'true');
 localStorage.setItem('dharma_radzinsky_read', 'true');
@@ -104,16 +110,16 @@ localStorage.setItem('dharma_nodes_activated', 'true');
 
 **Answer:** `AUTHENTICATE WICKMUND`  
 **Cipher:** Morse code (ITU-R standard)  
-**Gate flag:** `dharma_ping_resolved = 'true'` — must be set before authenticate succeeds
+**Gate flag:** `dharma_orientation_read = 'true'` — must have read the orientation reel before authenticate succeeds
 
-### Step 1 — Confirm the island signal (gate requirement)
+### Step 1 — Confirm the island signal
 
 The **IslandMap** panel shows a pulsing green marker at the Swan Station position. Hover to reveal coordinates: `N 4°815′ W 162°342′`.
 
 ```
 PING 4815 162342
 ```
-Response confirms the node, returns Morse code clue, sets `dharma_ping_resolved = 'true'`.
+Response confirms the node. Sets `dharma_ping_resolved = 'true'`. **Note:** PING does NOT reveal the Morse code — that is only in the orientation reel.
 
 ### Step 2 — Find the personal effects
 ```
@@ -126,13 +132,16 @@ INCIDENT
 ```
 READ /FILES/PERSONAL-EFFECTS.TXT
 ```
-Contains Desmond Hume's belongings. V. Kelvin's note: *"His verification word is encoded in the orientation transcript. Standard maritime signalling format."*
+Contains Desmond Hume's belongings. V. Kelvin's note: *"His verification word is encoded in the orientation transcript. Standard maritime signalling format."*  
+Sets `dharma_personal_effects_read = 'true'`. **This flag must be set before the orientation reel is accessible.**
 
 ### Step 4 — Read the orientation reel
 ```
 READ /DHARMA/ORIENTATION-REEL-3.TXT
 ```
-Desmond's addendum at the end:
+Gated — returns `ACCESS RESTRICTED` if personal effects haven't been read first.  
+Desmond's addendum at the end contains the Morse code. Sets `dharma_orientation_read = 'true'`.
+
 > `.-- .. -.-. -.- -- ..- -. -..`
 
 ### Step 5 — Decode the Morse
@@ -161,55 +170,76 @@ AUTHENTICATE WICKMUND
 
 **Answer:** `AUTHENTICATE KRONOS`  
 **Cipher:** Acrostic — first letter of each Greek-designated carrier peak  
-**Gate flag:** `dharma_waveform_solved = 'true'` — waveform puzzle must be completed first
+**Gate flag:** `dharma_freq_decrypted = 'true'` — set only when `DECRYPT FREQUENCIES` completes with all four sources
 
-### Step 1 — Check the COMMS intercept
+### Overview
+
+The carrier wave intercept (`COMMS`) shows all 6 peaks as `[DESIGNATION CORRUPTED]`. The Greek names must be recovered from **four independent sources** in any order. Only once all four sources have been accessed does `DECRYPT FREQUENCIES` reveal the full series and set the gate flag.
+
+| Source | Command | Peaks revealed | Flag set |
+|--------|---------|----------------|----------|
+| Carrier wave structure | `COMMS` | (structure only — no names) | `dharma_comms_read` |
+| Entity field telemetry | `TRACK` (after entity enters zone) | Peak 01 = KAPPA · Peak 02 = RHO | `dharma_entity_tracked` |
+| Subnet archive download | `SUBNET` → `/download` | Peak 03 = OMEGA · Peak 04 = NU | `dharma_subnet_complete` |
+| Pearl observation log | `PEARL` | Peak 05 = OMICRON · Peak 06 = SIGMA | `dharma_pearl_log_cycled` |
+
+### Step 1 — Read the carrier wave log (required)
 ```
 COMMS
 ```
-6 carrier wave peaks, Greek names. Peaks 03 and 04 are corrupted:
-```
-PEAK 01: KAPPA       [4 MHz]
-PEAK 02: RHO         [8 MHz]
-PEAK 03: [CORRUPTED] [-- MHz]
-PEAK 04: [CORRUPTED] [-- MHz]
-PEAK 05: OMICRON    [23 MHz]
-PEAK 06: SIGMA      [42 MHz]
-```
+Shows a Flame Station intercept: 6 frequency peaks at 4, 8, 15, 16, 23, 42 MHz — all designations corrupted. Instructs player to cross-reference field telemetry, subnet archive, and Pearl log. Sets `dharma_comms_read = 'true'`.
 
-### Step 2 — Recover the corrupted peaks
+### Step 2 — Track the moving entity (KAPPA · RHO)
+
+On the **IslandMap**, a red dot moves across the island when clearance ≥ 2. Wait for it to enter the target zone (~x:50–62%, y:32–44%). When it does, `dharma_entity_tracked = 'true'` is set automatically and a map status message fires.
+
+```
+TRACK
+```
+With `dharma_entity_tracked` set, TRACK returns the grid fix log: *"KAPPA(4) · RHO(8) values confirm secondary grid alignment — peaks 01 and 02 of carrier wave."*
+
+Without it, TRACK returns "no logged entity positions."
+
+### Step 3 — Download the subnet archive (OMEGA · NU)
+```
+SUBNET
+```
+Opens the **SubnetInterface** overlay (available at L2+). Inside the interface, type:
+```
+/download
+```
+Completes the archive extraction. Home.tsx `onComplete` callback sets `dharma_subnet_complete = 'true'`. The download confirmation reads: *"Peak 03 = OMEGA [15 MHz] · Peak 04 = NU [16 MHz]. Cross-reference: COMMS carrier wave log."*
+
+### Step 4 — Read the Pearl observation log (OMICRON · SIGMA)
+```
+PEARL
+```
+Returns excerpts from Pearl Station observation cycles. Cycle 10891 confirms: *"peaks at 23 MHz and 42 MHz … designations confirmed: OMICRON · SIGMA. Relay log suffix: O-S."* Sets `dharma_pearl_log_cycled = 'true'`.
+
+### Step 5 — Run the full decryption
 ```
 DECRYPT FREQUENCIES
 ```
-Recovers: `OMEGA (15 MHz)` and `NU (16 MHz)`.  
-Full series: **KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA = K-R-O-N-O-S**
+**Progressive output** — shows which sources are confirmed and which are outstanding. All four flags must be set for full completion:
 
-### Step 3 — Complete carrier wave verification (gate requirement)
 ```
-COMMS VERIFY
+> [COMMS] Carrier structure confirmed — 6 peaks at 4·8·15·16·23·42 MHz.
+> [ENTITY TELEMETRY] Peak 01 = KAPPA (4 MHz) · Peak 02 = RHO (8 MHz)
+> [SUBNET ARCHIVE]   Peak 03 = OMEGA (15 MHz) · Peak 04 = NU (16 MHz)
+> [PEARL LOG]        Peak 05 = OMICRON (23 MHz) · Peak 06 = SIGMA (42 MHz)
+>
+> FULL GREEK SERIES RESTORED:
+>   KAPPA · RHO · OMEGA · NU · OMICRON · SIGMA
+>
+> STATION RELAY DESIGNATION: K-R-O-N-O-S
 ```
-Opens the **WaveformPuzzle** overlay. Sets `dharma_waveform_access = 'true'` → Home.tsx polls and renders the puzzle.
 
-The puzzle shows a reference waveform and 6 candidates (A–F). The correct answer **rotates each session** based on `parseInt(localStorage.getItem('countdown_start')) % 6` — this prevents note-taking shortcuts. Selecting the correct candidate sets `dharma_waveform_solved = 'true'`.
+Sets `dharma_freq_decrypted = 'true'`.
 
-### Step 4 — Authenticate
+### Step 6 — Authenticate
 ```
 AUTHENTICATE KRONOS
 ```
-
-### Supporting discovery paths (not gated, but contain clues)
-
-**Entity tracking (IslandMap):**  
-A red dot moves across the island map when clearance ≥ 2. When it enters the target zone (~x:50–62%, y:32–44%), `dharma_entity_tracked = 'true'` is set. `TRACK` command then returns a log entry cross-referencing KAPPA·RHO peaks.
-
-**Radio fragment assembly (RadioReceiver):**  
-Lock all 4 target frequencies (4.8, 8.0, 15.16, 23.42 MHz) → 108.0 MHz unlocks and the assembled data tags spell KRONOS. Sets `dharma_radio_fragments_complete = 'true'`.
-
-**Subnet channel sequence (SubnetInterface):**  
-Visit all three channels in order — general (tag: OS), engineering (tag: ON), alvar (tag: KR). Oldest-first concatenation: KR+ON+OS = KRONOS. Sets `dharma_subnet_sequence_read = 'true'`.
-
-**Pearl log cycle markers (PearlStationLog):**  
-Specific log lines have DHARMA numbers [4], [8], [15], [16], [23], [42] in the left margin. Footer note: *"Cycle markers correspond to active intranet grid coordinates. Verify via PING [coordinates] at terminal."*
 
 ---
 
@@ -387,19 +417,27 @@ IslandMap shows the hatch-exterior marker only when countdown seconds remaining 
 | `hatch-exterior` | L4+ | Countdown 6000–6480s | N 4°18′ W 16°342′ |
 
 **Moving entity (L2+):**  
-A red dot bounces across the map using a 200ms interval. When it enters zone (x:50–62%, y:32–44%), sets `dharma_entity_tracked = 'true'` and fires a sound. `TRACK` command in terminal then shows the grid fix log.
+A red dot bounces across the map using a 200ms interval. Movement is constrained by `islandBoundary.ts` (`isPointInIsland(x, y)`) — entity reverses with a random new heading when it would leave the island polygon. When it enters zone (x:50–62%, y:32–44%), sets `dharma_entity_tracked = 'true'` and fires a sound. `TRACK` command in terminal then shows the grid fix log.
+
+**Fog of war (`FogOverlay` component):**  
+A `<svg>` mask layer above the map image reveals terrain progressively. Reveal zones (ellipses) expand with clearance and entity tracking:
+
+| Zone | Clears when |
+|------|-------------|
+| Seed (small island hint) | Always |
+| Swan area | L1+ |
+| Entity zone | `dharma_entity_tracked = 'true'` |
+| Black Rock / northeast | L3+ |
+| North jungle | L4+ |
+| (Full map) | L5+ (fog removed entirely) |
+
+The fog uses animated SVG `feTurbulence` + `feDisplacementMap` filters for a drifting-mist effect.
+
+**Station markers (L5 / devmode):**  
+Amber dots for all entries in `MAP_STATIONS` (from `mapCoordinates.ts`). Hover shows station name and DHARMA coordinates. Label uses `s.name` (full station name).
 
 **Weather system:**  
-Cycles every 90s through `['clear','clear','fog','clear','rain','clear','storm','clear']`. Writes current state to `dharma_weather_state`. Terminal `PING` reads this key to decide whether storm coordinates respond.
-
----
-
-### WaveformPuzzle (`WaveformPuzzle.tsx`)
-
-**Trigger:** `COMMS VERIFY` → sets `dharma_waveform_access = 'true'` → Home.tsx opens overlay  
-**What it does:** Displays a reference waveform and 6 candidates (A–F). Player clicks the matching one.  
-**Session rotation:** `getCorrectIndex() = parseInt(localStorage.getItem('countdown_start') || '0') % 6` — correct answer changes each time the countdown resets, preventing note-taking shortcuts.  
-**On correct selection:** 1.8-second confirmation delay, then sets `dharma_waveform_solved = 'true'`, fires `onSolve` callback in Home.tsx.
+Cycles every 90s through `['clear','clear','fog','clear','rain','clear','storm','clear']`. Writes to `dharma_weather_state`. A separate 2s poll reads it back into React state so the `SETWEATHER` terminal command takes effect immediately. Terminal `PING` also reads this key to decide whether storm coordinates respond.
 
 ---
 
@@ -432,42 +470,22 @@ Cycles every 90s through `['clear','clear','fog','clear','rain','clear','storm',
 
 ---
 
-### RadioReceiver (`RadioReceiver.tsx`)
-
-**Access:** L2+ only  
-**Triggers:**
-- Click the countdown display **6 times within 4 seconds**
-- Or type `RADIO` in the terminal (L2+, sets `dharma_radio_access = 'true'`)
-
-**Target frequencies:**
-
-| Frequency | Fragment tag | Transmission content |
-|-----------|-------------|---------------------|
-| 4.8 MHz   | `[KR]` | Arrow station data |
-| 8.0 MHz   | `[ON]` | Flame relay offline |
-| 15.16 MHz | `[OS]` | Pearl observation log |
-| 23.42 MHz | — | Hydra zoological/perimeter |
-| **108.0 MHz** | *(unlocks after all 4 locked)* | Assembles fragment tags → KRONOS |
-
-Lock all 4 → `dharma_radio_fragments_complete = 'true'`. Tune to 108.0 MHz to see the assembled codes.
-
----
-
 ### SubnetInterface (`SubnetInterface.tsx`)
 
-**Access:** L3+  
+**Access:** L2+  
 **Trigger:** `SUBNET` command sets `dharma_subnet_access = 'true'` → Home.tsx opens overlay
 
 **Channels with puzzle relevance:**
 
 | Channel | Key content |
 |---------|-------------|
-| GENERAL | Fragment tag `[OS]` at bottom |
-| ENGINEERING | Fragment tag `[ON]` at bottom; archive code `AH/MDG-932815` |
-| ALVAR.H [DIRECT] | Fragment tag `[KR]`; **Alvar.H explains the mirror cipher (Atbash hint for L4→L5)** |
+| GENERAL | Archive info |
+| ENGINEERING | Archive code `AH/MDG-932815` |
+| ALVAR.H [DIRECT] | **Alvar.H explains the mirror cipher (Atbash hint for L4→L5)** |
 
-Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.  
-`/download` command in the interface: sets `dharma_subnet_complete = 'true'`, surfaces `OVERRIDE-D108` code.
+`/download` command in the interface: sets `dharma_subnet_complete = 'true'`. Home.tsx `onComplete` callback writes the flag. The download message surfaces Peak 03 = OMEGA and Peak 04 = NU for the L2→L3 puzzle.
+
+**Note:** SUBNET moved from L3+ to L2+ to participate in the L2→L3 four-source puzzle.
 
 ---
 
@@ -498,11 +516,11 @@ Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.
 |---------|----|----|----|----|-----|
 | `COMMS` command | — | ✓ | ✓ | ✓ | ✓ |
 | `DECRYPT` command | — | ✓ | ✓ | ✓ | ✓ |
-| `RADIO` command / Receiver UI | — | ✓ | ✓ | ✓ | ✓ |
+| `PEARL` command | — | ✓ | ✓ | ✓ | ✓ |
 | `TRACK` command | — | ✓ | ✓ | ✓ | ✓ |
+| `SUBNET` command / SubnetInterface UI | — | ✓ | ✓ | ✓ | ✓ |
 | `OVERRIDE` command | — | — | ✓ | ✓ | ✓ |
 | `DIAGNOSE` command | — | — | ✓ | ✓ | ✓ |
-| `SUBNET` command | — | — | ✓ | ✓ | ✓ |
 | `MAP` command / Blast Door UI | — | — | ✓ | ✓ | ✓ |
 | `NODE` command (hidden) | — | — | ✓ | ✓ | ✓ |
 | `OVERRIDE-D108` (hidden) | — | — | ✓ | ✓ | ✓ |
@@ -521,9 +539,11 @@ Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.
 | WHO — V. Kelvin entry | — | — | — | ✓ | ✓ |
 | WHO — Hanso/Candidates | — | — | — | — | ✓ |
 | IslandMap swan-signal | ✓ | ✓ | ✓ | ✓ | ✓ |
+| IslandMap fog of war (partial reveal) | ✓ | ✓ | ✓ | ✓ | — |
 | IslandMap storm-cache | — | — | ✓ | ✓ | ✓ |
 | IslandMap hatch-exterior | — | — | — | ✓ | ✓ |
 | IslandMap moving entity | — | ✓ | ✓ | ✓ | ✓ |
+| IslandMap station markers (amber dots) | — | — | — | — | ✓ |
 
 ---
 
@@ -541,12 +561,18 @@ Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.
 
 | Key | Set by | Gates |
 |-----|--------|-------|
-| `dharma_ping_resolved` | `PING 4815 162342` | L1→L2 |
-| `dharma_waveform_solved` | WaveformPuzzle correct answer | L2→L3 |
+| `dharma_ping_resolved` | `PING 4815 162342` | Part of L1→L2 path |
+| `dharma_personal_effects_read` | `READ /FILES/PERSONAL-EFFECTS.TXT` | Required before orientation reel is accessible |
+| `dharma_orientation_read` | `READ /DHARMA/ORIENTATION-REEL-3.TXT` | **L1→L2 gate** |
+| `dharma_comms_read` | `COMMS` command | Part of L2→L3 (source 1 of 4) |
+| `dharma_entity_tracked` | Entity enters target zone on IslandMap | Part of L2→L3 (source 2 of 4) |
+| `dharma_subnet_complete` | SubnetInterface `/download` | Part of L2→L3 (source 3 of 4) |
+| `dharma_pearl_log_cycled` | `PEARL` command | Part of L2→L3 (source 4 of 4) |
+| `dharma_freq_decrypted` | `DECRYPT FREQUENCIES` (all 4 sources present) | **L2→L3 gate** |
 | `dharma_map_consulted` | `MAP` command (L3+) | Part of L3→L4 |
 | `dharma_radzinsky_read` | `RADZINSKY` command (L3+) | Part of L3→L4 |
 | `dharma_decrypt_shift_used` | `DECRYPT SHIFT` command | Part of L3→L4 |
-| `dharma_nodes_activated` | `ACTIVATE 4-8-15-16-23-42` | L4→L5 |
+| `dharma_nodes_activated` | `ACTIVATE 4-8-15-16-23-42` | **L4→L5 gate** |
 
 ### Overlay trigger flags (polled by Home.tsx every 500ms; cleared after opening)
 
@@ -554,30 +580,26 @@ Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.
 |-----|--------|-------|
 | `dharma_subnet_access` | `SUBNET` command | SubnetInterface overlay |
 | `dharma_map_access` | `MAP` command | BlastDoorMap overlay |
-| `dharma_radio_access` | `RADIO` command | RadioReceiver overlay |
-| `dharma_waveform_access` | `COMMS VERIFY` command | WaveformPuzzle overlay |
 | `dharma_incident_archive` | `INCIDENT ARCHIVE` command | IncidentReports overlay |
+| `dharma_failsafe_activated` | `FAILSAFE` typed during implosion | Resets app (handled in poll) |
 
 ### Puzzle progress & lore flags
 
 | Key | Set by | Purpose |
 |-----|--------|---------|
-| `dharma_entity_tracked` | Entity enters target zone on map | Enables full TRACK log |
-| `dharma_weather_state` | IslandMap weather cycle | Read by terminal PING storm check |
+| `dharma_weather_state` | IslandMap weather cycle / `SETWEATHER` | Read back into React state every 2s; PING storm check |
 | `dharma_storm_cache_pinged` | PING storm coords during storm | Lore |
 | `dharma_hatch_exterior_pinged` | PING hatch coords in time window | Lore |
 | `dharma_node_maze_complete` | NODE C2 reached | Lore |
 | `dharma_activation_progress` | ACTIVATE (JSON number array) | Tracks sequence position |
 | `dharma_override_used` | OVERRIDE-D108 command | Lore |
-| `dharma_subnet_complete` | SubnetInterface `/download` | Lore |
-| `dharma_subnet_sequence_read` | All three subnet channels visited | Lore |
-| `dharma_radio_fragments_complete` | All 4 radio freqs locked | Lore |
 | `dharma_failsafe_activated` | FAILSAFE typed during implosion | Resets app |
 | `dharma_incident_unlocked` | `DECRYPT INCIDENT` command | Lore |
 | `dharma_pearl_access` | Legacy `LOGIN C22/DSTNGSHD-LBRT` | Legacy |
 | `dharma_surveillance_active` | `ACCESS pearl-surveillance` | Lore |
 | `dharma_lockdown` | `LOCKDOWN` command | Lore |
 | `dharma_error_allowed` | `OVERRIDE system-error` | Debug page |
+| `dharma_decrypt_shift_used` | `DECRYPT SHIFT` | L3→L4 gate component |
 
 ### Dev mode
 
@@ -606,13 +628,13 @@ Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.
 | `AUTHENTICATE [word]` | L1+ | Advance clearance level |
 | `CLEAR` | L1+ | Clear terminal |
 | `EXIT` | L1+ | Suspend session |
-| `COMMS [verify]` | L2+ | Radio intercept log; `COMMS VERIFY` opens waveform puzzle |
+| `COMMS` | L2+ | Carrier wave intercept log; sets `dharma_comms_read` (source 1 of 4 for L2→L3) |
 | `DECRYPT [key]` | L2+ | Keys: `frequencies`, `shift`, `incident`, `blackrock`, `valenzetti` |
-| `RADIO` | L2+ | Open RadioReceiver overlay |
-| `TRACK` | L2+ | Entity sonar log (requires `dharma_entity_tracked`) |
+| `PEARL` | L2+ | Pearl Station observation log; sets `dharma_pearl_log_cycled` (source 4 of 4 for L2→L3) |
+| `TRACK` | L2+ | Entity sonar log (requires `dharma_entity_tracked`; reveals KAPPA·RHO) |
+| `SUBNET` | L2+ | Open SubnetInterface overlay (moved from L3 to L2) |
 | `OVERRIDE [param]` | L3+ | System override protocols |
 | `DIAGNOSE [target]` | L3+ | Network diagnostics |
-| `SUBNET` | L3+ | Open SubnetInterface overlay |
 | `MAP` | L3+ | Open BlastDoorMap UV overlay |
 | `ACCESS [param]` | L4+ | Special access protocols |
 | `VALENZETTI` | L4+ | Valenzetti Equation summary |
@@ -650,7 +672,6 @@ Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.
 | `HANSO` | L1+ | Hanso Foundation lore |
 | `WHAT IS YOUR NAME` | L1+ | System identifies itself |
 | `MAMA` / `WATCH` | L1+ | Flavor responses |
-| `RADIO.LISTEN(freq)` | L2+ | Tune to frequency (needs transmission log) |
 | `4 8 15 16 23 42` | any | Resets countdown (only works in alarm/protocol state) |
 | `INCIDENT ARCHIVE` | any | Opens IncidentReports overlay |
 | `DEVMODE` | any | Developer mode |
@@ -683,15 +704,15 @@ Visiting all three channels sets `dharma_subnet_sequence_read = 'true'`.
 | All terminal commands & puzzle content | `client/src/lib/terminal.ts` |
 | Main page, overlay coordination, polling | `client/src/pages/Home.tsx` |
 | Terminal UI + clearance badge + glitch effects | `client/src/components/Terminal.tsx` |
-| Island map + signal markers + entity | `client/src/components/IslandMap.tsx` |
-| Carrier wave matching puzzle | `client/src/components/WaveformPuzzle.tsx` |
+| Island map + fog-of-war + entity + markers | `client/src/components/IslandMap.tsx` |
+| Island boundary polygon (entity movement) | `client/src/lib/islandBoundary.ts` |
+| Station/signal pixel coordinates | `client/src/lib/mapCoordinates.ts` |
 | Subnet chat overlay | `client/src/components/SubnetInterface.tsx` |
 | Incident reports overlay | `client/src/components/IncidentReports.tsx` |
 | Pearl paper printout (post-failure) | `client/src/components/PearlStationLog.tsx` |
 | Blast door UV map | `client/src/components/BlastDoorMap.tsx` |
-| Radio frequency receiver | `client/src/components/RadioReceiver.tsx` |
 | 108-minute countdown | `client/src/components/Countdown.tsx` |
-| System failure overlay | `client/src/components/SystemFailureScreen.tsx` |
+| System failure overlay | `client/src/components/SystemFailure.tsx` |
 
 ### Adding a new puzzle step
 1. Add content to `terminal.ts` — new file path in `read()`, new command in `commands` or `hiddenCommands`
@@ -714,9 +735,10 @@ Multiple answers per level are supported: `1: ['WICKMUND', 'ALTERNATE']`.
 
 ### Cross-component state flow
 - **Terminal → Home:** Sets a localStorage flag; Home.tsx polls every 500ms and opens the relevant overlay
-- **IslandMap → Terminal:** Writes `dharma_weather_state` to localStorage; PING reads it; writes `dharma_entity_tracked`; TRACK reads it
+- **IslandMap → Terminal:** Writes `dharma_weather_state` (cycle) and reads it back every 2s; writes `dharma_entity_tracked` when entity hits zone; TRACK reads it
+- **SubnetInterface → L2→L3 gate:** `onComplete` callback in Home.tsx writes `dharma_subnet_complete`; DECRYPT FREQUENCIES reads it
 - **Countdown → Home → IslandMap:** Countdown fires `onTick(secondsRemaining)`; Home stores `timeRemaining` state; passes it to IslandMap as prop
-- **WaveformPuzzle → authenticate gate:** `dharma_waveform_solved` set by puzzle; checked by AUTHENTICATE at L2
+- **DECRYPT FREQUENCIES → AUTHENTICATE gate:** Sets `dharma_freq_decrypted` when all 4 sources confirmed; AUTHENTICATE at L2 checks for this flag
 
 ---
 

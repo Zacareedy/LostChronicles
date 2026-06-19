@@ -11,8 +11,6 @@ import IncidentReports from '@/components/IncidentReports';
 import SubnetInterface from '@/components/SubnetInterface';
 import BlastDoorMap from '@/components/BlastDoorMap';
 import IslandMap from '@/components/IslandMap';
-import WaveformPuzzle from '@/components/WaveformPuzzle';
-import RadioReceiver from '@/components/RadioReceiver';
 import PuzzleController, { PuzzleControllerRef } from '@/components/PuzzleController';
 import PuzzleLauncher from '@/components/PuzzleLauncher';
 import { playSound, stopSound } from '@/lib/audio';
@@ -42,9 +40,6 @@ const Home: React.FC = () => {
   // Subnet interface state
   const [isSubnetOpen, setIsSubnetOpen] = useState(false);
 
-  // Waveform puzzle state
-  const [isWaveformOpen, setIsWaveformOpen] = useState(false);
-
   // Countdown time remaining — passed to IslandMap for time-gated signals
   const [timeRemaining, setTimeRemaining] = useState(9999);
 
@@ -52,11 +47,6 @@ const Home: React.FC = () => {
   const [isMapOpen, setIsMapOpen] = useState(false);
   const logoClicks = useRef(0);
   const logoClickTimer = useRef<ReturnType<typeof setTimeout>>();
-
-  // Radio receiver state + countdown click counter
-  const [isRadioOpen, setIsRadioOpen] = useState(false);
-  const countdownClicks = useRef(0);
-  const countdownClickTimer = useRef<ReturnType<typeof setTimeout>>();
 
   // Live clearance level (mirrors Terminal's state via CustomEvent)
   const [currentClearance, setCurrentClearance] = useState(() => getClearance());
@@ -136,20 +126,9 @@ const Home: React.FC = () => {
         if (mapFlag === 'true') {
           localStorage.removeItem('dharma_map_access');
           setIsMapOpen(true);
-          // Mark map as consulted for L3→L4 multi-source puzzle
           if (getClearance() >= 3) {
             try { localStorage.setItem('dharma_map_consulted', 'true'); } catch {}
           }
-        }
-        const waveformFlag = localStorage.getItem('dharma_waveform_access');
-        if (waveformFlag === 'true') {
-          localStorage.removeItem('dharma_waveform_access');
-          setIsWaveformOpen(true);
-        }
-        const radioFlag = localStorage.getItem('dharma_radio_access');
-        if (radioFlag === 'true') {
-          localStorage.removeItem('dharma_radio_access');
-          setIsRadioOpen(true);
         }
         const failsafeFlag = localStorage.getItem('dharma_failsafe_activated');
         if (failsafeFlag === 'true') {
@@ -237,18 +216,6 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleCountdownClick = () => {
-    if (getClearance() < 2) return;
-    clearTimeout(countdownClickTimer.current);
-    countdownClicks.current += 1;
-    if (countdownClicks.current >= 6) {
-      countdownClicks.current = 0;
-      setIsRadioOpen(true);
-    } else {
-      countdownClickTimer.current = setTimeout(() => { countdownClicks.current = 0; }, 4000);
-    }
-  };
-
   const handleLaunchPuzzle = (puzzleId: string) => {
     setActivePuzzleId(puzzleId);
     triggerSystemStatus(`LAUNCHING ${puzzleId.toUpperCase()} INTERFACE`, 3000);
@@ -268,7 +235,7 @@ const Home: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative min-h-screen overflow-hidden flex flex-col">
       <div className="absolute inset-0 crt pointer-events-none z-50"></div>
 
       <header className="pt-6 pb-2 px-6 flex justify-between items-center border-b border-[hsla(var(--dharma-gray),0.3)]">
@@ -279,7 +246,7 @@ const Home: React.FC = () => {
             <p className="text-xs" style={{ color: 'var(--ph-mid)' }}>STATION 3 · SECURITY LEVEL: {currentClearance}</p>
           </div>
         </div>
-        <div onClick={handleCountdownClick} className="cursor-pointer select-none">
+        <div className="select-none">
           <Countdown
             onCountdownFinish={handleCountdownFinish}
             isReset={isCountdownReset}
@@ -289,8 +256,7 @@ const Home: React.FC = () => {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
+      <main className="flex-1 min-h-0 container mx-auto p-4 flex flex-col lg:flex-row gap-4 lg:items-stretch">
           <Terminal
             onRevealPuzzle={handleRevealPuzzle}
             onRevealStation={handleRevealStation}
@@ -298,10 +264,9 @@ const Home: React.FC = () => {
             onCommand={handleTerminalCommand}
             isSystemFailure={isSystemFailure}
           />
-        </div>
-        <div className="lg:col-span-1">
-          <IslandMap clearance={currentClearance} timeRemaining={timeRemaining} />
-        </div>
+          <div className="lg:flex-1 self-stretch min-h-64 lg:min-h-0 min-w-0">
+            <IslandMap clearance={currentClearance} timeRemaining={timeRemaining} />
+          </div>
       </main>
 
       <footer className="mt-6 p-4 border-t border-[hsla(var(--dharma-gray),0.3)] text-xs" style={{ color: 'var(--ph-mid)' }}>
@@ -352,28 +317,11 @@ const Home: React.FC = () => {
         }}
       />
 
-      {/* Waveform puzzle — COMMS VERIFY terminal command (L2+) */}
-      <WaveformPuzzle
-        isVisible={isWaveformOpen}
-        onClose={() => setIsWaveformOpen(false)}
-        onSolve={() => {
-          setIsWaveformOpen(false);
-          triggerSystemStatus('CARRIER SIGNATURE VERIFIED — UPLINK RESTORED', 4000);
-        }}
-      />
-
       {/* Blast Door Map — UV-reveal puzzle, logo 4-click (L3+) or MAP terminal command */}
       <BlastDoorMap
         isVisible={isMapOpen}
         onClose={() => setIsMapOpen(false)}
       />
-
-      {/* Radio Receiver — frequency dial puzzle, countdown 6-click (L2+) or RADIO terminal command */}
-      <RadioReceiver
-        isVisible={isRadioOpen}
-        onClose={() => setIsRadioOpen(false)}
-      />
-
 
       <PuzzleController
         ref={puzzleControllerRef}

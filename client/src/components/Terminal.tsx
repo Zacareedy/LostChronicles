@@ -353,13 +353,19 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
         </div>
       )}
 
-      {/* ── Terminal panel ── */}
+      {/* ── Terminal panel — Apple Monitor III: 80 cols × 24 rows ── */}
       <motion.section
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
-        className="lg:col-span-2 dharma-panel relative"
-        style={upgrading ? { boxShadow: '0 0 24px 4px rgba(51,255,51,0.55)', transition: 'box-shadow 0.3s' } : {}}
+        className="dharma-panel relative"
+        style={{
+          width: 'fit-content',
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          ...(upgrading ? { boxShadow: '0 0 24px 4px rgba(51,255,51,0.55)', transition: 'box-shadow 0.3s' } : {}),
+        }}
       >
         <div className="dharma-panel-header border-b border-[hsla(var(--dharma-gray),0.5)] flex justify-between items-center">
           <h2 className="dharma-panel-title tracking-[0.5em] text-sm">DHARMA TERMINAL v2.0</h2>
@@ -377,12 +383,12 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
               animate={{ opacity: 1, scaleY: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.25 }}
-              className="absolute inset-x-0 top-10 z-20 pointer-events-none flex items-center justify-center"
-              style={{ height: 36 }}
+              className="absolute inset-x-0 z-20 pointer-events-none flex items-center justify-center"
+              style={{ top: 40, height: 40 }}
             >
               <div
-                className="font-terminal text-sm tracking-widest animate-terminal-blink"
-                style={{ color: '#33ff33', background: '#010601', padding: '4px 20px', border: '1px solid #33ff33' }}
+                className="font-terminal tracking-widest animate-terminal-blink"
+                style={{ fontSize: '16px', color: '#33ff33', background: '#010601', padding: '4px 20px', border: '1px solid #33ff33' }}
               >
                 ▲ CLEARANCE {clearance} — {clearanceLabel(clearance)} — GRANTED ▲
               </div>
@@ -390,18 +396,56 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
           )}
         </AnimatePresence>
 
-        {/* Terminal output */}
-        <div
-          ref={terminalOutputRef}
-          className="dharma-panel-content h-72 overflow-auto font-terminal text-[hsl(var(--dharma-green))] text-lg relative"
-        >
-          <div className="space-y-2">
+        {/* CRT screen — 80 VT323 columns wide, fills panel height */}
+        <div style={{
+          position: 'relative',
+          background: '#010801',
+          overflow: 'hidden',
+          fontFamily: "'VT323', monospace",
+          fontSize: '22px',
+          width: 'calc(80ch + 16px)',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
+          {/* Scanlines */}
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 10, pointerEvents: 'none',
+            background: 'repeating-linear-gradient(0deg, rgba(0,0,0,0) 0px, rgba(0,0,0,0) 1px, rgba(0,0,0,0.22) 1px, rgba(0,0,0,0.22) 2px)',
+          }} />
+          {/* Vignette */}
+          <div style={{
+            position: 'absolute', inset: 0, zIndex: 11, pointerEvents: 'none',
+            background: 'radial-gradient(ellipse at 50% 45%, transparent 52%, rgba(0,0,0,0.38) 100%)',
+          }} />
+
+          {/* Output — 80 columns wide, fills available panel height at 22px VT323 */}
+          <div
+            ref={terminalOutputRef}
+            className="crt-screen"
+            style={{
+              position: 'relative', zIndex: 1,
+              fontFamily: "'VT323', monospace",
+              fontSize: '22px',
+              lineHeight: '22px',
+              flex: 1,
+              minHeight: 0,
+              overflowY: 'auto',
+              overflowX: 'hidden',
+              padding: '4px 8px',
+              color: '#4dff32',
+              textShadow: '0 0 5px rgba(77,255,50,0.55)',
+              letterSpacing: '0',
+              cursor: 'text',
+            }}
+            onClick={() => terminalInputRef.current?.focus()}
+          >
             {terminalOutput.filter(line => line.type !== 'cursor').map((line, index) => (
-              <p key={index}>{line.text}</p>
+              <p key={index} style={{ margin: 0, whiteSpace: 'pre', minHeight: '22px', maxWidth: '80ch', overflow: 'hidden' }}>{line.text}</p>
             ))}
-            <form onSubmit={handleSubmit} className="flex relative">
-              <span className="mr-2">{'>:'}</span>
-              <div className="relative flex-1">
+            <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'baseline', maxWidth: '80ch' }}>
+              <span style={{ marginRight: '4px', opacity: 0.7 }}>{'>:'}</span>
+              <div style={{ position: 'relative', flex: 1 }}>
                 <input
                   ref={terminalInputRef}
                   type="text"
@@ -412,46 +456,36 @@ const Terminal: React.FC<TerminalProps> = ({ onRevealPuzzle, onRevealStation, on
                       playSound('beep', 'short');
                     }
                   }}
-                  className="bg-transparent w-full focus:outline-none"
-                  placeholder=""
+                  style={{
+                    background: 'transparent', width: '100%',
+                    border: 'none', outline: 'none',
+                    fontFamily: "'VT323', monospace",
+                    fontSize: '22px', lineHeight: '22px',
+                    color: '#4dff32',
+                    textShadow: '0 0 5px rgba(77,255,50,0.55)',
+                    letterSpacing: '0',
+                  }}
                   autoComplete="off"
                 />
-                {!input && <span className="absolute left-0 top-0 animate-terminal-blink">█</span>}
+                {!input && <span className="absolute left-0 top-0 animate-terminal-blink" style={{ color: '#4dff32' }}>█</span>}
               </div>
             </form>
           </div>
-        </div>
 
-        {/* Terminal footer */}
-        <div
-          className="bg-[hsla(var(--dharma-gray),0.1)] p-2 text-xs flex justify-between border-t border-[hsla(var(--dharma-gray),0.3)]"
-          style={{ color: '#33ff33' }}
-        >
-          <span>Type HELP for commands · AUTHENTICATE to advance clearance</span>
-          <span className={
-            terminalStatus === 'ACCESS DENIED'
-              ? 'text-[hsl(var(--dharma-red))]'
-              : terminalStatus === 'SYSTEM FAILURE'
-                ? 'text-[hsl(var(--dharma-red))] font-bold animate-terminal-blink'
-                : ''
-          }>
-            {terminalStatus}
-          </span>
+          {/* System Failure overlay */}
+          {isSystemFailure && (
+            <div className="absolute top-2 left-2 right-2 z-10 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0.7, 0.9, 0.7], y: [0, -3, 0] }}
+                transition={{ repeat: Infinity, duration: 1.5 }}
+                className="bg-transparent p-2 text-center"
+              >
+                <div className="font-terminal text-[hsl(var(--dharma-red))] text-4xl font-bold" />
+              </motion.div>
+            </div>
+          )}
         </div>
-
-        {/* System Failure Overlay */}
-        {isSystemFailure && (
-          <div className="absolute top-2 left-2 right-2 z-10 pointer-events-none">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: [0.7, 0.9, 0.7], y: [0, -3, 0] }}
-              transition={{ repeat: Infinity, duration: 1.5 }}
-              className="bg-transparent p-2 text-center"
-            >
-              <div className="font-terminal text-[hsl(var(--dharma-red))] text-4xl font-bold" />
-            </motion.div>
-          </div>
-        )}
       </motion.section>
     </>
   );

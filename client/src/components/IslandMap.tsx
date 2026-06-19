@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { playSound } from '@/lib/audio';
 import mapImage from '@assets/island_map_satellite.jpg';
 import { MAP_SIGNAL_MARKERS, MAP_STATIONS } from '@/lib/mapCoordinates';
+import { isPointInIsland } from '@/lib/islandBoundary';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -14,18 +15,13 @@ interface SignalMarker {
   coordinates: string;
   statusLabel: string;
   minClearance: number;
-  // weather: only shown during this weather state (undefined = always)
   weather?: WeatherState;
-  // timeWindow: only shown when countdown seconds remaining is within [min, max]
   timeWindow?: { min: number; max: number };
 }
 
 // ─── Signal marker definitions ────────────────────────────────────────────────
-// Each puzzle that uses the map adds its marker here.
 
-// Positions are imported from mapCoordinates.ts — edit there to move markers.
 const SIGNAL_MARKERS: SignalMarker[] = [
-  // L1→L2: Coordinate entry puzzle — always visible
   {
     id: 'swan-signal',
     position: { top: MAP_SIGNAL_MARKERS['swan-signal'].top, left: MAP_SIGNAL_MARKERS['swan-signal'].left },
@@ -33,11 +29,6 @@ const SIGNAL_MARKERS: SignalMarker[] = [
     statusLabel: 'UNVERIFIED NODE — ENTER COORDINATES TO CONFIRM',
     minClearance: 1,
   },
-
-  // L2→L3: Entity tracking — visible when an entity marker is near (handled separately)
-  // placeholder; the moving entity is rendered as its own element
-
-  // L3→L4: Weather event — visible only during storm
   {
     id: 'storm-cache',
     position: { top: MAP_SIGNAL_MARKERS['storm-cache'].top, left: MAP_SIGNAL_MARKERS['storm-cache'].left },
@@ -46,8 +37,6 @@ const SIGNAL_MARKERS: SignalMarker[] = [
     minClearance: 3,
     weather: 'storm',
   },
-
-  // L4→L5: Time gate — visible only when countdown is in first 8 minutes (6000–6480s window)
   {
     id: 'hatch-exterior',
     position: { top: MAP_SIGNAL_MARKERS['hatch-exterior'].top, left: MAP_SIGNAL_MARKERS['hatch-exterior'].left },
@@ -59,37 +48,191 @@ const SIGNAL_MARKERS: SignalMarker[] = [
 ];
 
 // ─── Station reference markers (L5 / devmode only) ───────────────────────────
-// All known DHARMA stations from MAP_STATIONS, visible when clearance = 5.
-// Rendered as small amber dots so they're distinct from puzzle-critical green dots.
+
 const STATION_MARKERS = Object.entries(MAP_STATIONS).map(([key, s]) => ({
   id: `station-${key}`,
   position: { top: `${s.top}%`, left: `${s.left}%` },
-  label: key.toUpperCase(),
+  label: s.name,
   dharmaCoords: s.dharmaCoords,
 }));
+
+// ─── Fog of war overlay ───────────────────────────────────────────────────────
+
+interface FogZone {
+  id: string;
+  cx: number; // % of container
+  cy: number;
+  rx: number; // horizontal radius %
+  ry: number; // vertical radius %
+}
+
+function buildFogZones(clearance: number, entityTracked: boolean): FogZone[] {
+  const z: FogZone[] = [];
+  // Always give a tiny seed reveal so the island shape is hinted
+  z.push({ id: 'seed', cx: 42, cy: 55, rx: 6, ry: 5 });
+  if (clearance >= 1) z.push({ id: 'swan', cx: 32.2, cy: 77.7, rx: 22, ry: 17 });
+  if (entityTracked)  z.push({ id: 'entity', cx: 56, cy: 37, rx: 18, ry: 14 });
+  if (clearance >= 3) z.push({ id: 'blackrock', cx: 63.9, cy: 27.1, rx: 17, ry: 13 });
+  if (clearance >= 4) z.push({ id: 'north', cx: 44.1, cy: 21, rx: 22, ry: 17 });
+  return z;
+}
+
+const FogOverlay: React.FC<{ clearance: number; entityTracked: boolean }> = ({
+  clearance,
+  entityTracked,
+}) => {
+  if (clearance >= 5) return null;
+
+  const zones = buildFogZones(clearance, entityTracked);
+
+  return (
+    <svg
+      style={{
+        position: 'absolute',
+        inset: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 3,
+        overflow: 'visible',
+      }}
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        {/* Soft-edge blur for reveal holes in the mask */}
+        <filter id="fog-reveal-blur" x="-80%" y="-80%" width="260%" height="260%">
+          <feGaussianBlur stdDeviation="14" />
+        </filter>
+
+        {/* Animated turbulence displacement — makes fog edges look like drifting mist */}
+        <filter id="fog-drift" x="-8%" y="-8%" width="116%" height="116%">
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.020 0.013"
+            numOctaves="4"
+            result="noise"
+          >
+            <animate
+              attributeName="baseFrequency"
+              values="0.020 0.013;0.026 0.017;0.020 0.013"
+              dur="24s"
+              repeatCount="indefinite"
+            />
+          </feTurbulence>
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="30"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+
+        {/* Slower, larger-scale turbulence for the wisp layer */}
+        <filter id="fog-wisp" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence
+            type="turbulence"
+            baseFrequency="0.010 0.007"
+            numOctaves="3"
+            result="noise"
+          >
+            <animate
+              attributeName="baseFrequency"
+              values="0.010 0.007;0.015 0.010;0.010 0.007"
+              dur="38s"
+              repeatCount="indefinite"
+            />
+          </feTurbulence>
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="45"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+          <feGaussianBlur stdDeviation="2" />
+        </filter>
+
+        {/* Mask: white = fog visible, black = terrain revealed */}
+        <mask id="fog-mask">
+          <rect width="100%" height="100%" fill="white" />
+          {zones.map(z => (
+            <ellipse
+              key={z.id}
+              cx={`${z.cx}%`}
+              cy={`${z.cy}%`}
+              rx={`${z.rx}%`}
+              ry={`${z.ry}%`}
+              fill="black"
+              filter="url(#fog-reveal-blur)"
+            />
+          ))}
+        </mask>
+      </defs>
+
+      {/* Primary deep-dark fog layer */}
+      <rect
+        width="100%"
+        height="100%"
+        fill="rgb(4, 9, 18)"
+        opacity="0.89"
+        mask="url(#fog-mask)"
+        filter="url(#fog-drift)"
+      />
+
+      {/* Mid grey-blue mist — drifting slowly, creates the "foggy" texture at edges */}
+      <rect
+        width="100%"
+        height="100%"
+        fill="rgb(130, 158, 175)"
+        opacity="0.16"
+        mask="url(#fog-mask)"
+        filter="url(#fog-wisp)"
+      />
+
+      {/* Light wisp highlight — softer, larger displacement for depth */}
+      <rect
+        width="100%"
+        height="100%"
+        fill="rgb(190, 210, 220)"
+        opacity="0.08"
+        mask="url(#fog-mask)"
+        filter="url(#fog-wisp)"
+      />
+    </svg>
+  );
+};
 
 // ─── Moving entity (L2→L3 puzzle) ────────────────────────────────────────────
 
 function useEntityPosition(active: boolean) {
-  const [pos, setPos] = useState({ x: 15, y: 55 }); // % across map
-  const dirRef = useRef({ dx: 0.04, dy: 0.02 });
-  const frameRef = useRef<ReturnType<typeof setInterval>>();
+  // Start near Swan Station — guaranteed inside island boundary
+  const [pos, setPos] = useState({ x: 36, y: 72 });
+  const dirRef = useRef({ dx: 0.045, dy: 0.025 });
 
   useEffect(() => {
     if (!active) return;
-    frameRef.current = setInterval(() => {
+    const id = setInterval(() => {
       setPos(prev => {
-        let { dx, dy } = dirRef.current;
-        let nx = prev.x + dx;
-        let ny = prev.y + dy;
-        // Bounce off edges
-        if (nx < 10 || nx > 85) { dx = -dx; nx = Math.max(10, Math.min(85, nx)); }
-        if (ny < 15 || ny > 80) { dy = -dy; ny = Math.max(15, Math.min(80, ny)); }
-        dirRef.current = { dx, dy };
-        return { x: nx, y: ny };
+        const { dx, dy } = dirRef.current;
+        const nx = prev.x + dx;
+        const ny = prev.y + dy;
+
+        if (isPointInIsland(nx, ny)) {
+          return { x: nx, y: ny };
+        }
+
+        // Hit coastline — pick a random new heading and stay put this tick
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.hypot(dx, dy);
+        dirRef.current = {
+          dx: Math.cos(angle) * speed,
+          dy: Math.sin(angle) * speed,
+        };
+        return prev;
       });
     }, 200);
-    return () => clearInterval(frameRef.current);
+    return () => clearInterval(id);
   }, [active]);
 
   return pos;
@@ -113,26 +256,20 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
   const [mapStatus, setMapStatus] = useState('SCANNING FOR SIGNALS...');
   const [coordinates, setCoordinates] = useState('--°--′ N  --°--′ W');
 
-  // Weather cycles — used for L3→L4 storm puzzle
   const [weather, setWeather] = useState<WeatherState>('clear');
 
-  // Entity active when clearance >= 2
   const entityPos = useEntityPosition(clearance >= 2);
-  // Track whether entity has ever entered the target zone (L2→L3)
   const [entityVisited, setEntityVisited] = useState(() =>
     localStorage.getItem('dharma_entity_tracked') === 'true'
   );
 
   const MIN_ZOOM = 1;
-  const MAX_ZOOM = 2.5;
+  const MAX_ZOOM = 5;
 
-  // Weather cycle: writes to localStorage every ~90s; storm is rare.
-  // The cycle only writes — a separate poll reads the value back into React state
-  // so that the SETWEATHER terminal command also takes effect immediately.
+  // Weather cycle: writes to localStorage every ~90s
   useEffect(() => {
     const CYCLE: WeatherState[] = ['clear', 'clear', 'fog', 'clear', 'rain', 'clear', 'storm', 'clear'];
     let i = 0;
-    // Write initial state if nothing is already set (preserves SETWEATHER override on hot reload)
     if (!localStorage.getItem('dharma_weather_state')) {
       try { localStorage.setItem('dharma_weather_state', 'clear'); } catch {}
     }
@@ -143,21 +280,17 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
     return () => clearInterval(id);
   }, []);
 
-  // Poll localStorage every 2s and sync weather state.
-  // This makes SETWEATHER terminal command take effect without waiting for the cycle.
+  // Poll localStorage every 2s — lets SETWEATHER terminal command take effect immediately
   useEffect(() => {
     const VALID: WeatherState[] = ['clear', 'fog', 'rain', 'storm'];
     const poll = setInterval(() => {
       const stored = localStorage.getItem('dharma_weather_state') as WeatherState | null;
-      if (stored && VALID.includes(stored)) {
-        setWeather(stored);
-      }
+      if (stored && VALID.includes(stored)) setWeather(stored);
     }, 2000);
     return () => clearInterval(poll);
   }, []);
 
   // Entity target zone: top≈38%, left≈55% — L2→L3 clue location
-  // When entity enters that zone, set flag and update status
   useEffect(() => {
     if (clearance < 2 || entityVisited) return;
     const inZone = entityPos.x > 50 && entityPos.x < 62 && entityPos.y > 32 && entityPos.y < 44;
@@ -166,7 +299,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
       setEntityVisited(true);
       setMapStatus('ENTITY AT GRID REF — N 15°16′ W 23°42′ — LOG ENTRY GENERATED');
       playSound('beep', 'short');
-      setTimeout(() => setMapStatus('SCANNING FOR SIGNALS...'), 8000);
+      setTimeout(() => setMapStatus('SCANNING FOR SIGNALS...'), 45000);
     }
   }, [entityPos, clearance, entityVisited]);
 
@@ -218,10 +351,8 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
     setMapStatus('SCANNING FOR SIGNALS...');
   };
 
-  // At L5 all puzzle gates are solved — bypass weather and time-window restrictions.
   const masterAccess = clearance >= 5;
 
-  // Which static markers are currently visible
   const visibleMarkers = SIGNAL_MARKERS.filter(m => {
     if (clearance < m.minClearance) return false;
     if (m.weather && m.weather !== weather && !masterAccess) return false;
@@ -232,7 +363,6 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
     return true;
   });
 
-  // Weather tint overlay — stronger values so the effect is actually perceptible
   const weatherOverlay: Record<WeatherState, string> = {
     clear: 'transparent',
     fog:   'rgba(160,185,160,0.35)',
@@ -245,7 +375,8 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.4 }}
-      className="dharma-panel"
+      className="dharma-panel h-full"
+      style={{ display: 'flex', flexDirection: 'column' }}
     >
       <div className="dharma-panel-header border-b border-[hsla(var(--dharma-gray),0.5)] flex justify-between items-center">
         <h2 className="dharma-panel-title tracking-[0.5em] text-sm">
@@ -262,8 +393,8 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
         </div>
       </div>
 
-      {/* Map viewport */}
-      <div className="relative" style={{ aspectRatio: '4/3' }}>
+      {/* Map viewport — fills remaining panel height */}
+      <div className="relative" style={{ flex: 1, minHeight: 0 }}>
         <div
           ref={mapContainerRef}
           className="absolute inset-2 overflow-hidden border border-[hsla(var(--dharma-gray),0.3)] bg-black"
@@ -273,7 +404,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
           onMouseLeave={handleMouseUp}
           style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
         >
-          {/* Map image + markers */}
+          {/* Map image + markers + fog — all inside the zoom/pan transform */}
           <div
             className="relative w-full h-full"
             style={{
@@ -295,7 +426,10 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
               style={{ background: weatherOverlay[weather] }}
             />
 
-            {/* Static signal markers */}
+            {/* Fog of war — above image/weather, below markers and entity */}
+            <FogOverlay clearance={clearance} entityTracked={entityVisited} />
+
+            {/* Static signal markers (z-index 10, above fog) */}
             {visibleMarkers.map(m => (
               <div
                 key={m.id}
@@ -314,7 +448,7 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
               </div>
             ))}
 
-            {/* Station reference markers (L5 / devmode) — amber dots for all known DHARMA stations */}
+            {/* Station reference markers (L5 / devmode) — amber dots */}
             {masterAccess && STATION_MARKERS.map(s => (
               <div
                 key={s.id}
@@ -333,7 +467,36 @@ const IslandMap: React.FC<IslandMapProps> = ({ clearance, timeRemaining = 9999 }
               </div>
             ))}
 
-            {/* Moving entity (clearance 2+) */}
+            {/* Entity target zone — visible at L2+ until tracked */}
+            {clearance >= 2 && !entityVisited && (
+              <div
+                className="absolute pointer-events-none"
+                style={{
+                  left: '50%',
+                  top: '32%',
+                  width: '12%',
+                  height: '12%',
+                  zIndex: 8,
+                  border: '1px dashed rgba(255, 68, 68, 0.45)',
+                  boxShadow: 'inset 0 0 12px rgba(255,68,68,0.08)',
+                }}
+              >
+                <span style={{
+                  position: 'absolute',
+                  top: '-14px',
+                  left: '0',
+                  fontSize: '7px',
+                  color: 'rgba(255,68,68,0.55)',
+                  fontFamily: 'monospace',
+                  letterSpacing: '0.05em',
+                  whiteSpace: 'nowrap',
+                }}>
+                  GRID REF
+                </span>
+              </div>
+            )}
+
+            {/* Moving entity (clearance 2+) — z-index 9, always visible above fog */}
             {clearance >= 2 && (
               <div
                 className="absolute pointer-events-none"
